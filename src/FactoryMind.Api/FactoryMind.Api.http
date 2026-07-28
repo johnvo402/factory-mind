@@ -1,0 +1,6 @@
+@FactoryMind.Api_HostAddress = http://localhost:5047
+
+GET {{FactoryMind.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
