@@ -2,14 +2,14 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using FactoryMind.Application.Auth;
+using FactoryMind.Application.Features.Auth;
 using FactoryMind.Domain.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace FactoryMind.Api.Auth;
 
-public sealed class JwtTokenService(IOptions<JwtSettings> options) : IJwtTokenService
+public sealed class JwtTokenService(IOptions<JwtSettings> options) : ITokenService
 {
     private readonly JwtSettings _settings = options.Value;
     public string CreateAccessToken(User user)

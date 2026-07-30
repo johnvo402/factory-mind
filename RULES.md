@@ -12,7 +12,15 @@ Always prioritize simplicity.
 
 Use Clean Architecture Lite.
 
-Never over engineer.
+Use CQRS with explicit commands and queries.
+
+Expose HTTP endpoints through ASP.NET Core Minimal APIs.
+
+Use the Repository Pattern: declare feature-specific repository interfaces in Application and implement them in Infrastructure.
+
+Put genuinely reusable, framework-independent contracts and utilities in FactoryMind.Shared.
+
+Never over engineer: CQRS does not require MediatR, an event bus, or separate read databases in the MVP.
 
 ---
 
@@ -49,7 +57,8 @@ Always follow
 - KISS
 - YAGNI
 - DRY
-- SOLID (reasonable)
+- SOLID
+- Clean Code
 - Ship Fast
 - MVP First
 
@@ -81,8 +90,6 @@ Never
 
 - create unnecessary abstraction
 
-- introduce CQRS
-
 - introduce Microservices
 
 - introduce Event Bus
@@ -113,6 +120,16 @@ Prefer
 
 - small classes
 
+- focused command/query handlers
+
+- one responsibility per type
+
+- dependency inversion at architectural boundaries
+
+- shared code in `FactoryMind.Shared` only when it is used by more than one project or feature
+
+- feature-specific repository interfaces and infrastructure implementations
+
 Avoid
 
 - magic code
@@ -120,6 +137,14 @@ Avoid
 - unnecessary inheritance
 
 - deep nesting
+
+- business logic in Minimal API endpoint mappings
+
+- commands that return query models or queries that change state
+
+- feature-specific code placed in `FactoryMind.Shared`
+
+- generic repositories that hide useful query intent
 
 ---
 

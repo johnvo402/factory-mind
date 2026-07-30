@@ -445,7 +445,7 @@ decision-log/
 
 0002-chat-homepage.md
 
-0003-no-cqrs.md
+0003-use-cqrs.md
 
 0004-no-agent.md
 ```

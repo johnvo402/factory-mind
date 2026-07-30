@@ -71,6 +71,8 @@ FactoryMind.Tests
 
 Done.
 
+`FactoryMind.Shared` only contains code that is truly shared by multiple projects or features, such as common result/error contracts, pagination contracts, shared constants and framework-independent helpers. It must not become a dumping ground for feature code, entities or infrastructure implementations.
+
 ---
 
 # 3. Dependency Rule
@@ -95,83 +97,78 @@ Api không viết business.
 
 Đủ.
 
+Repository interfaces belong to Application so command/query handlers depend on abstractions. Infrastructure implements those interfaces with EF Core. Repositories are feature-specific (for example, `IMachineRepository`); do not introduce a generic repository that obscures query intent.
+
 ---
 
 # 4. Request Flow
 
-Đây là flow duy nhất.
+Mỗi endpoint được khai báo bằng ASP.NET Core Minimal API. Endpoint chỉ làm HTTP binding, xác thực và trả response; business logic nằm trong handler.
 
 ```text
 Client
 
 ↓
 
-Controller
+Minimal API endpoint
 
 ↓
 
-Application Service
+Command hoặc Query handler
 
 ↓
 
-Repository
+Repository / infrastructure service
 
 ↓
 
-PostgreSQL
-
-↓
-
-Application
+PostgreSQL hoặc external service
 
 ↓
 
 Response
 ```
 
-Không MediatR.
+CQRS là bắt buộc:
 
-Không CQRS.
+* Command thay đổi state và có thể trả result nhỏ cần thiết cho client.
+* Query chỉ đọc dữ liệu và không thay đổi state.
+* Command và query có request, handler và response model riêng.
 
-Không Event Bus.
-
-Không Command.
-
-Không Query.
-
----
-
-### Vì sao bỏ CQRS?
-
-MVP chỉ có khoảng 20 API.
-
-CQRS chỉ làm code dài hơn.
-
-Sau này nếu có 500 API thì tính tiếp.
+Không dùng MediatR, Event Bus hoặc read database riêng trong MVP nếu chưa có nhu cầu được xác thực.
 
 ---
 
 # 5. Module Structure
 
-Ví dụ Machine.
+Tổ chức theo feature và CQRS. Ví dụ Machine:
 
 ```text
-Machine
-
-MachineController
-
-MachineService
-
-MachineRepository
-
-MachineEntity
-
-MachineDto
+Features/
+  Machines/
+    CreateMachine/
+      CreateMachineCommand.cs
+      CreateMachineHandler.cs
+    GetMachine/
+      GetMachineQuery.cs
+      GetMachineHandler.cs
+    MachineResponse.cs
+    MachineEndpoints.cs
 ```
 
-Module nào cũng giống nhau.
+Endpoint mapping giữ mỏng; handler thực hiện một use case. Domain entity và repository abstraction vẫn nằm ở layer phù hợp theo dependency rule.
 
-Rất dễ tìm.
+Ví dụ repository:
+
+```text
+Application/
+  Features/Machines/IMachineRepository.cs
+
+Infrastructure/
+  Persistence/Machines/EfMachineRepository.cs
+```
+
+Query handler gọi method đọc có ý nghĩa nghiệp vụ; command handler gọi method thay đổi state. Endpoint không gọi `DbContext` trực tiếp.
 
 ---
 
@@ -180,7 +177,7 @@ Rất dễ tìm.
 Đây là phần duy nhất đặc biệt.
 
 ```text
-ChatController
+Chat endpoints
 
 ↓
 
@@ -321,49 +318,19 @@ Sau khi xem lại MVP, mình nghĩ nên dùng:
 
 ## Clean Architecture Lite
 
-Ví dụ:
-
-```text
-Machine/
-
-MachineController.cs
-
-MachineService.cs
-
-MachineRepository.cs
-
-Machine.cs
-
-MachineDto.cs
-```
-
-Thay vì:
+Clean Architecture Lite vẫn dùng feature folders và CQRS, nhưng chỉ tạo type khi phục vụ một use case thực tế:
 
 ```text
 Features/
-
-Machine/
-
-Commands/
-
-Queries/
-
-Handlers/
-
-Validators/
-
-Responses/
-
-Requests/
-
-Profiles/
-
-Events/
-
-...
+  Machines/
+    CreateMachine/
+      CreateMachineCommand.cs
+      CreateMachineHandler.cs
+    GetMachine/
+      GetMachineQuery.cs
+      GetMachineHandler.cs
+    MachineEndpoints.cs
 ```
 
-Mỗi module có vài chục file.
-
-Điều đó **không phù hợp với một người phát triển**.
+Không thêm mediator, event, profile, validator hay abstraction chỉ vì một template có chúng. Cấu trúc này giữ command/query rõ ràng, tuân thủ SOLID và vẫn phù hợp cho MVP một người phát triển.
 
