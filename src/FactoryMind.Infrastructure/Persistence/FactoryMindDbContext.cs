@@ -1,7 +1,13 @@
 using FactoryMind.Application.Features.Knowledge;
+using FactoryMind.Application.Features.Inventories;
+using FactoryMind.Application.Features.Machines;
+using FactoryMind.Application.Features.Materials;
+using FactoryMind.Application.Features.Products;
+using FactoryMind.Application.Features.ProductionOrders;
 using FactoryMind.Domain.Chat;
 using FactoryMind.Domain.Identity;
 using FactoryMind.Domain.Knowledge;
+using FactoryMind.Domain.Manufacturing;
 using FactoryMind.Infrastructure.Persistence.Knowledge;
 using Microsoft.EntityFrameworkCore;
 using Pgvector.EntityFrameworkCore;
@@ -18,6 +24,11 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
     public DbSet<KnowledgeDocument> Documents => Set<KnowledgeDocument>();
     public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
     public DbSet<DocumentEmbeddingRecord> DocumentEmbeddings => Set<DocumentEmbeddingRecord>();
+    public DbSet<Machine> Machines => Set<Machine>();
+    public DbSet<Material> Materials => Set<Material>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<Inventory> Inventories => Set<Inventory>();
+    public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         modelBuilder.HasPostgresExtension("vector");
@@ -125,6 +136,84 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
                 .WithOne()
                 .HasForeignKey<DocumentEmbeddingRecord>(embedding => embedding.DocumentChunkId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Machine>(entity => {
+            entity.ToTable("machines");
+            entity.HasIndex(machine => new { machine.CompanyId, machine.Code }).IsUnique();
+            entity.HasIndex(machine => new { machine.CompanyId, machine.Name });
+            entity.Property(machine => machine.Code).HasMaxLength(MachineConstraints.MaximumCodeLength).IsRequired();
+            entity.Property(machine => machine.Name).HasMaxLength(MachineConstraints.MaximumNameLength).IsRequired();
+            entity.Property(machine => machine.Status).HasMaxLength(30).IsRequired();
+            entity.HasOne(machine => machine.Company)
+                .WithMany(company => company.Machines)
+                .HasForeignKey(machine => machine.CompanyId);
+        });
+
+        modelBuilder.Entity<Material>(entity => {
+            entity.ToTable("materials");
+            entity.HasIndex(material => new { material.CompanyId, material.Code }).IsUnique();
+            entity.HasIndex(material => new { material.CompanyId, material.Name });
+            entity.Property(material => material.Code).HasMaxLength(MaterialConstraints.MaximumCodeLength).IsRequired();
+            entity.Property(material => material.Name).HasMaxLength(MaterialConstraints.MaximumNameLength).IsRequired();
+            entity.Property(material => material.Unit).HasMaxLength(MaterialConstraints.MaximumUnitLength).IsRequired();
+            entity.HasOne(material => material.Company)
+                .WithMany(company => company.Materials)
+                .HasForeignKey(material => material.CompanyId);
+        });
+
+        modelBuilder.Entity<Product>(entity => {
+            entity.ToTable("products");
+            entity.HasIndex(product => new { product.CompanyId, product.Code }).IsUnique();
+            entity.HasIndex(product => new { product.CompanyId, product.Name });
+            entity.Property(product => product.Code).HasMaxLength(ProductConstraints.MaximumCodeLength).IsRequired();
+            entity.Property(product => product.Name).HasMaxLength(ProductConstraints.MaximumNameLength).IsRequired();
+            entity.HasOne(product => product.Company)
+                .WithMany(company => company.Products)
+                .HasForeignKey(product => product.CompanyId);
+        });
+
+        modelBuilder.Entity<Inventory>(entity => {
+            entity.ToTable("inventories");
+            entity.HasIndex(inventory => new {
+                inventory.CompanyId,
+                inventory.MaterialId,
+                inventory.Warehouse
+            }).IsUnique();
+            entity.HasIndex(inventory => new { inventory.CompanyId, inventory.Warehouse });
+            entity.Property(inventory => inventory.Warehouse)
+                .HasMaxLength(InventoryConstraints.MaximumWarehouseLength)
+                .IsRequired();
+            entity.Property(inventory => inventory.Quantity)
+                .HasPrecision(InventoryConstraints.QuantityPrecision, InventoryConstraints.QuantityScale);
+            entity.HasOne(inventory => inventory.Company)
+                .WithMany(company => company.Inventories)
+                .HasForeignKey(inventory => inventory.CompanyId);
+            entity.HasOne(inventory => inventory.Material)
+                .WithMany()
+                .HasForeignKey(inventory => inventory.MaterialId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductionOrder>(entity => {
+            entity.ToTable("production_orders");
+            entity.HasIndex(order => new { order.CompanyId, order.Number }).IsUnique();
+            entity.HasIndex(order => new { order.CompanyId, order.Status, order.UpdatedAt });
+            entity.Property(order => order.Number)
+                .HasMaxLength(ProductionOrderConstraints.MaximumNumberLength)
+                .IsRequired();
+            entity.Property(order => order.Status)
+                .HasMaxLength(ProductionOrderConstraints.MaximumStatusLength)
+                .IsRequired();
+            entity.Property(order => order.Quantity)
+                .HasPrecision(ProductionOrderConstraints.QuantityPrecision, ProductionOrderConstraints.QuantityScale);
+            entity.HasOne(order => order.Company)
+                .WithMany(company => company.ProductionOrders)
+                .HasForeignKey(order => order.CompanyId);
+            entity.HasOne(order => order.Product)
+                .WithMany()
+                .HasForeignKey(order => order.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

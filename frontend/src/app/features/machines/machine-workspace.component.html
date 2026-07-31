@@ -1,0 +1,109 @@
+<section class="content">
+    <section class="toolbar">
+      <div>
+        <h2>Danh sách máy</h2>
+        <p>{{ store.machines().length }} máy trong kết quả hiện tại</p>
+      </div>
+      <div class="toolbar-actions">
+        <form (submit)="search($event)" class="search-form">
+          <input
+            type="search"
+            [formControl]="searchControl"
+            maxlength="200"
+            aria-label="Tìm máy"
+            placeholder="Tìm theo mã hoặc tên máy"
+          >
+          @if (store.search()) {
+            <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button>
+          }
+          <button type="submit" class="secondary">Tìm kiếm</button>
+        </form>
+        <button type="button" class="primary" (click)="startCreate()">＋ Thêm máy</button>
+      </div>
+    </section>
+
+    @if (store.error()) {
+      <div class="error" role="alert">{{ store.error() }}</div>
+    }
+
+    @if (store.isLoading()) {
+      <div class="state">Đang tải dữ liệu máy...</div>
+    } @else if (store.machines().length === 0) {
+      <div class="state empty">
+        <strong>Chưa có dữ liệu máy.</strong>
+        <span>Thêm máy đầu tiên để bắt đầu quản lý dữ liệu nhà máy.</span>
+        <button type="button" class="primary" (click)="startCreate()">Thêm máy</button>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Mã máy</th><th>Tên máy</th><th>Trạng thái</th><th>Cập nhật</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (machine of store.machines(); track machine.id) {
+              <tr>
+                <td><strong>{{ machine.code }}</strong></td>
+                <td>{{ machine.name }}</td>
+                <td><span class="status" [attr.data-status]="machine.status">{{ statusLabel(machine.status) }}</span></td>
+                <td>{{ machine.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td class="actions">
+                  @if (confirmDeleteId() === machine.id) {
+                    <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(machine.id)">Xác nhận</button>
+                    <button type="button" class="ghost" (click)="cancelDelete()">Hủy</button>
+                  } @else {
+                    <button type="button" class="ghost" [attr.aria-label]="'Sửa ' + machine.code" (click)="startEdit(machine)">Sửa</button>
+                    <button type="button" class="ghost danger-text" [attr.aria-label]="'Xóa ' + machine.code" (click)="requestDelete(machine.id)">Xóa</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  @if (editorOpen()) {
+    <div class="editor-backdrop" (click)="cancelEdit()">
+      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="machine-editor-title" (click)="$event.stopPropagation()">
+        <header>
+          <div>
+            <span class="eyebrow">MACHINE</span>
+            <h2 id="machine-editor-title">{{ editingId() ? 'Cập nhật máy' : 'Thêm máy mới' }}</h2>
+          </div>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">×</button>
+        </header>
+
+        <form [formGroup]="machineForm" (ngSubmit)="save()">
+          <label>
+            Mã máy
+            <input type="text" formControlName="code" maxlength="50" placeholder="Ví dụ: M-002">
+            @if (machineForm.controls.code.touched && machineForm.controls.code.invalid) {
+              <small>Mã máy là bắt buộc và không quá 50 ký tự.</small>
+            }
+          </label>
+          <label>
+            Tên máy
+            <input type="text" formControlName="name" maxlength="200" placeholder="Ví dụ: Packing Line 02">
+            @if (machineForm.controls.name.touched && machineForm.controls.name.invalid) {
+              <small>Tên máy là bắt buộc và không quá 200 ký tự.</small>
+            }
+          </label>
+          <label>
+            Trạng thái
+            <select formControlName="status">
+              @for (status of statuses; track status.value) {
+                <option [value]="status.value">{{ status.label }}</option>
+              }
+            </select>
+          </label>
+          <footer>
+            <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button>
+            <button type="submit" class="primary" [disabled]="store.isSaving()">
+              {{ store.isSaving() ? 'Đang lưu...' : 'Lưu máy' }}
+            </button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  }
+</section>

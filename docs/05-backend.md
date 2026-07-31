@@ -193,6 +193,10 @@ Infrastructure/
 
 Query handler gọi method đọc có ý nghĩa nghiệp vụ; command handler gọi method thay đổi state. Endpoint không gọi `DbContext` trực tiếp.
 
+Sprint 4 starts with Machine as a complete business-data vertical slice. `GET`, `POST`, `PUT`, and `DELETE` operations are company-scoped, use the existing `Manager` policy, and expose search by code or name. Machine code uniqueness is enforced both by the use case and a tenant-scoped database index.
+
+Material and Product reuse the same HTTP and authorization conventions while keeping explicit feature-specific commands, queries, repositories, validators, and response models. Their codes are also unique per company; Material keeps `Unit` as a required string and Product remains code/name only for the MVP.
+
 ---
 
 # 6. AI Flow
@@ -428,4 +432,8 @@ Features/
 ```
 
 Chỉ thêm mediator, validator, behavior hoặc abstraction khi nó phục vụ use case thực tế. Cấu trúc này giữ command/query rõ ràng, tuân thủ SOLID và vẫn phù hợp cho MVP một người phát triển.
+
+Business-data slices use explicit feature repositories and tenant-scoped CQRS handlers. Inventory references an existing material in the current company, keeps warehouse as a normalized scalar for the MVP, and enforces one balance row per material and warehouse. The API uses FluentValidation before dispatching commands and returns domain failures through the shared RFC 7807 mapping.
+
+Production Order follows the same vertical-slice boundary: the handler resolves Product within the current tenant, normalizes the order number and status, and persists only the documented MVP lifecycle. Product references use restrictive deletion so historical order data cannot be orphaned.
 

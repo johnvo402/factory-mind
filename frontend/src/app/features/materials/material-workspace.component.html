@@ -1,0 +1,86 @@
+<section class="content">
+  <section class="toolbar">
+    <div>
+      <h2>Danh sách nguyên liệu</h2>
+      <p>{{ store.materials().length }} nguyên liệu trong kết quả hiện tại</p>
+    </div>
+    <div class="toolbar-actions">
+      <form (submit)="search($event)" class="search-form">
+        <input type="search" [formControl]="searchControl" maxlength="200" aria-label="Tìm nguyên liệu" placeholder="Tìm theo mã hoặc tên nguyên liệu">
+        @if (store.search()) {
+          <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button>
+        }
+        <button type="submit" class="secondary">Tìm kiếm</button>
+      </form>
+      <button type="button" class="primary" (click)="startCreate()">＋ Thêm nguyên liệu</button>
+    </div>
+  </section>
+
+  @if (store.error()) {
+    <div class="error" role="alert">{{ store.error() }}</div>
+  }
+
+  @if (store.isLoading()) {
+    <div class="state">Đang tải dữ liệu nguyên liệu...</div>
+  } @else if (store.materials().length === 0) {
+    <div class="state empty">
+      <strong>Chưa có dữ liệu nguyên liệu.</strong>
+      <span>Thêm nguyên liệu đầu tiên để theo dõi tồn kho ở bước tiếp theo.</span>
+      <button type="button" class="primary" (click)="startCreate()">Thêm nguyên liệu</button>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Mã</th><th>Tên nguyên liệu</th><th>Đơn vị</th><th>Cập nhật</th><th></th></tr></thead>
+        <tbody>
+          @for (material of store.materials(); track material.id) {
+            <tr>
+              <td><strong>{{ material.code }}</strong></td>
+              <td>{{ material.name }}</td>
+              <td>{{ material.unit }}</td>
+              <td>{{ material.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td class="actions">
+                @if (confirmDeleteId() === material.id) {
+                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(material.id)">Xác nhận</button>
+                  <button type="button" class="ghost" (click)="confirmDeleteId.set(null)">Hủy</button>
+                } @else {
+                  <button type="button" class="ghost" [attr.aria-label]="'Sửa ' + material.code" (click)="startEdit(material)">Sửa</button>
+                  <button type="button" class="ghost danger-text" [attr.aria-label]="'Xóa ' + material.code" (click)="requestDelete(material.id)">Xóa</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (editorOpen()) {
+    <div class="editor-backdrop" (click)="cancelEdit()">
+      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="material-editor-title" (click)="$event.stopPropagation()">
+        <header>
+          <div><span class="eyebrow">MATERIAL</span><h2 id="material-editor-title">{{ editingId() ? 'Cập nhật nguyên liệu' : 'Thêm nguyên liệu mới' }}</h2></div>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">×</button>
+        </header>
+        <form [formGroup]="materialForm" (ngSubmit)="save()">
+          <label>Mã nguyên liệu
+            <input type="text" formControlName="code" maxlength="50" placeholder="Ví dụ: MAT-PP">
+            @if (materialForm.controls.code.touched && materialForm.controls.code.invalid) { <small>Mã nguyên liệu là bắt buộc và không quá 50 ký tự.</small> }
+          </label>
+          <label>Tên nguyên liệu
+            <input type="text" formControlName="name" maxlength="200" placeholder="Ví dụ: Polypropylene Resin">
+            @if (materialForm.controls.name.touched && materialForm.controls.name.invalid) { <small>Tên nguyên liệu là bắt buộc và không quá 200 ký tự.</small> }
+          </label>
+          <label>Đơn vị
+            <input type="text" formControlName="unit" maxlength="30" placeholder="Ví dụ: kg">
+            @if (materialForm.controls.unit.touched && materialForm.controls.unit.invalid) { <small>Đơn vị là bắt buộc và không quá 30 ký tự.</small> }
+          </label>
+          <footer>
+            <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button>
+            <button type="submit" class="primary" [disabled]="store.isSaving()">{{ store.isSaving() ? 'Đang lưu...' : 'Lưu nguyên liệu' }}</button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  }
+</section>

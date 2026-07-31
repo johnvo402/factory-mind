@@ -162,7 +162,11 @@ Name
 Status
 
 CreatedAt
+
+UpdatedAt
 ```
+
+`Machine.Code` is normalized to uppercase and unique per company. MVP statuses are `available`, `running`, `maintenance`, and `offline`.
 
 ---
 
@@ -180,19 +184,33 @@ Name
 Unit
 
 CreatedAt
+
+UpdatedAt
 ```
+
+`Material.Code` is normalized to uppercase and unique per company. `Unit` remains a required short string for the MVP instead of introducing a separate unit-of-measure table.
 
 ---
 
 ## Inventory
 
 ```text
+Id
+
+CompanyId
+
 MaterialId
 
 Warehouse
 
 Quantity
+
+CreatedAt
+
+UpdatedAt
 ```
+
+Inventory is an MVP balance snapshot rather than a movement ledger. A company can have at most one entry for the same material and warehouse. `Quantity` uses `numeric(18,3)` and cannot be negative through the API. Deleting a referenced material is restricted.
 
 Không cần bảng Warehouse riêng trong MVP nếu mỗi doanh nghiệp chỉ có một kho hoặc số kho rất ít. Nếu sau này phát sinh nhiều kho thì mới tách.
 
@@ -201,24 +219,44 @@ Không cần bảng Warehouse riêng trong MVP nếu mỗi doanh nghiệp chỉ 
 ## Product
 
 ```text
+Id
+
+CompanyId
+
 Code
 
 Name
+
+CreatedAt
+
+UpdatedAt
 ```
+
+`Product.Code` is normalized to uppercase and unique per company.
 
 ---
 
 ## ProductionOrder
 
 ```text
+Id
+
+CompanyId
+
 Number
 
-Product
+ProductId
 
 Quantity
 
 Status
+
+CreatedAt
+
+UpdatedAt
 ```
+
+`ProductionOrder.Number` is normalized to uppercase and unique per company. `Quantity` uses `numeric(18,3)` and must be greater than zero. Product deletion is restricted while an order references it. MVP statuses are `planned`, `in_progress`, `completed`, and `cancelled`.
 
 ---
 

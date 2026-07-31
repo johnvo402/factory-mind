@@ -1,0 +1,72 @@
+<section class="content">
+  <section class="toolbar">
+    <div><h2>Danh sách sản phẩm</h2><p>{{ store.products().length }} sản phẩm trong kết quả hiện tại</p></div>
+    <div class="toolbar-actions">
+      <form (submit)="search($event)" class="search-form">
+        <input type="search" [formControl]="searchControl" maxlength="200" aria-label="Tìm sản phẩm" placeholder="Tìm theo mã hoặc tên sản phẩm">
+        @if (store.search()) { <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button> }
+        <button type="submit" class="secondary">Tìm kiếm</button>
+      </form>
+      <button type="button" class="primary" (click)="startCreate()">＋ Thêm sản phẩm</button>
+    </div>
+  </section>
+
+  @if (store.error()) { <div class="error" role="alert">{{ store.error() }}</div> }
+
+  @if (store.isLoading()) {
+    <div class="state">Đang tải dữ liệu sản phẩm...</div>
+  } @else if (store.products().length === 0) {
+    <div class="state empty">
+      <strong>Chưa có dữ liệu sản phẩm.</strong>
+      <span>Thêm sản phẩm đầu tiên để tạo lệnh sản xuất ở bước tiếp theo.</span>
+      <button type="button" class="primary" (click)="startCreate()">Thêm sản phẩm</button>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Mã</th><th>Tên sản phẩm</th><th>Cập nhật</th><th></th></tr></thead>
+        <tbody>
+          @for (product of store.products(); track product.id) {
+            <tr>
+              <td><strong>{{ product.code }}</strong></td><td>{{ product.name }}</td><td>{{ product.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td class="actions">
+                @if (confirmDeleteId() === product.id) {
+                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(product.id)">Xác nhận</button>
+                  <button type="button" class="ghost" (click)="confirmDeleteId.set(null)">Hủy</button>
+                } @else {
+                  <button type="button" class="ghost" [attr.aria-label]="'Sửa ' + product.code" (click)="startEdit(product)">Sửa</button>
+                  <button type="button" class="ghost danger-text" [attr.aria-label]="'Xóa ' + product.code" (click)="requestDelete(product.id)">Xóa</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (editorOpen()) {
+    <div class="editor-backdrop" (click)="cancelEdit()">
+      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="product-editor-title" (click)="$event.stopPropagation()">
+        <header>
+          <div><span class="eyebrow">PRODUCT</span><h2 id="product-editor-title">{{ editingId() ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới' }}</h2></div>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">×</button>
+        </header>
+        <form [formGroup]="productForm" (ngSubmit)="save()">
+          <label>Mã sản phẩm
+            <input type="text" formControlName="code" maxlength="50" placeholder="Ví dụ: PRD-001">
+            @if (productForm.controls.code.touched && productForm.controls.code.invalid) { <small>Mã sản phẩm là bắt buộc và không quá 50 ký tự.</small> }
+          </label>
+          <label>Tên sản phẩm
+            <input type="text" formControlName="name" maxlength="200" placeholder="Ví dụ: Storage Box 20L">
+            @if (productForm.controls.name.touched && productForm.controls.name.invalid) { <small>Tên sản phẩm là bắt buộc và không quá 200 ký tự.</small> }
+          </label>
+          <footer>
+            <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button>
+            <button type="submit" class="primary" [disabled]="store.isSaving()">{{ store.isSaving() ? 'Đang lưu...' : 'Lưu sản phẩm' }}</button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  }
+</section>

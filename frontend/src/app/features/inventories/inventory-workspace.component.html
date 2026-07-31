@@ -1,0 +1,85 @@
+<section class="content">
+  <section class="toolbar">
+    <div><h2>Tồn kho nguyên liệu</h2><p>{{ store.inventories().length }} dòng tồn kho trong kết quả hiện tại</p></div>
+    <div class="toolbar-actions">
+      <form (submit)="search($event)" class="search-form">
+        <input type="search" [formControl]="searchControl" maxlength="200" aria-label="Tìm tồn kho" placeholder="Tìm theo nguyên liệu hoặc kho">
+        @if (store.search()) { <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button> }
+        <button type="submit" class="secondary">Tìm kiếm</button>
+      </form>
+      <button type="button" class="primary" [disabled]="store.materials().length === 0" (click)="startCreate()">＋ Thêm tồn kho</button>
+    </div>
+  </section>
+
+  @if (store.error()) { <div class="error" role="alert">{{ store.error() }}</div> }
+
+  @if (store.isLoading()) {
+    <div class="state">Đang tải dữ liệu tồn kho...</div>
+  } @else if (store.materials().length === 0) {
+    <div class="state empty"><strong>Chưa có nguyên liệu.</strong><span>Hãy tạo nguyên liệu trước khi ghi nhận tồn kho.</span></div>
+  } @else if (store.inventories().length === 0) {
+    <div class="state empty">
+      <strong>Chưa có dữ liệu tồn kho.</strong>
+      <span>Thêm số lượng thực tế theo nguyên liệu và vị trí kho.</span>
+      <button type="button" class="primary" (click)="startCreate()">Thêm tồn kho</button>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nguyên liệu</th><th>Kho</th><th>Số lượng</th><th>Đơn vị</th><th></th></tr></thead>
+        <tbody>
+          @for (inventory of store.inventories(); track inventory.id) {
+            <tr>
+              <td><strong>{{ inventory.materialCode }}</strong><br>{{ inventory.materialName }}</td>
+              <td>{{ inventory.warehouse }}</td>
+              <td>{{ inventory.quantity | number: '1.0-3' }}</td>
+              <td>{{ inventory.unit }}</td>
+              <td class="actions">
+                @if (confirmDeleteId() === inventory.id) {
+                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(inventory.id)">Xác nhận</button>
+                  <button type="button" class="ghost" (click)="confirmDeleteId.set(null)">Hủy</button>
+                } @else {
+                  <button type="button" class="ghost" [attr.aria-label]="'Sửa tồn kho ' + inventory.materialCode" (click)="startEdit(inventory)">Sửa</button>
+                  <button type="button" class="ghost danger-text" [attr.aria-label]="'Xóa tồn kho ' + inventory.materialCode" (click)="requestDelete(inventory.id)">Xóa</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (editorOpen()) {
+    <div class="editor-backdrop" (click)="cancelEdit()">
+      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="inventory-editor-title" (click)="$event.stopPropagation()">
+        <header>
+          <div><span class="eyebrow">INVENTORY</span><h2 id="inventory-editor-title">{{ editingId() ? 'Cập nhật tồn kho' : 'Thêm tồn kho mới' }}</h2></div>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">×</button>
+        </header>
+        <form [formGroup]="inventoryForm" (ngSubmit)="save()">
+          <label>Nguyên liệu
+            <select formControlName="materialId" aria-label="Nguyên liệu">
+              @for (material of store.materials(); track material.id) {
+                <option [value]="material.id">{{ material.code }} — {{ material.name }} ({{ material.unit }})</option>
+              }
+            </select>
+            @if (inventoryForm.controls.materialId.touched && inventoryForm.controls.materialId.invalid) { <small>Nguyên liệu là bắt buộc.</small> }
+          </label>
+          <label>Kho
+            <input type="text" formControlName="warehouse" maxlength="100" placeholder="Ví dụ: Main Warehouse">
+            @if (inventoryForm.controls.warehouse.touched && inventoryForm.controls.warehouse.invalid) { <small>Tên kho là bắt buộc và không quá 100 ký tự.</small> }
+          </label>
+          <label>Số lượng
+            <input type="number" formControlName="quantity" min="0" step="0.001" placeholder="Ví dụ: 1200">
+            @if (inventoryForm.controls.quantity.touched && inventoryForm.controls.quantity.invalid) { <small>Số lượng phải lớn hơn hoặc bằng 0.</small> }
+          </label>
+          <footer>
+            <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button>
+            <button type="submit" class="primary" [disabled]="store.isSaving()">{{ store.isSaving() ? 'Đang lưu...' : 'Lưu tồn kho' }}</button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  }
+</section>

@@ -1,0 +1,60 @@
+<aside class="sidebar">
+  <div class="brand"><span>FM</span><strong>FactoryMind</strong></div>
+
+  <button
+    class="new-chat"
+    type="button"
+    [disabled]="store.isStreaming()"
+    (click)="startNewConversation()"
+  >
+    <span aria-hidden="true">＋</span> Cuộc trò chuyện mới
+  </button>
+
+  @if (activeView() === 'chat') {
+    <section class="history" aria-label="Lịch sử trò chuyện">
+      <span class="section-label">Gần đây</span>
+      @if (store.conversations().length === 0 && !store.isLoading()) {
+        <p>Chưa có cuộc trò chuyện.</p>
+      }
+      @for (conversation of store.conversations(); track conversation.id) {
+        <button
+          type="button"
+          class="conversation"
+          [class.active]="store.selectedConversationId() === conversation.id"
+          [disabled]="store.isStreaming()"
+          (click)="selectConversation(conversation.id)"
+          [title]="conversation.title"
+        >
+          <span aria-hidden="true">◌</span>
+          <span>{{ conversation.title }}</span>
+        </button>
+      }
+    </section>
+  } @else {
+    <section class="data-context">
+      <span class="section-label">Business Data</span>
+      <strong>Quản lý dữ liệu nhà máy</strong>
+      <p>Dữ liệu có cấu trúc phục vụ vận hành và AI.</p>
+    </section>
+  }
+
+  <nav aria-label="Điều hướng chính">
+    <button
+      type="button"
+      [class.active]="activeView() === 'chat'"
+      (click)="viewRequested.emit('chat')"
+    ><span aria-hidden="true">◈</span> Chat</button>
+    <button type="button" disabled><span aria-hidden="true">▤</span> Knowledge</button>
+    <button
+      type="button"
+      [class.active]="activeView() === 'data'"
+      (click)="viewRequested.emit('data')"
+    ><span aria-hidden="true">▦</span> Data</button>
+    <button type="button" disabled><span aria-hidden="true">⚙</span> Settings</button>
+  </nav>
+
+  <button class="profile" type="button" (click)="logoutRequested.emit()">
+    <span class="profile-avatar">{{ userName().slice(0, 1) }}</span>
+    <span><strong>{{ userName() }}</strong><small>Đăng xuất</small></span>
+  </button>
+</aside>

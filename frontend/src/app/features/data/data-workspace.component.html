@@ -1,0 +1,25 @@
+<section class="data-panel">
+  <header class="data-header">
+    <div>
+      <span class="eyebrow">BUSINESS DATA</span>
+      <h1>Dữ liệu nhà máy</h1>
+      <p>Quản lý dữ liệu có cấu trúc dùng cho vận hành và Hybrid RAG.</p>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Nhóm dữ liệu">
+    <button type="button" [class.active]="activeView() === 'machines'" (click)="selectView('machines')">Machine</button>
+    <button type="button" [class.active]="activeView() === 'materials'" (click)="selectView('materials')">Material</button>
+    <button type="button" [class.active]="activeView() === 'inventories'" (click)="selectView('inventories')">Inventory</button>
+    <button type="button" [class.active]="activeView() === 'products'" (click)="selectView('products')">Product</button>
+    <button type="button" [class.active]="activeView() === 'production-orders'" (click)="selectView('production-orders')">Production Order</button>
+  </nav>
+
+  @switch (activeView()) {
+    @case ('materials') { <app-material-workspace /> }
+    @case ('inventories') { <app-inventory-workspace /> }
+    @case ('products') { <app-product-workspace /> }
+    @case ('production-orders') { <app-production-order-workspace /> }
+    @default { <app-machine-workspace /> }
+  }
+</section>

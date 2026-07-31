@@ -6,17 +6,15 @@ import {
   input,
   OnDestroy,
   OnInit,
-  output,
   viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ChatMessageComponent } from './chat-message.component';
-import { ChatSidebarComponent } from './chat-sidebar.component';
 import { ChatStore } from './chat.store';
 
 @Component({
   selector: 'app-chat-workspace',
-  imports: [ReactiveFormsModule, ChatMessageComponent, ChatSidebarComponent],
+  imports: [ReactiveFormsModule, ChatMessageComponent],
   templateUrl: './chat-workspace.component.html',
   styleUrl: './chat-workspace.component.scss',
 })
@@ -25,7 +23,6 @@ export class ChatWorkspaceComponent implements OnInit, OnDestroy {
   private readonly messageViewport =
     viewChild<ElementRef<HTMLDivElement>>('messageViewport');
   readonly userName = input.required<string>();
-  readonly logoutRequested = output<void>();
   protected readonly composer = new FormControl('', {
     nonNullable: true,
     validators: [Validators.required, Validators.maxLength(8_000)],
