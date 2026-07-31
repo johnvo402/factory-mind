@@ -49,6 +49,7 @@ describe('ChatStore', () => {
         content: 'Which machine is ready?',
         createdAt: '2026-08-01T00:00:01Z',
         citations: [],
+        businessEvidence: [],
       },
       persistedAssistantMessage(),
     ];
@@ -62,6 +63,10 @@ describe('ChatStore', () => {
       { type: 'conversation', conversationId: 'conversation-1' },
       { type: 'token', content: 'Machine A is ready ' },
       { type: 'token', content: '[S1].' },
+      {
+        type: 'business-evidence',
+        businessEvidence: persistedAssistantMessage().businessEvidence,
+      },
       { type: 'citations', citations: persistedAssistantMessage().citations },
       { type: 'done' },
     ];
@@ -116,6 +121,13 @@ describe('ChatStore', () => {
       role: 'assistant',
       content: 'Machine A is ready [S1].',
       createdAt: '2026-08-01T00:00:02Z',
+      businessEvidence: [{
+        referenceNumber: 1,
+        entityId: 'machine-1',
+        entityType: 'machine',
+        title: 'MC-01 - Cutter',
+        detail: 'status=available',
+      }],
       citations: [{
         referenceNumber: 1,
         documentId: 'document-1',

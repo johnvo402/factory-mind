@@ -19,6 +19,9 @@ public static class DependencyInjection {
         services.AddSingleton<DocumentChunker>();
         services.AddScoped<KnowledgeRetriever>();
         services.AddScoped<IKnowledgeContextBuilder, KnowledgeContextBuilder>();
+        services.AddScoped<IIntentRouter, IntentRouter>();
+        services.AddScoped<IBusinessContextBuilder, BusinessContextBuilder>();
+        services.AddScoped<IChatContextBuilder, ChatContextBuilder>();
 
         return services;
     }

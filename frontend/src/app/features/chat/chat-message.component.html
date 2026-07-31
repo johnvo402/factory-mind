@@ -19,6 +19,22 @@
       <p class="user-content">{{ message().content }}</p>
     }
 
+    @if (message().businessEvidence.length > 0) {
+      <section class="business-evidence" aria-label="Dữ liệu nghiệp vụ">
+        <span class="citations-label">Dữ liệu nghiệp vụ</span>
+        @for (evidence of message().businessEvidence; track evidence.entityType + evidence.entityId) {
+          <article class="evidence-card">
+            <header>
+              <span class="reference business-reference">B{{ evidence.referenceNumber }}</span>
+              <span>{{ evidence.title }}</span>
+              <small>{{ entityTypeLabel(evidence.entityType) }}</small>
+            </header>
+            <p>{{ evidence.detail }}</p>
+          </article>
+        }
+      </section>
+    }
+
     @if (message().citations.length > 0) {
       <section class="citations" aria-label="Nguồn tham khảo">
         <span class="citations-label">Nguồn tham khảo</span>

@@ -47,8 +47,16 @@ public sealed class ChatCommandHandlerTests {
             ChunkId = Guid.NewGuid(),
             DocumentTitle = "Unused manual"
         };
-        var contextBuilder = new FakeKnowledgeContextBuilder(source, unusedSource);
-        var chatClient = new FakeChatCompletionClient("Available now", " [S1].");
+        var evidence = new BusinessEvidenceResponse(
+            1,
+            Guid.NewGuid(),
+            "machine",
+            "MC-01 - Cutter",
+            "status=available");
+        var contextBuilder = new FakeChatContextBuilder(source, unusedSource) {
+            Evidence = [evidence]
+        };
+        var chatClient = new FakeChatCompletionClient("Available now", " [B1] [S1].");
         var handler = new SendMessageCommandHandler(repository, chatClient, contextBuilder, currentUser);
 
         var result = await handler.Handle(
@@ -66,20 +74,25 @@ public sealed class ChatCommandHandlerTests {
             updates.Add(update);
         }
 
-        Assert.Equal(["Available now", " [S1]."], updates.OfType<ChatTokenUpdate>().Select(update => update.Content));
+        Assert.Equal(["Available now", " [B1] [S1]."], updates.OfType<ChatTokenUpdate>().Select(update => update.Content));
+        var businessEvidence = Assert.Single(updates.OfType<ChatBusinessEvidenceUpdate>()).BusinessEvidence;
+        Assert.Equal(evidence, Assert.Single(businessEvidence));
         var citations = Assert.Single(updates.OfType<ChatCitationsUpdate>()).Citations;
         Assert.Equal(source, Assert.Single(citations));
         var answer = Assert.Single(repository.AddedMessages, message => message.Role == ChatRoles.Assistant);
-        Assert.Equal("Available now [S1].", answer.Content);
+        Assert.Equal("Available now [B1] [S1].", answer.Content);
         var persistedCitation = Assert.Single(answer.Citations);
         Assert.Equal(source.DocumentId, persistedCitation.DocumentId);
         Assert.Equal(source.ChunkId, persistedCitation.ChunkId);
         Assert.Equal(source.ReferenceNumber, persistedCitation.ReferenceNumber);
+        var persistedEvidence = Assert.Single(answer.BusinessEvidence);
+        Assert.Equal(evidence.EntityId, persistedEvidence.EntityId);
+        Assert.Equal(evidence.EntityType, persistedEvidence.EntityType);
         Assert.Equal(2, repository.SaveChangesCount);
         Assert.Equal(currentUser.CompanyId, contextBuilder.CompanyId);
         Assert.Equal("Which machine is available?", contextBuilder.Question);
         Assert.Equal(ChatRoles.System, chatClient.Prompt[0].Role);
-        Assert.Equal("Knowledge context", chatClient.Prompt[0].Content);
+        Assert.Equal("Chat context", chatClient.Prompt[0].Content);
         Assert.Equal(ChatRoles.User, chatClient.Prompt[^1].Role);
     }
 
@@ -88,7 +101,7 @@ public sealed class ChatCommandHandlerTests {
         var currentUser = new FakeCurrentUser();
         var repository = new FakeConversationRepository();
         var chatClient = new FakeChatCompletionClient("unused");
-        var contextBuilder = new FakeKnowledgeContextBuilder();
+        var contextBuilder = new FakeChatContextBuilder();
         var handler = new SendMessageCommandHandler(repository, chatClient, contextBuilder, currentUser);
         var conversationId = Guid.NewGuid();
 
@@ -138,6 +151,13 @@ public sealed class ChatCommandHandlerTests {
             Excerpt = "Lock the energy source.",
             Score = 0.89
         });
+        message.BusinessEvidence.Add(new ChatBusinessEvidence {
+            ReferenceNumber = 1,
+            EntityId = Guid.NewGuid(),
+            EntityType = "machine",
+            Title = "MC-01 - Cutter",
+            Detail = "status=available"
+        });
         var repository = new FakeConversationRepository { OwnedConversation = conversation };
         repository.ExistingMessages.Add(message);
         var handler = new GetMessagesQueryHandler(repository, currentUser);
@@ -149,6 +169,9 @@ public sealed class ChatCommandHandlerTests {
         var citation = Assert.Single(response.Citations);
         Assert.Equal("Safety manual", citation.DocumentTitle);
         Assert.Equal(8, citation.PageNumber);
+        var evidence = Assert.Single(response.BusinessEvidence);
+        Assert.Equal("machine", evidence.EntityType);
+        Assert.Equal("MC-01 - Cutter", evidence.Title);
     }
 
     [Fact]
@@ -172,7 +195,7 @@ public sealed class ChatCommandHandlerTests {
         var handler = new SendMessageCommandHandler(
             repository,
             chatClient,
-            new FakeKnowledgeContextBuilder(),
+            new FakeChatContextBuilder(),
             currentUser);
 
         var result = await handler.Handle(
@@ -182,7 +205,7 @@ public sealed class ChatCommandHandlerTests {
         }
 
         Assert.Equal(22, chatClient.Prompt.Count);
-        Assert.Equal("Knowledge context", chatClient.Prompt[0].Content);
+        Assert.Equal("Chat context", chatClient.Prompt[0].Content);
         Assert.Equal("History 5", chatClient.Prompt[1].Content);
         Assert.Equal("Current question", chatClient.Prompt[^1].Content);
     }
@@ -209,20 +232,21 @@ public sealed class ChatCommandHandlerTests {
         }
     }
 
-    private sealed class FakeKnowledgeContextBuilder(params CitationResponse[] sources)
-        : IKnowledgeContextBuilder {
+    private sealed class FakeChatContextBuilder(params CitationResponse[] sources)
+        : IChatContextBuilder {
         public Guid? CompanyId { get; private set; }
         public string? Question { get; private set; }
         public int BuildCount { get; private set; }
+        public IReadOnlyList<BusinessEvidenceResponse> Evidence { get; init; } = [];
 
-        public Task<KnowledgeContext> BuildAsync(
+        public Task<ChatContext> BuildAsync(
             Guid companyId,
             string question,
             CancellationToken cancellationToken) {
             CompanyId = companyId;
             Question = question;
             BuildCount++;
-            return Task.FromResult(new KnowledgeContext("Knowledge context", sources));
+            return Task.FromResult(new ChatContext("Chat context", sources, Evidence));
         }
     }
 

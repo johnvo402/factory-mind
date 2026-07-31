@@ -41,6 +41,7 @@ describe('ChatApiService', () => {
     browserFetch.and.resolveTo(sseResponse([
       'event: conversation\ndata: {"conversationId":"conversation-1"}\n\n',
       'event: token\ndata: {"content":"Answer [S1]."}\n\n',
+      'event: business-evidence\ndata: {"businessEvidence":[]}\n\n',
       'event: citations\ndata: {"citations":[]}\n\n',
       'event: done\ndata: {}\n\n',
     ]));
@@ -52,6 +53,7 @@ describe('ChatApiService', () => {
     expect(events).toEqual([
       { type: 'conversation', conversationId: 'conversation-1' },
       { type: 'token', content: 'Answer [S1].' },
+      { type: 'business-evidence', businessEvidence: [] },
       { type: 'citations', citations: [] },
       { type: 'done' },
     ]);

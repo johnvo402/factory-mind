@@ -15,6 +15,13 @@ describe('ChatMessageComponent', () => {
         + '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" onerror="alert(1)"> '
         + '[S1].',
       createdAt: '2026-08-01T00:00:00Z',
+      businessEvidence: [{
+        referenceNumber: 1,
+        entityId: 'machine-1',
+        entityType: 'machine',
+        title: 'MC-01 - Cutter',
+        detail: 'status=available',
+      }],
       citations: [{
         referenceNumber: 1,
         documentId: 'document-1',
@@ -34,5 +41,7 @@ describe('ChatMessageComponent', () => {
     expect(element.querySelector('.markdown')?.innerHTML).not.toContain('onerror');
     expect(element.querySelector('.citation summary')?.textContent).toContain('Safety manual');
     expect(element.querySelector('.citation p')?.textContent).toContain('protective equipment');
+    expect(element.querySelector('.evidence-card header')?.textContent).toContain('MC-01');
+    expect(element.querySelector('.evidence-card p')?.textContent).toContain('status=available');
   });
 });

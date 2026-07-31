@@ -227,6 +227,11 @@ export class ChatStore {
         ...message,
         citations: event.citations,
       }));
+    } else if (event.type === 'business-evidence') {
+      this.updateMessage(assistantMessageId, (message) => ({
+        ...message,
+        businessEvidence: event.businessEvidence,
+      }));
     }
   }
 
@@ -286,6 +291,7 @@ export class ChatStore {
       content,
       createdAt: new Date().toISOString(),
       citations: [],
+      businessEvidence: [],
     };
   }
 

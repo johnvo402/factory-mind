@@ -11,7 +11,7 @@ namespace FactoryMind.Application.Features.Chat.SendMessage;
 public sealed class SendMessageCommandHandler(
     IConversationRepository repository,
     IChatCompletionClient chatClient,
-    IKnowledgeContextBuilder contextBuilder,
+    IChatContextBuilder contextBuilder,
     ICurrentUser currentUser) : IRequestHandler<SendMessageCommand, Result<ChatStream>> {
     public async ValueTask<Result<ChatStream>> Handle(
         SendMessageCommand command,
@@ -31,7 +31,7 @@ public sealed class SendMessageCommandHandler(
             currentUser.UserId,
             cancellationToken);
         var content = command.Content.Trim();
-        var knowledgeContext = await contextBuilder.BuildAsync(
+        var chatContext = await contextBuilder.BuildAsync(
             currentUser.CompanyId,
             content,
             cancellationToken);
@@ -51,7 +51,7 @@ public sealed class SendMessageCommandHandler(
         await repository.SaveChangesAsync(cancellationToken);
 
         var prompt = new List<ChatPromptMessage> {
-            new(ChatRoles.System, knowledgeContext.Prompt)
+            new(ChatRoles.System, chatContext.Prompt)
         };
         prompt.AddRange(existingMessages
             .TakeLast(KnowledgeContextBuilder.MaximumHistoryMessages)
@@ -61,7 +61,8 @@ public sealed class SendMessageCommandHandler(
         var updates = StreamAndPersistAsync(
             conversation,
             prompt,
-            knowledgeContext.Sources);
+            chatContext.Sources,
+            chatContext.BusinessEvidence);
         var stream = new ChatStream(conversation.Id, updates);
         return Result<ChatStream>.Success(stream);
     }
@@ -70,6 +71,7 @@ public sealed class SendMessageCommandHandler(
         Conversation conversation,
         IReadOnlyList<ChatPromptMessage> prompt,
         IReadOnlyList<CitationResponse> sources,
+        IReadOnlyList<BusinessEvidenceResponse> businessEvidence,
         [EnumeratorCancellation] CancellationToken cancellationToken = default) {
         var answer = new StringBuilder();
 
@@ -79,6 +81,7 @@ public sealed class SendMessageCommandHandler(
         }
 
         if (answer.Length == 0) {
+            yield return new ChatBusinessEvidenceUpdate([]);
             yield return new ChatCitationsUpdate([]);
             yield break;
         }
@@ -87,6 +90,11 @@ public sealed class SendMessageCommandHandler(
         var citedSources = sources
             .Where(source => answerContent.Contains(
                 $"[S{source.ReferenceNumber}]",
+                StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var citedBusinessEvidence = businessEvidence
+            .Where(evidence => answerContent.Contains(
+                $"[B{evidence.ReferenceNumber}]",
                 StringComparison.OrdinalIgnoreCase))
             .ToList();
         conversation.UpdatedAt = DateTime.UtcNow;
@@ -110,8 +118,20 @@ public sealed class SendMessageCommandHandler(
             });
         }
 
+        foreach (var evidence in citedBusinessEvidence) {
+            assistantMessage.BusinessEvidence.Add(new ChatBusinessEvidence {
+                ReferenceNumber = evidence.ReferenceNumber,
+                EntityId = evidence.EntityId,
+                EntityType = evidence.EntityType,
+                Title = evidence.Title,
+                Detail = evidence.Detail,
+                CreatedAt = assistantMessage.CreatedAt
+            });
+        }
+
         repository.AddMessage(assistantMessage);
         await repository.SaveChangesAsync(cancellationToken);
+        yield return new ChatBusinessEvidenceUpdate(citedBusinessEvidence);
         yield return new ChatCitationsUpdate(citedSources);
     }
 

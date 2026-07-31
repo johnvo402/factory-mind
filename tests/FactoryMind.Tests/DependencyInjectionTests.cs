@@ -38,6 +38,15 @@ public sealed class DependencyInjectionTests {
             descriptor.ServiceType == typeof(IKnowledgeContextBuilder)
             && descriptor.ImplementationType == typeof(KnowledgeContextBuilder));
         Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(KnowledgeRetriever));
+        Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(IIntentRouter)
+            && descriptor.ImplementationType == typeof(IntentRouter));
+        Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(IBusinessContextBuilder)
+            && descriptor.ImplementationType == typeof(BusinessContextBuilder));
+        Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(IChatContextBuilder)
+            && descriptor.ImplementationType == typeof(ChatContextBuilder));
     }
 
     [Fact]
@@ -54,6 +63,9 @@ public sealed class DependencyInjectionTests {
         Assert.Contains(services, descriptor =>
             descriptor.ServiceType == typeof(IConversationRepository)
             && descriptor.ImplementationType == typeof(EfConversationRepository));
+        Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(IBusinessContextRepository)
+            && descriptor.ImplementationType == typeof(EfBusinessContextRepository));
         Assert.Contains(services, descriptor =>
             descriptor.ServiceType == typeof(IDocumentRepository)
             && descriptor.ImplementationType == typeof(EfDocumentRepository));

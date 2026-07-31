@@ -6,6 +6,7 @@ import { API_ROUTES } from '../../core/api/api.routes';
 import { BROWSER_FETCH } from '../../core/api/browser-fetch.token';
 import { AuthService } from '../../core/auth/auth.service';
 import {
+  ChatBusinessEvidence,
   ChatCitation,
   ChatMessage,
   ChatStreamEvent,
@@ -128,6 +129,13 @@ export class ChatApiService {
           type: 'citations',
           citations: Array.isArray(data['citations'])
             ? (data['citations'] as ChatCitation[])
+            : [],
+        };
+      case 'business-evidence':
+        return {
+          type: 'business-evidence',
+          businessEvidence: Array.isArray(data['businessEvidence'])
+            ? (data['businessEvidence'] as ChatBusinessEvidence[])
             : [],
         };
       case 'done':

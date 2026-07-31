@@ -437,3 +437,7 @@ Business-data slices use explicit feature repositories and tenant-scoped CQRS ha
 
 Production Order follows the same vertical-slice boundary: the handler resolves Product within the current tenant, normalizes the order number and status, and persists only the documented MVP lifecycle. Product references use restrictive deletion so historical order data cannot be orphaned.
 
+Sprint 5 chat uses `IChatContextBuilder` to orchestrate deterministic intent routing and bounded retrieval. `Business` reads compact SQL projections through the feature-specific `IBusinessContextRepository`; `Knowledge` uses the existing tenant-scoped pgvector retrieval; `Hybrid` merges both. Every SQL projection filters `CompanyId` before ordering and limiting rows, and no entity graph or full table is sent to the model.
+
+Business context uses `[B#]` labels and document context uses `[S#]`. The completed assistant answer is scanned for referenced labels, then `message_business_evidence` and `message_citations` store immutable snapshots. SSE emits business evidence separately from document citations so Presentation and the frontend keep the two source types explicit.
+

@@ -106,10 +106,43 @@
   animation-delay: 0.3s;
 }
 
-.citations {
+.citations,
+.business-evidence {
   display: grid;
   gap: 8px;
   margin-top: 18px;
+}
+
+.evidence-card {
+  border: 1px solid #d8e4ee;
+  border-radius: 10px;
+  background: #f7fafc;
+}
+
+.evidence-card header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  color: #34434d;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.evidence-card header small {
+  margin-left: auto;
+  color: #73808a;
+  font-weight: 500;
+}
+
+.evidence-card p {
+  margin: 0;
+  border-top: 1px solid #e1e8ed;
+  padding: 12px;
+  color: #53616b;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .citations-label {
@@ -152,6 +185,11 @@
   text-align: center;
   font-size: 0.72rem;
   font-weight: 800;
+}
+
+.business-reference {
+  background: #e2edf7;
+  color: #245d87;
 }
 
 .citation p {

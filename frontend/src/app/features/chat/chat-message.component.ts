@@ -15,4 +15,15 @@ export class ChatMessageComponent {
   protected scoreLabel(score: number): string {
     return `${Math.round(score * 100)}% match`;
   }
+
+  protected entityTypeLabel(entityType: string): string {
+    const labels: Record<string, string> = {
+      machine: 'Máy',
+      material: 'Nguyên liệu',
+      inventory: 'Tồn kho',
+      product: 'Sản phẩm',
+      production_order: 'Lệnh sản xuất',
+    };
+    return labels[entityType] ?? entityType;
+  }
 }

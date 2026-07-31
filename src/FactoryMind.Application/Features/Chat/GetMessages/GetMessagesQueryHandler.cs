@@ -41,6 +41,15 @@ public sealed class GetMessagesQueryHandler(
                         citation.PageNumber,
                         citation.Excerpt,
                         citation.Score))
+                    .ToList(),
+                message.BusinessEvidence
+                    .OrderBy(evidence => evidence.ReferenceNumber)
+                    .Select(evidence => new BusinessEvidenceResponse(
+                        evidence.ReferenceNumber,
+                        evidence.EntityId,
+                        evidence.EntityType,
+                        evidence.Title,
+                        evidence.Detail))
                     .ToList()))
             .ToList();
 

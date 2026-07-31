@@ -57,6 +57,11 @@ public sealed class ChatSseWriter(ILogger<ChatSseWriter> logger) {
                 "citations",
                 new { citations.Citations },
                 cancellationToken),
+            ChatBusinessEvidenceUpdate evidence => WriteEventAsync(
+                response,
+                "business-evidence",
+                new { evidence.BusinessEvidence },
+                cancellationToken),
             _ => throw new InvalidOperationException($"Unsupported chat stream update {update.GetType().Name}.")
         };
     }

@@ -21,6 +21,7 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ChatMessage> Messages => Set<ChatMessage>();
     public DbSet<ChatCitation> MessageCitations => Set<ChatCitation>();
+    public DbSet<ChatBusinessEvidence> MessageBusinessEvidence => Set<ChatBusinessEvidence>();
     public DbSet<KnowledgeDocument> Documents => Set<KnowledgeDocument>();
     public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
     public DbSet<DocumentEmbeddingRecord> DocumentEmbeddings => Set<DocumentEmbeddingRecord>();
@@ -92,6 +93,18 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
             entity.HasOne(citation => citation.Message)
                 .WithMany(message => message.Citations)
                 .HasForeignKey(citation => citation.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChatBusinessEvidence>(entity => {
+            entity.ToTable("message_business_evidence");
+            entity.HasIndex(evidence => new { evidence.MessageId, evidence.ReferenceNumber }).IsUnique();
+            entity.Property(evidence => evidence.EntityType).HasMaxLength(50).IsRequired();
+            entity.Property(evidence => evidence.Title).HasMaxLength(250).IsRequired();
+            entity.Property(evidence => evidence.Detail).HasMaxLength(600).IsRequired();
+            entity.HasOne(evidence => evidence.Message)
+                .WithMany(message => message.BusinessEvidence)
+                .HasForeignKey(evidence => evidence.MessageId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

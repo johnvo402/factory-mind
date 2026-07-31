@@ -237,6 +237,8 @@ AI trả lời từ:
 * SQL
 * PDF
 
+Implementation status: Hybrid RAG routes `Business`, `Knowledge`, and `Hybrid` questions, merges bounded tenant-scoped context, and returns separately rendered SQL evidence and PDF sources.
+
 ---
 
 # Sprint 6

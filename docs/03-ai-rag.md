@@ -174,6 +174,10 @@ Sprint 3 exposes tenant-scoped semantic knowledge search through `POST /api/know
 
 Chat now uses the same retrieval path to build a compact knowledge context. The five nearest chunks are labeled `[S1]` through `[S5]`, capped at 8,000 characters, and placed in a system message before the current question. The model must cite supporting labels inline and say that it does not know when the supplied context is insufficient. Only labels present in the completed answer become persisted citations.
 
+Sprint 5 routes chat questions to exactly one of `Business`, `Knowledge`, or `Hybrid`. The deterministic router normalizes Vietnamese text and uses documented manufacturing keywords; an ambiguous question falls back to `Hybrid` so classification does not require another LLM call. Business retrieval reads only small tenant-scoped projections from PostgreSQL, while Knowledge retrieval continues to use pgvector.
+
+Business records are labeled `[B1]`, `[B2]`, and so on. Hybrid context merges these records with `[S#]` document sources under one system instruction. Only labels referenced by the final answer are returned and persisted as immutable evidence snapshots.
+
 ---
 
 # 5. Context Builder
