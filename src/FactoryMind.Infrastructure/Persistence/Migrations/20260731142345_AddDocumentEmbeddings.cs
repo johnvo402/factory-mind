@@ -4,21 +4,17 @@ using Pgvector;
 
 #nullable disable
 
-namespace FactoryMind.Infrastructure.Persistence.Migrations
-{
+namespace FactoryMind.Infrastructure.Persistence.Migrations {
     /// <inheritdoc />
-    public partial class AddDocumentEmbeddings : Migration
-    {
+    public partial class AddDocumentEmbeddings : Migration {
         /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
+        protected override void Up(MigrationBuilder migrationBuilder) {
             migrationBuilder.AlterDatabase()
                 .Annotation("Npgsql:PostgresExtension:vector", ",,");
 
             migrationBuilder.CreateTable(
                 name: "document_embeddings",
-                columns: table => new
-                {
+                columns: table => new {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     DocumentChunkId = table.Column<Guid>(type: "uuid", nullable: false),
                     CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -27,8 +23,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     Embedding = table.Column<Vector>(type: "vector(1536)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_document_embeddings", x => x.Id);
                     table.ForeignKey(
                         name: "FK_document_embeddings_document_chunks_DocumentChunkId",
@@ -51,8 +46,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
         }
 
         /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
+        protected override void Down(MigrationBuilder migrationBuilder) {
             migrationBuilder.DropTable(
                 name: "document_embeddings");
 

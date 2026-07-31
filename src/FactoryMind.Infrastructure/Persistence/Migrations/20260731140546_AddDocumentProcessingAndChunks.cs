@@ -3,14 +3,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace FactoryMind.Infrastructure.Persistence.Migrations
-{
+namespace FactoryMind.Infrastructure.Persistence.Migrations {
     /// <inheritdoc />
-    public partial class AddDocumentProcessingAndChunks : Migration
-    {
+    public partial class AddDocumentProcessingAndChunks : Migration {
         /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
+        protected override void Up(MigrationBuilder migrationBuilder) {
             migrationBuilder.AddColumn<int>(
                 name: "ChunkCount",
                 table: "documents",
@@ -40,8 +37,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "document_chunks",
-                columns: table => new
-                {
+                columns: table => new {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     DocumentId = table.Column<Guid>(type: "uuid", nullable: false),
                     CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -50,8 +46,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     Content = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_document_chunks", x => x.Id);
                     table.ForeignKey(
                         name: "FK_document_chunks_documents_DocumentId",
@@ -74,8 +69,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
         }
 
         /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
+        protected override void Down(MigrationBuilder migrationBuilder) {
             migrationBuilder.DropTable(
                 name: "document_chunks");
 

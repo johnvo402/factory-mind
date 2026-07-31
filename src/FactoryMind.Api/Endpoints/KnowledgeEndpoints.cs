@@ -14,9 +14,9 @@ public static class KnowledgeEndpoints {
             SearchKnowledgeRequest request,
             ISender sender,
             CancellationToken cancellationToken) => {
-            var query = new SearchKnowledgeQuery(request.Query, request.Limit);
-            return (await sender.Send(query, cancellationToken)).ToHttpResult();
-        }).WithRequestValidation<SearchKnowledgeRequest>();
+                var query = new SearchKnowledgeQuery(request.Query, request.Limit);
+                return (await sender.Send(query, cancellationToken)).ToHttpResult();
+            }).WithRequestValidation<SearchKnowledgeRequest>();
 
         return endpoints;
     }

@@ -3,18 +3,14 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace FactoryMind.Infrastructure.Persistence.Migrations
-{
+namespace FactoryMind.Infrastructure.Persistence.Migrations {
     /// <inheritdoc />
-    public partial class AddChatConversationsAndMessages : Migration
-    {
+    public partial class AddChatConversationsAndMessages : Migration {
         /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
+        protected override void Up(MigrationBuilder migrationBuilder) {
             migrationBuilder.CreateTable(
                 name: "conversations",
-                columns: table => new
-                {
+                columns: table => new {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -22,8 +18,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_conversations", x => x.Id);
                     table.ForeignKey(
                         name: "FK_conversations_companies_CompanyId",
@@ -41,16 +36,14 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "messages",
-                columns: table => new
-                {
+                columns: table => new {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ConversationId = table.Column<Guid>(type: "uuid", nullable: false),
                     Role = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Content = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_messages", x => x.Id);
                     table.ForeignKey(
                         name: "FK_messages_conversations_ConversationId",
@@ -77,8 +70,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
         }
 
         /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
+        protected override void Down(MigrationBuilder migrationBuilder) {
             migrationBuilder.DropTable(
                 name: "messages");
 

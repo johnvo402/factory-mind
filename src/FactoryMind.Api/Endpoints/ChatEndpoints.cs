@@ -17,8 +17,8 @@ public static class ChatEndpoints {
             CreateConversationCommand command,
             ISender sender,
             CancellationToken cancellationToken) => {
-            return (await sender.Send(command, cancellationToken)).ToHttpResult();
-        }).WithRequestValidation<CreateConversationCommand>();
+                return (await sender.Send(command, cancellationToken)).ToHttpResult();
+            }).WithRequestValidation<CreateConversationCommand>();
 
         group.MapGet(ApiRoutes.Conversations.Root, async (ISender sender, CancellationToken cancellationToken) => {
             return (await sender.Send(new GetConversationsQuery(), cancellationToken)).ToHttpResult();
@@ -28,9 +28,9 @@ public static class ChatEndpoints {
             Guid conversationId,
             ISender sender,
             CancellationToken cancellationToken) => {
-            var query = new GetMessagesQuery(conversationId);
-            return (await sender.Send(query, cancellationToken)).ToHttpResult();
-        });
+                var query = new GetMessagesQuery(conversationId);
+                return (await sender.Send(query, cancellationToken)).ToHttpResult();
+            });
 
         group.MapPost(ApiRoutes.Conversations.StreamMessage, async (
             Guid conversationId,
@@ -39,16 +39,16 @@ public static class ChatEndpoints {
             ChatSseWriter streamWriter,
             HttpContext httpContext,
             CancellationToken cancellationToken) => {
-            var command = new SendMessageCommand(conversationId, request.Content);
-            var result = await sender.Send(command, cancellationToken);
+                var command = new SendMessageCommand(conversationId, request.Content);
+                var result = await sender.Send(command, cancellationToken);
 
-            if (result.IsFailure) {
-                await result.ToHttpResult().ExecuteAsync(httpContext);
-                return;
-            }
+                if (result.IsFailure) {
+                    await result.ToHttpResult().ExecuteAsync(httpContext);
+                    return;
+                }
 
-            await streamWriter.WriteAsync(httpContext, result.Value!, cancellationToken);
-        }).WithRequestValidation<SendMessageRequest>();
+                await streamWriter.WriteAsync(httpContext, result.Value!, cancellationToken);
+            }).WithRequestValidation<SendMessageRequest>();
 
         return endpoints;
     }

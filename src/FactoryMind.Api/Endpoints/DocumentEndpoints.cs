@@ -18,15 +18,15 @@ public static class DocumentEndpoints {
             [FromForm] UploadDocumentForm form,
             ISender sender,
             CancellationToken cancellationToken) => {
-            await using var content = form.File.OpenReadStream();
-            var command = new UploadDocumentCommand(
-                form.Title,
-                form.File.FileName,
-                form.File.ContentType,
-                form.File.Length,
-                content);
-            return (await sender.Send(command, cancellationToken)).ToHttpResult();
-        })
+                await using var content = form.File.OpenReadStream();
+                var command = new UploadDocumentCommand(
+                    form.Title,
+                    form.File.FileName,
+                    form.File.ContentType,
+                    form.File.Length,
+                    content);
+                return (await sender.Send(command, cancellationToken)).ToHttpResult();
+            })
             .DisableAntiforgery()
             .WithMetadata(new RequestSizeLimitAttribute(DocumentUploadConstraints.MaximumRequestSize))
             .WithRequestValidation<UploadDocumentForm>();
@@ -39,10 +39,10 @@ public static class DocumentEndpoints {
             Guid documentId,
             ISender sender,
             CancellationToken cancellationToken) => {
-            return (await sender.Send(
-                new QueueDocumentProcessingCommand(documentId),
-                cancellationToken)).ToHttpResult();
-        });
+                return (await sender.Send(
+                    new QueueDocumentProcessingCommand(documentId),
+                    cancellationToken)).ToHttpResult();
+            });
 
         return endpoints;
     }
