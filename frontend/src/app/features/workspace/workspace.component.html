@@ -9,6 +9,8 @@
 
   @if (activeView() === 'chat') {
     <app-chat-workspace [userName]="userName()" />
+  } @else if (activeView() === 'knowledge') {
+    <app-knowledge-workspace />
   } @else if (activeView() === 'data') {
     <app-data-workspace />
   } @else {

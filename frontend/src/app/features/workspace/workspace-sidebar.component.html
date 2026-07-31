@@ -30,11 +30,23 @@
         </button>
       }
     </section>
-  } @else {
+  } @else if (activeView() === 'data') {
     <section class="data-context">
       <span class="section-label">Business Data</span>
       <strong>Quản lý dữ liệu nhà máy</strong>
       <p>Dữ liệu có cấu trúc phục vụ vận hành và AI.</p>
+    </section>
+  } @else if (activeView() === 'knowledge') {
+    <section class="data-context">
+      <span class="section-label">Knowledge</span>
+      <strong>Tài liệu và semantic search</strong>
+      <p>PDF đã xử lý là nguồn citation cho câu trả lời AI.</p>
+    </section>
+  } @else {
+    <section class="data-context">
+      <span class="section-label">Settings</span>
+      <strong>Quản trị tenant</strong>
+      <p>Company, users và cấu hình Gemini an toàn.</p>
     </section>
   }
 
@@ -44,12 +56,18 @@
       [class.active]="activeView() === 'chat'"
       (click)="viewRequested.emit('chat')"
     ><span aria-hidden="true">◈</span> Chat</button>
-    <button type="button" disabled><span aria-hidden="true">▤</span> Knowledge</button>
     <button
       type="button"
-      [class.active]="activeView() === 'data'"
-      (click)="viewRequested.emit('data')"
-    ><span aria-hidden="true">▦</span> Data</button>
+      [class.active]="activeView() === 'knowledge'"
+      (click)="viewRequested.emit('knowledge')"
+    ><span aria-hidden="true">▤</span> Knowledge</button>
+    @if (userRole() === 'Admin' || userRole() === 'Manager') {
+      <button
+        type="button"
+        [class.active]="activeView() === 'data'"
+        (click)="viewRequested.emit('data')"
+      ><span aria-hidden="true">▦</span> Data</button>
+    }
     @if (userRole() === 'Admin') {
       <button
         type="button"

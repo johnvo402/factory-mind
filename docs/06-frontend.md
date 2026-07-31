@@ -419,6 +419,8 @@ The implemented chat home loads these KPI values from the tenant-scoped dashboar
 
 The Data workspace includes an Excel import wizard for Machine, Material, Product, Inventory, and Production Order. It previews the first rows, proposes a header mapping, requires confirmation, and renders row-level validation errors without partially importing the workbook.
 
+Knowledge is a first-class workspace for PDF upload, asynchronous processing status, retry after parsing failure, and semantic-search inspection with document, page, excerpt, and score. While documents are uploaded or processing, the list polls quietly without blocking the rest of the UI.
+
 Settings has Company, Users, and AI tabs. Admins can rename the company and manage tenant users. The AI tab shows the active Gemini models, key readiness, and a re-index action; it never accepts, stores, or renders provider credentials in browser state.
 
 Lý do:

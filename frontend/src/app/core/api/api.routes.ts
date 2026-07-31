@@ -27,7 +27,12 @@ export const API_ROUTES = {
     ai: `${API_BASE}/settings/ai`,
   },
   documents: {
+    root: `${API_BASE}/documents`,
+    process: (documentId: string) => `${API_BASE}/documents/${documentId}/process`,
     reindex: `${API_BASE}/documents/reindex`,
+  },
+  knowledge: {
+    search: `${API_BASE}/knowledge/search`,
   },
   machines: {
     root: `${API_BASE}/machines`,

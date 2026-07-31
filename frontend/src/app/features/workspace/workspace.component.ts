@@ -1,13 +1,20 @@
 import { Component, input, output, signal } from '@angular/core';
 import { ChatWorkspaceComponent } from '../chat/chat-workspace.component';
 import { DataWorkspaceComponent } from '../data/data-workspace.component';
+import { KnowledgeWorkspaceComponent } from '../knowledge/knowledge-workspace.component';
 import { SettingsWorkspaceComponent } from '../settings/settings-workspace.component';
 import { WorkspaceSidebarComponent } from './workspace-sidebar.component';
 import { WorkspaceView } from './workspace.models';
 
 @Component({
   selector: 'app-workspace',
-  imports: [ChatWorkspaceComponent, DataWorkspaceComponent, SettingsWorkspaceComponent, WorkspaceSidebarComponent],
+  imports: [
+    ChatWorkspaceComponent,
+    DataWorkspaceComponent,
+    KnowledgeWorkspaceComponent,
+    SettingsWorkspaceComponent,
+    WorkspaceSidebarComponent,
+  ],
   templateUrl: './workspace.component.html',
   styleUrl: './workspace.component.scss',
 })
