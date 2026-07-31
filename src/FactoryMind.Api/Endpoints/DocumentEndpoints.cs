@@ -2,6 +2,7 @@ using FactoryMind.Application.Common.Authorization;
 using FactoryMind.Application.Features.Knowledge;
 using FactoryMind.Application.Features.Knowledge.GetDocuments;
 using FactoryMind.Application.Features.Knowledge.QueueDocumentProcessing;
+using FactoryMind.Application.Features.Knowledge.ReindexDocuments;
 using FactoryMind.Application.Features.Knowledge.UploadDocument;
 using FactoryMind.Api.Routing;
 using Mediator;
@@ -43,6 +44,15 @@ public static class DocumentEndpoints {
                     new QueueDocumentProcessingCommand(documentId),
                     cancellationToken)).ToHttpResult();
             });
+
+        group.MapPost(ApiRoutes.Documents.Reindex, async (
+            ISender sender,
+            CancellationToken cancellationToken) => {
+                return (await sender.Send(
+                    new ReindexDocumentsCommand(),
+                    cancellationToken)).ToHttpResult();
+            })
+            .RequireAuthorization(AuthorizationPolicies.Manager);
 
         return endpoints;
     }

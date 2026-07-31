@@ -345,8 +345,9 @@ Storage
 
 LLM
 
-* OpenAI (mặc định)
-* Có thể mở rộng sang các nhà cung cấp khác trong tương lai.
+* Google Gemini API.
+* `gemini-3.5-flash-lite` cho chat và `gemini-embedding-2` cho semantic retrieval.
+* MVP dùng free tier với context nhỏ và quota handling rõ ràng.
 
 ---
 

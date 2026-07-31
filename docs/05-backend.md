@@ -32,7 +32,7 @@ Chốt luôn, không thay đổi trong MVP.
 | Storage        | MinIO                 |
 | Background Job | Hangfire              |
 | Authentication | JWT                   |
-| AI             | OpenAI Compatible API |
+| AI             | Google Gemini API     |
 | Logging        | Serilog               |
 
 Không RabbitMQ.
@@ -235,7 +235,7 @@ Không Agent.
 
 Không Planner.
 
-Sprint 2 implements an OpenAI-compatible chat stream and persists `Conversation` and `Message`. Application exposes semantic stream updates; Presentation maps them to Server-Sent Events, and Infrastructure owns the provider-specific HTTP protocol.
+Sprint 2 implements a Gemini chat stream and persists `Conversation` and `Message`. Application exposes semantic stream updates; Presentation maps them to Server-Sent Events, and Infrastructure owns the provider-specific HTTP protocol.
 
 Every chat repository operation is scoped by the current `CompanyId` and `UserId`. Knowledge RAG retrieves up to five company-scoped chunks, injects a bounded `[S#]` context, and persists only sources cited by the completed assistant answer. SSE emits `conversation`, `token`, `citations`, and `done` events. Intent detection and business-data retrieval remain later slices.
 
@@ -265,9 +265,9 @@ Sprint 3 runs PDF parsing and chunking through Hangfire after upload. Hangfire p
 
 PdfPig extracts text in content order. Chunking remains framework-independent Application logic and preserves the source page number for later citations. Image-only PDFs require OCR and are reported as failed in the MVP.
 
-After chunking, the same background use case calls the configured OpenAI-compatible `embeddings` endpoint in batches of 64. The MVP requires 1,536-dimensional vectors and stores them in PostgreSQL through pgvector. Chunks and embeddings are committed together before the document becomes ready.
+After chunking, the same background use case calls Gemini `batchEmbedContents` in batches of 64. The MVP uses `gemini-embedding-2` with 1,536-dimensional vectors and stores them in PostgreSQL through pgvector. Chunks and embeddings are committed together before the document becomes ready.
 
-Configure the embedding model with `OpenAi__EmbeddingModel`. Keep the API key outside source control. The selected compatible provider must accept `POST /embeddings` with `model`, `input`, and `dimensions` and return indexed embedding arrays.
+Document chunks use the Gemini `RETRIEVAL_DOCUMENT` task and search questions use `RETRIEVAL_QUERY`. Existing vectors from another model must be replaced through the explicit knowledge re-index use case; vectors from different model spaces are never mixed.
 
 Semantic knowledge search is a CQRS query behind `POST /api/knowledge/search`. Presentation validates the request, Application embeds the question and applies the authenticated company scope, and Infrastructure performs exact pgvector cosine ordering. The search repository only returns chunks belonging to ready documents in the same company.
 
@@ -287,15 +287,16 @@ appsettings.Development.json
 
 Không 20 file config.
 
-Configure the Sprint 2 AI provider with environment variables (or the matching `OpenAi` configuration section):
+Configure Gemini through environment variables, .NET user secrets, or deployment secrets:
 
 ```text
-OpenAi__BaseUrl
-OpenAi__ApiKey
-OpenAi__Model
+Gemini__BaseUrl
+Gemini__ApiKey
+Gemini__ChatModel
+Gemini__EmbeddingModel
 ```
 
-Never commit a real provider API key. The base URL must expose an OpenAI-compatible `chat/completions` streaming endpoint.
+`Gemini__ApiKey` may be supplied from the standard `GEMINI_API_KEY` environment variable. Never commit or expose a real provider API key. Chat uses Gemini `streamGenerateContent`; embeddings use `batchEmbedContents`.
 
 ## Local PostgreSQL
 
@@ -440,4 +441,6 @@ Production Order follows the same vertical-slice boundary: the handler resolves 
 Sprint 5 chat uses `IChatContextBuilder` to orchestrate deterministic intent routing and bounded retrieval. `Business` reads compact SQL projections through the feature-specific `IBusinessContextRepository`; `Knowledge` uses the existing tenant-scoped pgvector retrieval; `Hybrid` merges both. Every SQL projection filters `CompanyId` before ordering and limiting rows, and no entity graph or full table is sent to the model.
 
 Business context uses `[B#]` labels and document context uses `[S#]`. The completed assistant answer is scanned for referenced labels, then `message_business_evidence` and `message_citations` store immutable snapshots. SSE emits business evidence separately from document citations so Presentation and the frontend keep the two source types explicit.
+
+When the configured embedding model changes, a Manager must explicitly queue tenant-scoped re-indexing through `POST /api/documents/reindex`. Only ready documents are queued, processing remains asynchronous, and semantic search filters by the configured embedding model so incompatible vectors are never mixed.
 

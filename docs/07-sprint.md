@@ -138,7 +138,7 @@ Có thể đăng nhập.
 ### Backend
 
 * Chat API
-* OpenAI API
+* Gemini API
 * Streaming
 * Conversation
 * Message
@@ -152,6 +152,8 @@ Có thể đăng nhập.
 ### Done
 
 Có thể chat với AI.
+
+Current provider: `gemini-3.5-flash-lite` through the native Gemini streaming API.
 
 ---
 

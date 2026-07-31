@@ -116,9 +116,15 @@ public interface IDocumentProcessingQueue {
     void Enqueue(Guid documentId, Guid companyId);
 }
 
+public enum EmbeddingPurpose {
+    Document,
+    Query
+}
+
 public interface IEmbeddingClient {
     Task<EmbeddingBatch> CreateAsync(
         IReadOnlyList<string> inputs,
+        EmbeddingPurpose purpose,
         CancellationToken cancellationToken);
 }
 

@@ -63,9 +63,14 @@ public static class DependencyInjection {
         services.AddSingleton<IDocumentProcessingQueue, HangfireDocumentProcessingQueue>();
         services.AddSingleton<IDocumentTextExtractor, PdfPigDocumentTextExtractor>();
         services.AddSingleton<ICredentialHasher, CredentialHasher>();
-        services.Configure<OpenAiSettings>(configuration.GetSection(OpenAiSettings.SectionName));
-        services.AddHttpClient<IChatCompletionClient, OpenAiChatCompletionClient>();
-        services.AddHttpClient<IEmbeddingClient, OpenAiEmbeddingClient>();
+        services.Configure<GeminiSettings>(configuration.GetSection(GeminiSettings.SectionName));
+        services.PostConfigure<GeminiSettings>(settings => {
+            if (string.IsNullOrWhiteSpace(settings.ApiKey)) {
+                settings.ApiKey = configuration["GEMINI_API_KEY"] ?? string.Empty;
+            }
+        });
+        services.AddHttpClient<IChatCompletionClient, GeminiChatCompletionClient>();
+        services.AddHttpClient<IEmbeddingClient, GeminiEmbeddingClient>();
         services.Configure<MinioSettings>(configuration.GetSection(MinioSettings.SectionName));
         services.AddSingleton<IFileStorage, MinioFileStorage>();
 

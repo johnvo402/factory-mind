@@ -58,7 +58,9 @@ Frontend
 
 AI
 
-- OpenAI Compatible API
+- Google Gemini API
+- `gemini-3.5-flash-lite` for chat
+- `gemini-embedding-2` for embeddings
 - pgvector
 - RAG
 
@@ -183,6 +185,13 @@ AI is only responsible for
 - Hybrid RAG
 
 Nothing else.
+
+Provider rules:
+
+- Use the native Google Gemini API; do not add OpenAI-compatible clients or configuration.
+- Keep `GEMINI_API_KEY` in user secrets, environment variables, or deployment secrets only.
+- Never commit, log, expose, or return an AI API key through an endpoint.
+- Keep free-tier requests bounded and surface quota exhaustion without unbounded retries.
 
 ---
 

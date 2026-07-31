@@ -16,7 +16,7 @@ ng serve
 
 The development server proxies `/api` requests to the ASP.NET Core API at `http://localhost:5047`. Start the API with its `http` launch profile before using authentication.
 
-Chat uses an authenticated streaming `POST` through the same proxy. Configure the backend `OpenAi` base URL, chat model, embedding model, and API key before sending messages; provider credentials must never be added to the Angular environment or browser bundle.
+Chat uses an authenticated streaming `POST` through the same proxy. Configure the backend `Gemini` base URL, chat model, embedding model, and `GEMINI_API_KEY` before sending messages; provider credentials must never be added to the Angular environment or browser bundle.
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 

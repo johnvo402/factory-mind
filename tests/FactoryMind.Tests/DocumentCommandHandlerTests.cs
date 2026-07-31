@@ -4,6 +4,7 @@ using FactoryMind.Application.Features.Knowledge;
 using FactoryMind.Application.Features.Knowledge.GetDocuments;
 using FactoryMind.Application.Features.Knowledge.ProcessDocument;
 using FactoryMind.Application.Features.Knowledge.QueueDocumentProcessing;
+using FactoryMind.Application.Features.Knowledge.ReindexDocuments;
 using FactoryMind.Application.Features.Knowledge.UploadDocument;
 using FactoryMind.Domain.Knowledge;
 
@@ -211,6 +212,36 @@ public sealed class DocumentCommandHandlerTests {
     }
 
     [Fact]
+    public async Task Reindex_queues_only_ready_documents_for_the_current_company() {
+        var currentUser = new FakeCurrentUser();
+        var repository = new FakeDocumentRepository();
+        var queue = new FakeDocumentProcessingQueue();
+        var readyDocument = new KnowledgeDocument {
+            CompanyId = currentUser.CompanyId,
+            Title = "Ready SOP",
+            FileName = "ready.pdf",
+            Path = "ready-object",
+            Status = DocumentStatuses.Ready
+        };
+        repository.Documents.Add(readyDocument);
+        repository.Documents.Add(new KnowledgeDocument {
+            CompanyId = currentUser.CompanyId,
+            Title = "Processing SOP",
+            FileName = "processing.pdf",
+            Path = "processing-object",
+            Status = DocumentStatuses.Processing
+        });
+        var handler = new ReindexDocumentsCommandHandler(repository, queue, currentUser);
+
+        var result = await handler.Handle(new ReindexDocumentsCommand(), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.Value?.QueuedCount);
+        Assert.Equal([readyDocument.Id], queue.DocumentIds);
+        Assert.All(queue.CompanyIds, companyId => Assert.Equal(currentUser.CompanyId, companyId));
+    }
+
+    [Fact]
     public void Chunker_preserves_pages_and_creates_overlapping_chunks() {
         var words = Enumerable.Range(0, 400).Select(index => $"word{index}");
         var firstPage = string.Join(' ', words);
@@ -347,10 +378,14 @@ public sealed class DocumentCommandHandlerTests {
     }
 
     private sealed class FakeDocumentProcessingQueue : IDocumentProcessingQueue {
+        public List<Guid> DocumentIds { get; } = [];
+        public List<Guid> CompanyIds { get; } = [];
         public Guid? DocumentId { get; private set; }
         public Guid? CompanyId { get; private set; }
 
         public void Enqueue(Guid documentId, Guid companyId) {
+            DocumentIds.Add(documentId);
+            CompanyIds.Add(companyId);
             DocumentId = documentId;
             CompanyId = companyId;
         }
@@ -370,7 +405,9 @@ public sealed class DocumentCommandHandlerTests {
 
         public Task<EmbeddingBatch> CreateAsync(
             IReadOnlyList<string> inputs,
+            EmbeddingPurpose purpose,
             CancellationToken cancellationToken) {
+            Assert.Equal(EmbeddingPurpose.Document, purpose);
             BatchSizes.Add(inputs.Count);
             IReadOnlyList<float[]> vectors = inputs
                 .Select(_ => new float[DocumentEmbeddingConstraints.Dimensions])

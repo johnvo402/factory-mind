@@ -93,6 +93,7 @@ public sealed class ProcessDocumentCommandHandler(
                 .ToList();
             var response = await embeddingClient.CreateAsync(
                 batch.Select(chunk => chunk.Content).ToList(),
+                EmbeddingPurpose.Document,
                 cancellationToken);
             if (response.Vectors.Count != batch.Count) {
                 throw new AiProviderException("AI service returned an invalid embedding response.");

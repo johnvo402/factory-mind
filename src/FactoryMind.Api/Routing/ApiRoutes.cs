@@ -22,6 +22,7 @@ public static class ApiRoutes {
         public const string Group = Base + "/documents";
         public const string Root = "";
         public const string Process = "/{documentId:guid}/process";
+        public const string Reindex = "/reindex";
     }
 
     public static class Knowledge {

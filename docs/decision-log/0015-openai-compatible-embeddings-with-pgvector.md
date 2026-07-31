@@ -1,5 +1,7 @@
 # 0015 - OpenAI-compatible embeddings with pgvector
 
+> Superseded by decision 0027. The pgvector shape remains, but the provider is now Gemini-only.
+
 - **Decision:** Document processing requests embeddings from the configured OpenAI-compatible `embeddings` endpoint after parsing and chunking.
 - **Vector shape:** The MVP fixes vectors at 1,536 dimensions. The configured provider/model must return that size so PostgreSQL can enforce `vector(1536)`.
 - **Batching:** Send at most 64 chunk texts per provider request and preserve provider indices when mapping vectors back to chunks.

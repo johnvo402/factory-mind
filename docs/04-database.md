@@ -542,7 +542,7 @@ Embedding là **một cách biểu diễn nội dung**.
 
 Sau này nếu:
 
-* đổi model embedding (OpenAI → BGE),
+* đổi model embedding,
 * lưu nhiều phiên bản embedding,
 * re-index,
 

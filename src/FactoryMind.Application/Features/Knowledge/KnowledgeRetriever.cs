@@ -10,7 +10,10 @@ public sealed class KnowledgeRetriever(
         string query,
         int limit,
         CancellationToken cancellationToken) {
-        var embedding = await embeddingClient.CreateAsync([query.Trim()], cancellationToken);
+        var embedding = await embeddingClient.CreateAsync(
+            [query.Trim()],
+            EmbeddingPurpose.Query,
+            cancellationToken);
         if (embedding.Vectors.Count != 1
             || embedding.Vectors[0].Length != DocumentEmbeddingConstraints.Dimensions) {
             throw new AiProviderException("AI service returned an invalid embedding response.");

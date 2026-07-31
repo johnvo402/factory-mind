@@ -45,7 +45,9 @@ public sealed class KnowledgeSearchHandlerTests {
 
         public Task<EmbeddingBatch> CreateAsync(
             IReadOnlyList<string> inputs,
+            EmbeddingPurpose purpose,
             CancellationToken cancellationToken) {
+            Assert.Equal(EmbeddingPurpose.Query, purpose);
             Input = Assert.Single(inputs);
             IReadOnlyList<float[]> vectors = [new float[DocumentEmbeddingConstraints.Dimensions]];
             return Task.FromResult(new EmbeddingBatch("test-embedding-model", vectors));

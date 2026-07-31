@@ -26,6 +26,9 @@ public sealed class ApiRoutesTests {
         Assert.Equal(
             "/api/documents/{documentId:guid}/process",
             ApiRoutes.Documents.Group + ApiRoutes.Documents.Process);
+        Assert.Equal(
+            "/api/documents/reindex",
+            ApiRoutes.Documents.Group + ApiRoutes.Documents.Reindex);
         Assert.Equal("/api/knowledge/search", ApiRoutes.Knowledge.Group + ApiRoutes.Knowledge.Search);
         Assert.Equal(
             "/api/machines/{machineId:guid}",
