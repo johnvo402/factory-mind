@@ -3,10 +3,11 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ProblemDetails } from './core/api/api.models';
 import { AuthService } from './core/auth/auth.service';
+import { ChatWorkspaceComponent } from './features/chat/chat-workspace.component';
 
 @Component({
   selector: 'app-root',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ChatWorkspaceComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

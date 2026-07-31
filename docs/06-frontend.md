@@ -128,6 +128,10 @@ AI Response
 
 Chat chiếm khoảng 70% diện tích màn hình.
 
+The implemented chat workspace keeps transport, state, and rendering separate. `ChatApiService` owns REST and authenticated POST streaming, `ChatStore` owns conversations and optimistic stream state, and standalone components render the sidebar, messages, Markdown, and citation evidence. Native `fetch` is used for the SSE response because the endpoint requires a JSON POST body and bearer token; one retry is allowed after refreshing an expired access token.
+
+Assistant Markdown is compiled with `marked` and bound as an untrusted string through Angular `[innerHTML]`, allowing Angular's HTML sanitizer to remain active. The frontend never calls a `bypassSecurityTrust...` API for model output.
+
 ---
 
 ## Knowledge

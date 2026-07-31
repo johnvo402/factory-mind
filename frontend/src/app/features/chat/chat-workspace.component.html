@@ -1,0 +1,74 @@
+<main class="workspace">
+  <app-chat-sidebar
+    [userName]="userName()"
+    (logoutRequested)="logoutRequested.emit()"
+  />
+
+  <section class="chat-panel">
+    <header class="chat-header">
+      <div>
+        <span class="eyebrow">FACTORYMIND AI</span>
+        <h1>{{ store.selectedConversation()?.title ?? 'Cuộc trò chuyện mới' }}</h1>
+      </div>
+      <span class="rag-status"><i></i> Knowledge RAG</span>
+    </header>
+
+    <div #messageViewport class="messages" aria-live="polite">
+      @if (store.isLoading() && store.messages().length === 0) {
+        <div class="loading-state"><span></span> Đang tải cuộc trò chuyện...</div>
+      } @else if (store.messages().length === 0) {
+        <section class="welcome">
+          <div class="ai-mark">FM</div>
+          <p class="eyebrow">AI WORKSPACE</p>
+          <h2>Xin chào, {{ userName() }}</h2>
+          <p>Hỏi FactoryMind về tài liệu nhà máy. Mỗi câu trả lời sẽ chỉ rõ nguồn và trang liên quan.</p>
+          <div class="suggestions">
+            @for (suggestion of suggestions; track suggestion) {
+              <button
+                type="button"
+                [disabled]="store.isStreaming()"
+                (click)="sendSuggestion(suggestion)"
+              >
+                <span>{{ suggestion }}</span><strong aria-hidden="true">↗</strong>
+              </button>
+            }
+          </div>
+        </section>
+      } @else {
+        <div class="message-list">
+          @for (message of store.messages(); track message.id; let last = $last) {
+            <app-chat-message
+              [message]="message"
+              [streaming]="last && message.role === 'assistant' && store.isStreaming()"
+            />
+          }
+        </div>
+      }
+    </div>
+
+    <footer class="composer-area">
+      @if (store.error()) {
+        <div class="chat-error" role="alert">{{ store.error() }}</div>
+      }
+      <form class="composer" (ngSubmit)="sendMessage()">
+        <textarea
+          [formControl]="composer"
+          rows="2"
+          maxlength="8000"
+          aria-label="Tin nhắn gửi FactoryMind"
+          placeholder="Hỏi về tài liệu, máy móc hoặc quy trình nhà máy..."
+          [disabled]="store.isStreaming()"
+          (keydown)="handleComposerKeydown($event)"
+        ></textarea>
+        <button
+          type="submit"
+          aria-label="Gửi tin nhắn"
+          [disabled]="composer.invalid || store.isStreaming()"
+        >
+          {{ store.isStreaming() ? '•••' : '↑' }}
+        </button>
+      </form>
+      <p>FactoryMind có thể mắc lỗi. Hãy kiểm tra lại nội dung trong các nguồn được trích dẫn.</p>
+    </footer>
+  </section>
+</main>

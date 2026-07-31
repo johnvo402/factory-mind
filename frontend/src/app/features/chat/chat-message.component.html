@@ -1,0 +1,42 @@
+<article class="message" [class.user-message]="message().role === 'user'">
+  <div class="avatar" aria-hidden="true">
+    {{ message().role === 'user' ? 'You' : 'FM' }}
+  </div>
+  <div class="message-body">
+    <span class="message-author">
+      {{ message().role === 'user' ? 'Bạn' : 'FactoryMind AI' }}
+    </span>
+
+    @if (message().role === 'assistant') {
+      @if (!message().content && streaming()) {
+        <div class="thinking" aria-label="FactoryMind đang suy nghĩ">
+          <span></span><span></span><span></span>
+        </div>
+      } @else {
+        <div class="markdown" [innerHTML]="message().content | markdown"></div>
+      }
+    } @else {
+      <p class="user-content">{{ message().content }}</p>
+    }
+
+    @if (message().citations.length > 0) {
+      <section class="citations" aria-label="Nguồn tham khảo">
+        <span class="citations-label">Nguồn tham khảo</span>
+        @for (citation of message().citations; track citation.chunkId) {
+          <details class="citation">
+            <summary>
+              <span class="reference">S{{ citation.referenceNumber }}</span>
+              <span>{{ citation.documentTitle }}</span>
+              <small>Trang {{ citation.pageNumber }}</small>
+            </summary>
+            <p>{{ citation.excerpt }}</p>
+            <footer>
+              <span>{{ citation.fileName }}</span>
+              <span>{{ scoreLabel(citation.score) }}</span>
+            </footer>
+          </details>
+        }
+      </section>
+    }
+  </div>
+</article>
