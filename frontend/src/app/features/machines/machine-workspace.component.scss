@@ -1,0 +1,29 @@
+.status {
+  display: inline-flex;
+  border-radius: 999px;
+  background: #edf4f1;
+  padding: 5px 9px;
+  color: #466057;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.status[data-status='available'] {
+  background: #e7f7ef;
+  color: #137353;
+}
+
+.status[data-status='running'] {
+  background: #e8f1ff;
+  color: #235f9c;
+}
+
+.status[data-status='maintenance'] {
+  background: #fff4db;
+  color: #8a5a00;
+}
+
+.status[data-status='offline'] {
+  background: #f1f2f2;
+  color: #68716e;
+}

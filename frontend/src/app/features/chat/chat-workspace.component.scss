@@ -1,14 +1,7 @@
 :host {
   display: block;
-  min-height: 100vh;
+  min-width: 0;
   color: #20302a;
-}
-
-.workspace {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 270px minmax(0, 1fr);
-  background: #f7f9f8;
 }
 
 .ai-mark {
@@ -267,10 +260,6 @@ textarea:disabled {
 }
 
 @media (max-width: 900px) {
-  .workspace {
-    grid-template-columns: 220px minmax(0, 1fr);
-  }
-
   .suggestions {
     grid-template-columns: 1fr;
   }
@@ -281,10 +270,6 @@ textarea:disabled {
 }
 
 @media (max-width: 700px) {
-  .workspace {
-    grid-template-columns: 1fr;
-  }
-
   .chat-panel {
     height: calc(100vh - 59px);
   }

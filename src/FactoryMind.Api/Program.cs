@@ -23,6 +23,11 @@ app.MapAuthEndpoints();
 app.MapChatEndpoints();
 app.MapDocumentEndpoints();
 app.MapKnowledgeEndpoints();
+app.MapInventoryEndpoints();
+app.MapMachineEndpoints();
+app.MapMaterialEndpoints();
+app.MapProductEndpoints();
+app.MapProductionOrderEndpoints();
 app.MapGet(ApiRoutes.Health, () => Results.Ok(new { success = true, message = "FactoryMind API is running." }));
 app.Run();
 

@@ -1,0 +1,24 @@
+.order-status {
+  display: inline-flex;
+  border-radius: 999px;
+  background: #edf3f1;
+  padding: 5px 9px;
+  color: #51625c;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.order-status.in_progress {
+  background: #fff2cf;
+  color: #825d00;
+}
+
+.order-status.completed {
+  background: #e3f5ec;
+  color: #176a52;
+}
+
+.order-status.cancelled {
+  background: #fde8e5;
+  color: #a6382f;
+}

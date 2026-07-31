@@ -10,6 +10,11 @@ public sealed class ApiRoutesTests {
         Assert.Equal("/api/conversations", ApiRoutes.Conversations.Group);
         Assert.Equal("/api/documents", ApiRoutes.Documents.Group);
         Assert.Equal("/api/knowledge", ApiRoutes.Knowledge.Group);
+        Assert.Equal("/api/inventories", ApiRoutes.Inventories.Group);
+        Assert.Equal("/api/machines", ApiRoutes.Machines.Group);
+        Assert.Equal("/api/materials", ApiRoutes.Materials.Group);
+        Assert.Equal("/api/products", ApiRoutes.Products.Group);
+        Assert.Equal("/api/production-orders", ApiRoutes.ProductionOrders.Group);
     }
 
     [Fact]
@@ -22,5 +27,20 @@ public sealed class ApiRoutesTests {
             "/api/documents/{documentId:guid}/process",
             ApiRoutes.Documents.Group + ApiRoutes.Documents.Process);
         Assert.Equal("/api/knowledge/search", ApiRoutes.Knowledge.Group + ApiRoutes.Knowledge.Search);
+        Assert.Equal(
+            "/api/machines/{machineId:guid}",
+            ApiRoutes.Machines.Group + ApiRoutes.Machines.ById);
+        Assert.Equal(
+            "/api/materials/{materialId:guid}",
+            ApiRoutes.Materials.Group + ApiRoutes.Materials.ById);
+        Assert.Equal(
+            "/api/products/{productId:guid}",
+            ApiRoutes.Products.Group + ApiRoutes.Products.ById);
+        Assert.Equal(
+            "/api/inventories/{inventoryId:guid}",
+            ApiRoutes.Inventories.Group + ApiRoutes.Inventories.ById);
+        Assert.Equal(
+            "/api/production-orders/{productionOrderId:guid}",
+            ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.ById);
     }
 }

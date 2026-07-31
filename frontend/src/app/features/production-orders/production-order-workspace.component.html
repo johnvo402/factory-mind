@@ -1,0 +1,92 @@
+<section class="content">
+  <section class="toolbar">
+    <div><h2>Lệnh sản xuất</h2><p>{{ store.orders().length }} lệnh trong kết quả hiện tại</p></div>
+    <div class="toolbar-actions">
+      <form (submit)="search($event)" class="search-form">
+        <input type="search" [formControl]="searchControl" maxlength="200" aria-label="Tìm lệnh sản xuất" placeholder="Tìm theo số lệnh, sản phẩm hoặc trạng thái">
+        @if (store.search()) { <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button> }
+        <button type="submit" class="secondary">Tìm kiếm</button>
+      </form>
+      <button type="button" class="primary" [disabled]="store.products().length === 0" (click)="startCreate()">＋ Thêm lệnh</button>
+    </div>
+  </section>
+
+  @if (store.error()) { <div class="error" role="alert">{{ store.error() }}</div> }
+
+  @if (store.isLoading()) {
+    <div class="state">Đang tải lệnh sản xuất...</div>
+  } @else if (store.products().length === 0) {
+    <div class="state empty"><strong>Chưa có sản phẩm.</strong><span>Hãy tạo sản phẩm trước khi lập lệnh sản xuất.</span></div>
+  } @else if (store.orders().length === 0) {
+    <div class="state empty">
+      <strong>Chưa có lệnh sản xuất.</strong>
+      <span>Tạo lệnh đầu tiên để theo dõi tiến độ sản xuất.</span>
+      <button type="button" class="primary" (click)="startCreate()">Thêm lệnh sản xuất</button>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Số lệnh</th><th>Sản phẩm</th><th>Số lượng</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody>
+          @for (order of store.orders(); track order.id) {
+            <tr>
+              <td><strong>{{ order.number }}</strong></td>
+              <td>{{ order.productCode }} — {{ order.productName }}</td>
+              <td>{{ order.quantity | number: '1.0-3' }}</td>
+              <td><span class="order-status" [class.in_progress]="order.status === 'in_progress'" [class.completed]="order.status === 'completed'" [class.cancelled]="order.status === 'cancelled'">{{ statusLabel(order.status) }}</span></td>
+              <td class="actions">
+                @if (confirmDeleteId() === order.id) {
+                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(order.id)">Xác nhận</button>
+                  <button type="button" class="ghost" (click)="confirmDeleteId.set(null)">Hủy</button>
+                } @else {
+                  <button type="button" class="ghost" [attr.aria-label]="'Sửa ' + order.number" (click)="startEdit(order)">Sửa</button>
+                  <button type="button" class="ghost danger-text" [attr.aria-label]="'Xóa ' + order.number" (click)="requestDelete(order.id)">Xóa</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (editorOpen()) {
+    <div class="editor-backdrop" (click)="cancelEdit()">
+      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="order-editor-title" (click)="$event.stopPropagation()">
+        <header>
+          <div><span class="eyebrow">PRODUCTION ORDER</span><h2 id="order-editor-title">{{ editingId() ? 'Cập nhật lệnh sản xuất' : 'Thêm lệnh sản xuất mới' }}</h2></div>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">×</button>
+        </header>
+        <form [formGroup]="orderForm" (ngSubmit)="save()">
+          <label>Số lệnh
+            <input type="text" formControlName="number" maxlength="50" placeholder="Ví dụ: PO-2026-001">
+            @if (orderForm.controls.number.touched && orderForm.controls.number.invalid) { <small>Số lệnh là bắt buộc và không quá 50 ký tự.</small> }
+          </label>
+          <label>Sản phẩm
+            <select formControlName="productId" aria-label="Sản phẩm">
+              @for (product of store.products(); track product.id) {
+                <option [value]="product.id">{{ product.code }} — {{ product.name }}</option>
+              }
+            </select>
+          </label>
+          <label>Số lượng
+            <input type="number" formControlName="quantity" min="0.001" step="0.001" placeholder="Ví dụ: 500">
+            @if (orderForm.controls.quantity.touched && orderForm.controls.quantity.invalid) { <small>Số lượng phải lớn hơn 0.</small> }
+          </label>
+          <label>Trạng thái
+            <select formControlName="status" aria-label="Trạng thái lệnh sản xuất">
+              <option value="planned">Đã lên kế hoạch</option>
+              <option value="in_progress">Đang sản xuất</option>
+              <option value="completed">Hoàn thành</option>
+              <option value="cancelled">Đã hủy</option>
+            </select>
+          </label>
+          <footer>
+            <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button>
+            <button type="submit" class="primary" [disabled]="store.isSaving()">{{ store.isSaving() ? 'Đang lưu...' : 'Lưu lệnh sản xuất' }}</button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  }
+</section>

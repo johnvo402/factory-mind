@@ -61,7 +61,8 @@ button {
   font-size: 1.15rem;
 }
 
-.history {
+.history,
+.data-context {
   min-height: 120px;
   max-height: 34vh;
   display: grid;
@@ -80,10 +81,22 @@ button {
   text-transform: uppercase;
 }
 
-.history p {
+.history p,
+.data-context p,
+.data-context strong {
   margin: 4px 9px;
+}
+
+.history p,
+.data-context p {
   color: #88a59b;
   font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.data-context strong {
+  color: #dcebe5;
+  font-size: 0.88rem;
 }
 
 .conversation {
@@ -119,17 +132,22 @@ nav {
   padding: 20px 0 14px;
 }
 
-nav a {
+nav button {
   display: flex;
   align-items: center;
   gap: 10px;
+  border: 0;
   border-radius: 8px;
+  background: transparent;
   padding: 9px;
   color: #8fa9a0;
+  cursor: pointer;
   font-size: 0.82rem;
+  text-align: left;
 }
 
-nav a.active {
+nav button.active {
+  background: #1b453a;
   color: #f1faf7;
 }
 
@@ -178,7 +196,7 @@ nav a.active {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.58;
+  opacity: 0.48;
 }
 
 @media (max-width: 700px) {
@@ -200,12 +218,8 @@ button:disabled {
     font-size: 0;
   }
 
-  .new-chat span {
-    display: inline;
-    font-size: 1.1rem;
-  }
-
   .history,
+  .data-context,
   nav {
     display: none;
   }
