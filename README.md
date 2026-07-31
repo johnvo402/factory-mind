@@ -1,5 +1,9 @@
 # FactoryMind
 
+[![CI](https://github.com/johnvo402/factory-mind/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/johnvo402/factory-mind/actions/workflows/ci.yml)
+
+GitHub Actions validates formatting, builds and tests the .NET backend and Angular frontend, audits production npm dependencies, and publishes deployable API/frontend artifacts for each push and pull request.
+
 ## Backend quick start
 
 Start the local PostgreSQL and MinIO containers:
