@@ -16,6 +16,7 @@ export class App {
 
   protected readonly loggedIn = this.auth.isAuthenticated;
   protected readonly userName = computed(() => this.auth.user()?.name ?? '');
+  protected readonly userRole = computed(() => this.auth.user()?.role ?? '');
   protected readonly loading = signal(false);
   protected readonly error = signal('');
   protected readonly loginForm = new FormGroup({

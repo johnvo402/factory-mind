@@ -36,6 +36,14 @@ public static class ApiRoutes {
         public const string Import = "/import";
     }
 
+    public static class Settings {
+        public const string Group = Base + "/settings";
+        public const string Company = "/company";
+        public const string Users = "/users";
+        public const string UserById = Users + "/{userId:guid}";
+        public const string Ai = "/ai";
+    }
+
     public static class Knowledge {
         public const string Group = Base + "/knowledge";
         public const string Search = "/search";

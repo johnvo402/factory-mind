@@ -20,6 +20,15 @@ export const API_ROUTES = {
     preview: `${API_BASE}/imports/excel/preview`,
     import: `${API_BASE}/imports/excel/import`,
   },
+  settings: {
+    company: `${API_BASE}/settings/company`,
+    users: `${API_BASE}/settings/users`,
+    userById: (userId: string) => `${API_BASE}/settings/users/${userId}`,
+    ai: `${API_BASE}/settings/ai`,
+  },
+  documents: {
+    reindex: `${API_BASE}/documents/reindex`,
+  },
   machines: {
     root: `${API_BASE}/machines`,
     byId: (machineId: string) => `${API_BASE}/machines/${machineId}`,

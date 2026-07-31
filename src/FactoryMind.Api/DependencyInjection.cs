@@ -6,6 +6,7 @@ using FactoryMind.Application.Common.Authorization;
 using FactoryMind.Application.Common.Identity;
 using FactoryMind.Application.Features.Auth;
 using FactoryMind.Application.Features.Knowledge;
+using FactoryMind.Domain.Identity;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
@@ -53,8 +54,10 @@ public static class DependencyInjection {
         });
         services.AddAuthorization(options => {
             options.AddPolicy(AuthorizationPolicies.Authenticated, policy => policy.RequireAuthenticatedUser());
-            options.AddPolicy(AuthorizationPolicies.Admin, policy => policy.RequireRole("Admin"));
-            options.AddPolicy(AuthorizationPolicies.Manager, policy => policy.RequireRole("Admin", "Manager"));
+            options.AddPolicy(AuthorizationPolicies.Admin, policy => policy.RequireRole(UserRoles.Admin));
+            options.AddPolicy(
+                AuthorizationPolicies.Manager,
+                policy => policy.RequireRole(UserRoles.Admin, UserRoles.Manager));
         });
         services.AddCors(options => options.AddDefaultPolicy(policy => policy
             .AllowAnyHeader()

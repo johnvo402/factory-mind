@@ -448,3 +448,5 @@ Dashboard uses one authenticated CQRS query and an explicit `IDashboardRepositor
 
 Excel import is a stateless two-step CQRS flow. A Manager uploads an `.xlsx` workbook for a bounded preview and suggested field mapping, then submits the workbook again with the confirmed mapping. The Application validates every row, duplicate business key, tenant-owned material/product reference, decimal precision, and status before one transactional save; any row error prevents the whole batch from being persisted. Workbooks are limited to 10 MB, 50 columns, and 5,000 data rows.
 
+Settings is Admin-only CQRS. Company and user changes are tenant-scoped through `ISettingsRepository`; user responses never contain password hashes, and a user cannot deactivate or demote their own active Admin account. The AI settings endpoint is deliberately read-only for the MVP: it reports the native Gemini provider, configured chat/embedding model, bounded output size, and whether a server-side key exists, but never returns the key. Re-index remains an explicit Manager/Admin action.
+

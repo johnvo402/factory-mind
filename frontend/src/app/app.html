@@ -25,5 +25,9 @@
     </section>
   </main>
 } @else {
-  <app-workspace [userName]="userName()" (logoutRequested)="logout()" />
+  <app-workspace
+    [userName]="userName()"
+    [userRole]="userRole()"
+    (logoutRequested)="logout()"
+  />
 }

@@ -1,6 +1,7 @@
 <main class="workspace">
   <app-workspace-sidebar
     [userName]="userName()"
+    [userRole]="userRole()"
     [activeView]="activeView()"
     (viewRequested)="selectView($event)"
     (logoutRequested)="logoutRequested.emit()"
@@ -8,7 +9,9 @@
 
   @if (activeView() === 'chat') {
     <app-chat-workspace [userName]="userName()" />
-  } @else {
+  } @else if (activeView() === 'data') {
     <app-data-workspace />
+  } @else {
+    <app-settings-workspace />
   }
 </main>

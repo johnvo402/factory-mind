@@ -1,0 +1,75 @@
+<section class="settings-panel">
+  <header>
+    <span>ADMIN SETTINGS</span>
+    <h1>Cài đặt FactoryMind</h1>
+    <p>Quản lý tenant, thành viên và trạng thái kết nối Gemini.</p>
+  </header>
+
+  <nav aria-label="Nhóm cài đặt">
+    <button type="button" [class.active]="activeTab() === 'company'" (click)="setTab('company')">Company</button>
+    <button type="button" [class.active]="activeTab() === 'users'" (click)="setTab('users')">Users</button>
+    <button type="button" [class.active]="activeTab() === 'ai'" (click)="setTab('ai')">AI</button>
+  </nav>
+
+  <main>
+    @if (store.isLoading() && !store.company()) {
+      <p class="notice">Đang tải cài đặt...</p>
+    }
+    @if (store.error()) { <p class="notice error">{{ store.error() }}</p> }
+    @if (store.message()) { <p class="notice success">{{ store.message() }}</p> }
+
+    @switch (activeTab()) {
+      @case ('users') {
+        <section class="users-layout">
+          <article class="card users-list">
+            <div class="card-heading"><h2>Thành viên</h2><button type="button" (click)="newUser()">Thêm user</button></div>
+            @for (user of store.users(); track user.id) {
+              <button type="button" class="user-row" [class.selected]="selectedUserId() === user.id" (click)="selectUser(user)">
+                <span><strong>{{ user.name }}</strong><small>{{ user.email }}</small></span>
+                <span><small>{{ user.role }}</small><i [class.inactive]="!user.isActive"></i></span>
+              </button>
+            }
+          </article>
+
+          <article class="card editor">
+            <h2>{{ selectedUserId() ? 'Sửa người dùng' : 'Người dùng mới' }}</h2>
+            <label>Tên<input [value]="userName()" (input)="userName.set($any($event.target).value)" maxlength="200"></label>
+            <label>Email<input type="email" [value]="userEmail()" (input)="userEmail.set($any($event.target).value)" maxlength="320"></label>
+            @if (!selectedUserId()) {
+              <label>Mật khẩu<input type="password" [value]="userPassword()" (input)="userPassword.set($any($event.target).value)" minlength="8"></label>
+            }
+            <label>Role
+              <select [value]="userRole()" (change)="changeRole($event)">
+                <option value="Admin">Admin</option><option value="Manager">Manager</option><option value="User">User</option>
+              </select>
+            </label>
+            @if (selectedUserId()) {
+              <label class="checkbox"><input type="checkbox" [checked]="userActive()" (change)="userActive.set($any($event.target).checked)"> Đang hoạt động</label>
+            }
+            <button type="button" class="primary" [disabled]="store.isLoading() || !userName().trim() || !userEmail().trim() || (!selectedUserId() && userPassword().length < 8)" (click)="saveUser()">Lưu người dùng</button>
+          </article>
+        </section>
+      }
+      @case ('ai') {
+        @if (store.ai(); as ai) {
+          <article class="card ai-card">
+            <div><span>Provider</span><strong>{{ ai.provider }}</strong></div>
+            <div><span>Chat model</span><strong>{{ ai.chatModel }}</strong></div>
+            <div><span>Embedding</span><strong>{{ ai.embeddingModel }} · {{ ai.embeddingDimensions }}d</strong></div>
+            <div><span>Output limit</span><strong>{{ ai.maximumOutputTokens }} tokens</strong></div>
+            <div><span>API key</span><strong [class.ready]="ai.apiKeyConfigured">{{ ai.apiKeyConfigured ? 'Configured' : 'Missing' }}</strong></div>
+            <p>API key chỉ tồn tại trong secret của backend và không bao giờ được gửi tới trình duyệt.</p>
+            <button type="button" class="primary" [disabled]="store.isLoading()" (click)="store.reindex()">Re-index tài liệu cho Gemini</button>
+          </article>
+        }
+      }
+      @default {
+        <article class="card company-card">
+          <h2>Thông tin công ty</h2>
+          <label>Tên công ty<input [value]="companyName()" (input)="companyName.set($any($event.target).value)" maxlength="200"></label>
+          <button type="button" class="primary" [disabled]="store.isLoading() || !companyName().trim()" (click)="saveCompany()">Lưu thay đổi</button>
+        </article>
+      }
+    }
+  </main>
+</section>

@@ -23,7 +23,7 @@ public sealed class FactoryMindDatabaseInitializer(FactoryMindDbContext dbContex
                 Name = "FactoryMind Admin",
                 Email = "admin@factorymind.local",
                 PasswordHash = credentialHasher.HashPassword("Demo@123"),
-                Role = "Admin"
+                Role = UserRoles.Admin
             });
         }
 
