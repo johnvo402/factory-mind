@@ -265,6 +265,8 @@ After chunking, the same background use case calls the configured OpenAI-compati
 
 Configure the embedding model with `OpenAi__EmbeddingModel`. Keep the API key outside source control. The selected compatible provider must accept `POST /embeddings` with `model`, `input`, and `dimensions` and return indexed embedding arrays.
 
+Semantic knowledge search is a CQRS query behind `POST /api/knowledge/search`. Presentation validates the request, Application embeds the question and applies the authenticated company scope, and Infrastructure performs exact pgvector cosine ordering. The search repository only returns chunks belonging to ready documents in the same company.
+
 ---
 
 # 8. Configuration

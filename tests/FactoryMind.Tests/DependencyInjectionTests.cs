@@ -43,6 +43,9 @@ public sealed class DependencyInjectionTests {
             descriptor.ServiceType == typeof(IDocumentRepository)
             && descriptor.ImplementationType == typeof(EfDocumentRepository));
         Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(IKnowledgeSearchRepository)
+            && descriptor.ImplementationType == typeof(EfKnowledgeSearchRepository));
+        Assert.Contains(services, descriptor =>
             descriptor.ServiceType == typeof(IDocumentProcessingQueue)
             && descriptor.ImplementationType == typeof(HangfireDocumentProcessingQueue));
         Assert.Contains(services, descriptor =>

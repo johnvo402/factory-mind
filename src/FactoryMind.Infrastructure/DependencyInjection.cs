@@ -42,6 +42,7 @@ public static class DependencyInjection {
         services.AddScoped<IAuthRepository, EfAuthRepository>();
         services.AddScoped<IConversationRepository, EfConversationRepository>();
         services.AddScoped<IDocumentRepository, EfDocumentRepository>();
+        services.AddScoped<IKnowledgeSearchRepository, EfKnowledgeSearchRepository>();
         services.AddScoped<DocumentProcessingJob>();
         services.AddSingleton<IDocumentProcessingQueue, HangfireDocumentProcessingQueue>();
         services.AddSingleton<IDocumentTextExtractor, PdfPigDocumentTextExtractor>();

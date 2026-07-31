@@ -170,6 +170,10 @@ MVP dùng PostgreSQL + pgvector là đủ.
 
 ---
 
+Sprint 3 exposes tenant-scoped semantic knowledge search through `POST /api/knowledge/search`. The query is embedded with the same configured model used for document chunks, then PostgreSQL returns the nearest ready chunks by exact cosine distance. Results include document, page, chunk content, and similarity score for the later citation step.
+
+---
+
 # 5. Context Builder
 
 Đây là phần mình thích nhất.

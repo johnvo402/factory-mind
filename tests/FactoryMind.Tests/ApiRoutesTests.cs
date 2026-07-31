@@ -9,6 +9,7 @@ public sealed class ApiRoutesTests {
         Assert.Equal("/api/auth", ApiRoutes.Auth.Group);
         Assert.Equal("/api/conversations", ApiRoutes.Conversations.Group);
         Assert.Equal("/api/documents", ApiRoutes.Documents.Group);
+        Assert.Equal("/api/knowledge", ApiRoutes.Knowledge.Group);
     }
 
     [Fact]
@@ -20,5 +21,6 @@ public sealed class ApiRoutesTests {
         Assert.Equal(
             "/api/documents/{documentId:guid}/process",
             ApiRoutes.Documents.Group + ApiRoutes.Documents.Process);
+        Assert.Equal("/api/knowledge/search", ApiRoutes.Knowledge.Group + ApiRoutes.Knowledge.Search);
     }
 }

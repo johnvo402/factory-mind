@@ -45,3 +45,14 @@ Accept: text/event-stream
 
 GET {{FactoryMind.Api_HostAddress}}/api/conversations/{{conversationId}}/messages
 Authorization: Bearer {{accessToken}}
+
+###
+
+POST {{FactoryMind.Api_HostAddress}}/api/knowledge/search
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "query": "How should the machine be stopped before maintenance?",
+  "limit": 5
+}

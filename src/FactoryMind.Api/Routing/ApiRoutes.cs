@@ -23,4 +23,9 @@ public static class ApiRoutes {
         public const string Root = "";
         public const string Process = "/{documentId:guid}/process";
     }
+
+    public static class Knowledge {
+        public const string Group = Base + "/knowledge";
+        public const string Search = "/search";
+    }
 }
