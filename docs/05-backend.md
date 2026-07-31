@@ -310,7 +310,7 @@ The container uses PostgreSQL 17 with pgvector binaries available, a persistent 
 
 The host-run API connects through `localhost:${POSTGRES_PORT}`. Keep `ConnectionStrings__FactoryMind` aligned when changing database name, user, password, or port in `.env`.
 
-MinIO is added in Sprint 3 when PDF upload starts. Redis and Hangfire infrastructure are not started until a running feature needs them.
+MinIO and Hangfire are active for document processing. Hangfire persists jobs in PostgreSQL. Redis remains deferred until a measured cache or session use case needs it.
 
 ## Local MinIO
 
@@ -322,7 +322,7 @@ docker compose up -d
 
 The S3-compatible API is available at `localhost:${MINIO_API_PORT}` and the development console at `localhost:${MINIO_CONSOLE_PORT}`. The API creates the configured bucket on the first upload. Store object keys in PostgreSQL; never store PDF bytes in the database.
 
-The local Compose ports bind to `127.0.0.1` only. The pinned MinIO image is for workstation development; select a maintained, security-reviewed deployment image before production.
+The local Compose ports bind to `127.0.0.1` only. Production uses the pinned Quay MinIO image documented in `compose.prod.yaml`; reassess image support and security advisories during each deployment upgrade.
 
 ---
 
@@ -449,4 +449,6 @@ Dashboard uses one authenticated CQRS query and an explicit `IDashboardRepositor
 Excel import is a stateless two-step CQRS flow. A Manager uploads an `.xlsx` workbook for a bounded preview and suggested field mapping, then submits the workbook again with the confirmed mapping. The Application validates every row, duplicate business key, tenant-owned material/product reference, decimal precision, and status before one transactional save; any row error prevents the whole batch from being persisted. Workbooks are limited to 10 MB, 50 columns, and 5,000 data rows.
 
 Settings is Admin-only CQRS. Company and user changes are tenant-scoped through `ISettingsRepository`; user responses never contain password hashes, and a user cannot deactivate or demote their own active Admin account. The AI settings endpoint is deliberately read-only for the MVP: it reports the native Gemini provider, configured chat/embedding model, bounded output size, and whether a server-side key exists, but never returns the key. Re-index remains an explicit Manager/Admin action.
+
+Production runs the Angular/Nginx frontend as the only public HTTP service. Nginx proxies same-origin `/api` requests and disables buffering for chat SSE. API, PostgreSQL, and MinIO are private Compose services with health checks and persistent volumes. Production startup rejects the committed development JWT key and requires explicit bootstrap Admin credentials for an empty database; demo business records are seeded only in Development.
 

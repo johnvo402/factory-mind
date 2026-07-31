@@ -488,7 +488,7 @@ Không viết SQL Script thủ công.
 
 # 8. Seed Data
 
-Chỉ seed:
+Development chỉ seed:
 
 ```text
 Admin
@@ -503,6 +503,8 @@ Inventory Demo
 ```
 
 Đủ để demo.
+
+Production không seed demo business data hoặc demo password. Khi database trống, production chỉ tạo Company và Admin từ các biến `BootstrapAdmin__*`; startup từ chối cấu hình thiếu hoặc password ngắn hơn 12 ký tự.
 
 ---
 

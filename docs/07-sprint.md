@@ -256,6 +256,8 @@ Widget
 
 Done.
 
+Implementation status: tenant-scoped KPI summary is rendered on the Chat home.
+
 ---
 
 # Sprint 7
@@ -276,6 +278,8 @@ Preview
 
 Done.
 
+Implementation status: all five business entity types support bounded preview, mapping, row validation, and transactional `.xlsx` import.
+
 ---
 
 # Sprint 8
@@ -287,6 +291,8 @@ Done.
 * AI Model
 
 Done.
+
+Implementation status: Admin-only Company/Users settings and safe read-only Gemini metadata are implemented; provider secrets remain server-side.
 
 ---
 
@@ -301,6 +307,8 @@ Done.
 * Bug
 
 Done.
+
+Implementation status: Knowledge upload/search/status UI, role-aware navigation, retryable errors, loading/empty states, and production bundle budgets are implemented.
 
 ---
 
@@ -321,6 +329,8 @@ VPS
 Demo
 
 Khách hàng đầu tiên.
+
+Implementation status: production API/frontend images, internal PostgreSQL/MinIO topology, health checks, required secrets, and GHCR image delivery are implemented. VPS/TLS rollout remains environment-specific and requires an approved target, credentials, backup, and rollback procedure. Redis remains deferred because no running cache or session use case requires it.
 
 ---
 
@@ -362,13 +372,13 @@ Mỗi task chỉ được Done nếu:
 
 ## Data
 
-* [ ] CRUD
+* [x] CRUD
 
 ---
 
 ## Dashboard
 
-* [ ] KPI
+* [x] KPI
 
 ---
 

@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration)
-    .AddPresentation(builder.Configuration);
+    .AddPresentation(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 await app.Services.InitializeInfrastructureAsync();

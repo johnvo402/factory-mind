@@ -45,7 +45,7 @@ Backend
 - ASP.NET Core (.NET 9)
 - PostgreSQL
 - EF Core
-- Redis
+- Redis (deferred until a measured cache or session use case exists)
 - Hangfire
 - MinIO
 

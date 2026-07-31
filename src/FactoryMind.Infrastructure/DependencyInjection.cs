@@ -56,6 +56,8 @@ public static class DependencyInjection {
             options.Queues = ["documents"];
         });
         services.AddScoped<FactoryMindDatabaseInitializer>();
+        services.Configure<BootstrapAdminSettings>(
+            configuration.GetSection(BootstrapAdminSettings.SectionName));
         services.AddScoped<IAuthRepository, EfAuthRepository>();
         services.AddScoped<IConversationRepository, EfConversationRepository>();
         services.AddScoped<IBusinessContextRepository, EfBusinessContextRepository>();

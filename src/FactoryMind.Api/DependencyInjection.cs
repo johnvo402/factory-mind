@@ -17,9 +17,15 @@ namespace FactoryMind.Api;
 public static class DependencyInjection {
     public static IServiceCollection AddPresentation(
         this IServiceCollection services,
-        IConfiguration configuration) {
+        IConfiguration configuration,
+        IHostEnvironment environment) {
         var jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
             ?? throw new InvalidOperationException("JWT configuration is missing.");
+        if (environment.IsProduction()
+            && (jwtSettings.Key.Length < 32
+                || jwtSettings.Key.Contains("development-only", StringComparison.OrdinalIgnoreCase))) {
+            throw new InvalidOperationException("A strong production JWT key is required.");
+        }
 
         services.AddHttpContextAccessor();
         services.AddScoped<IPolicyChecker, HttpPolicyChecker>();
