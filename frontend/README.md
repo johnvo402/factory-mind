@@ -2,6 +2,10 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.32.
 
+## Prerequisites
+
+Use Node.js 24.18.1 LTS. The required version is pinned in `.nvmrc` and `package.json`.
+
 ## Development server
 
 To start a local development server, run:
@@ -9,6 +13,10 @@ To start a local development server, run:
 ```bash
 ng serve
 ```
+
+The development server proxies `/api` requests to the ASP.NET Core API at `http://localhost:5047`. Start the API with its `http` launch profile before using authentication.
+
+Chat uses an authenticated streaming `POST` through the same proxy. Configure the backend `OpenAi` base URL, chat model, embedding model, and API key before sending messages; provider credentials must never be added to the Angular environment or browser bundle.
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 

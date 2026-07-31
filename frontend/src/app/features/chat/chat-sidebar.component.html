@@ -1,0 +1,44 @@
+<aside class="sidebar">
+  <div class="brand"><span>FM</span><strong>FactoryMind</strong></div>
+
+  <button
+    class="new-chat"
+    type="button"
+    [disabled]="store.isStreaming()"
+    (click)="store.startNewConversation()"
+  >
+    <span aria-hidden="true">＋</span> Cuộc trò chuyện mới
+  </button>
+
+  <section class="history" aria-label="Lịch sử trò chuyện">
+    <span class="section-label">Gần đây</span>
+    @if (store.conversations().length === 0 && !store.isLoading()) {
+      <p>Chưa có cuộc trò chuyện.</p>
+    }
+    @for (conversation of store.conversations(); track conversation.id) {
+      <button
+        type="button"
+        class="conversation"
+        [class.active]="store.selectedConversationId() === conversation.id"
+        [disabled]="store.isStreaming()"
+        (click)="store.selectConversation(conversation.id)"
+        [title]="conversation.title"
+      >
+        <span aria-hidden="true">◌</span>
+        <span>{{ conversation.title }}</span>
+      </button>
+    }
+  </section>
+
+  <nav aria-label="Điều hướng chính">
+    <a class="active"><span aria-hidden="true">◈</span> Chat</a>
+    <a><span aria-hidden="true">▤</span> Knowledge</a>
+    <a><span aria-hidden="true">▦</span> Data</a>
+    <a><span aria-hidden="true">⚙</span> Settings</a>
+  </nav>
+
+  <button class="profile" type="button" (click)="logoutRequested.emit()">
+    <span class="profile-avatar">{{ userName().slice(0, 1) }}</span>
+    <span><strong>{{ userName() }}</strong><small>Đăng xuất</small></span>
+  </button>
+</aside>

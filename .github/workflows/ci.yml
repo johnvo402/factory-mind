@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET 9
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore FactoryMind.sln
+
+      - name: Verify formatting
+        run: dotnet format FactoryMind.sln --verify-no-changes --no-restore
+
+      - name: Build solution
+        run: dotnet build FactoryMind.sln --configuration Release --no-restore --warnaserror
+
+      - name: Run backend tests
+        run: >-
+          dotnet test FactoryMind.sln
+          --configuration Release
+          --no-build
+          --no-restore
+          --logger "trx;LogFileName=backend-tests.trx"
+          --results-directory TestResults
+
+      - name: Publish API artifact
+        run: >-
+          dotnet publish src/FactoryMind.Api/FactoryMind.Api.csproj
+          --configuration Release
+          --no-build
+          --no-restore
+          --output artifacts/api
+
+      - name: Upload backend test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-results
+          path: TestResults/**/*.trx
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload API artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: factory-mind-api
+          path: artifacts/api
+          if-no-files-found: error
+          retention-days: 7
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.18.1
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Build Angular application
+        run: npm run build
+
+      - name: Run frontend tests
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+        env:
+          CI: true
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: factory-mind-frontend
+          path: frontend/dist/frontend
+          if-no-files-found: error
+          retention-days: 7

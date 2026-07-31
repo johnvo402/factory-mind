@@ -225,11 +225,33 @@ Status
 ## Document
 
 ```text
+Id
+
+CompanyId
+
+UploadedByUserId
+
 Title
 
-Type
+FileName
+
+ContentType
 
 Path
+
+Size
+
+Status
+
+PageCount
+
+ChunkCount
+
+ProcessingError
+
+ProcessedAt
+
+CreatedAt
 ```
 
 ---
@@ -237,21 +259,61 @@ Path
 ## DocumentChunk
 
 ```text
+Id
+
 DocumentId
+
+CompanyId
+
+Sequence
+
+PageNumber
 
 Content
 
-Embedding
+CreatedAt
 ```
+
+`DocumentChunk` stores extracted text only. Vector data belongs to the later `DocumentEmbedding` table so a document can be re-embedded without rewriting its source chunks.
+
+---
+
+## DocumentEmbedding
+
+```text
+Id
+
+DocumentChunkId
+
+CompanyId
+
+Model
+
+Dimensions
+
+Embedding vector(1536)
+
+CreatedAt
+```
+
+Each chunk has one current embedding in the MVP. Re-indexing atomically replaces the document's chunks and embeddings. Exact cosine search is used before introducing an approximate vector index.
 
 ---
 
 ## Conversation
 
 ```text
+Id
+
+CompanyId
+
 UserId
 
 Title
+
+CreatedAt
+
+UpdatedAt
 ```
 
 ---
@@ -259,12 +321,48 @@ Title
 ## Message
 
 ```text
+Id
+
 ConversationId
 
 Role
 
 Content
+
+CreatedAt
 ```
+
+Chat queries must filter conversations by both `CompanyId` and `UserId`. A message is accessible only through a conversation owned by that company and user.
+
+---
+
+## MessageCitation
+
+```text
+Id
+
+MessageId
+
+ReferenceNumber
+
+DocumentId
+
+ChunkId
+
+DocumentTitle
+
+FileName
+
+PageNumber
+
+Excerpt
+
+Score
+
+CreatedAt
+```
+
+`MessageCitation` is an immutable source snapshot owned by an assistant message. It intentionally does not reference the live document with a foreign key, so historical answers retain their evidence if a source is later renamed or removed.
 
 ---
 

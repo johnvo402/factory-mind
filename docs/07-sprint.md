@@ -336,23 +336,23 @@ Mỗi task chỉ được Done nếu:
 
 ## Authentication
 
-* [ ] Login
-* [ ] Logout
+* [x] Login
+* [x] Logout
 
 ---
 
 ## AI
 
-* [ ] Chat
-* [ ] Streaming
-* [ ] Citation
+* [x] Chat
+* [x] Streaming
+* [x] Citation
 
 ---
 
 ## Knowledge
 
-* [ ] Upload
-* [ ] Search
+* [x] Upload
+* [x] Search
 
 ---
 
@@ -445,7 +445,7 @@ decision-log/
 
 0002-chat-homepage.md
 
-0003-no-cqrs.md
+0003-use-cqrs.md
 
 0004-no-agent.md
 ```

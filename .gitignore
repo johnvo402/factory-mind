@@ -1,4 +1,7 @@
 .tools
+.env
+.env.*
+!.env.example
 
 # From .NET Core 3.0 you can use the command: `dotnet new gitignore` to generate a customizable .gitignore file
 
@@ -28,6 +31,8 @@ build/
 bld/
 [Bb]in/
 [Oo]bj/
+/TestResults/
+/artifacts/
 msbuild.log
 msbuild.err
 msbuild.wrn

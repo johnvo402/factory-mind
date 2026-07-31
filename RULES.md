@@ -12,7 +12,29 @@ Always prioritize simplicity.
 
 Use Clean Architecture Lite.
 
-Never over engineer.
+Use CQRS with explicit commands and queries.
+
+Use the source-generated `Mediator` library to dispatch commands and queries to their handlers.
+
+Expose HTTP endpoints through ASP.NET Core Minimal APIs in the Presentation layer.
+
+Use the Repository Pattern: declare feature-specific repository interfaces in Application and implement them in Infrastructure.
+
+Put genuinely reusable, framework-independent contracts and utilities in FactoryMind.Shared.
+
+Handlers return `Result` or `Result<T>` from FactoryMind.Shared; Presentation maps results to HTTP responses.
+
+Protect use cases with named ASP.NET Core authorization policies and the Mediator `AuthorizationBehavior`.
+
+Validate Minimal API request models with FluentValidation endpoint filters before dispatching them.
+
+Return failures as RFC 7807 Problem Details with one clear message in `detail`; do not localize the same response into multiple languages.
+
+Each service-owning layer exposes its registrations through a `DependencyInjection.cs` extension. `Program.cs` composes these extensions and must not register Application or Infrastructure implementation details directly.
+
+Domain and Shared remain free of dependency-injection framework references because they do not own runtime services.
+
+Never over engineer: do not add an event bus, separate read databases, generic repositories, or a Unit of Work abstraction to the MVP.
 
 ---
 
@@ -49,7 +71,8 @@ Always follow
 - KISS
 - YAGNI
 - DRY
-- SOLID (reasonable)
+- SOLID
+- Clean Code
 - Ship Fast
 - MVP First
 
@@ -81,8 +104,6 @@ Never
 
 - create unnecessary abstraction
 
-- introduce CQRS
-
 - introduce Microservices
 
 - introduce Event Bus
@@ -113,6 +134,18 @@ Prefer
 
 - small classes
 
+- focused command/query handlers
+
+- one responsibility per type
+
+- dependency inversion at architectural boundaries
+
+- K&R brace style: opening braces stay on the same line as the declaration or condition
+
+- shared code in `FactoryMind.Shared` only when it is used by more than one project or feature
+
+- feature-specific repository interfaces and infrastructure implementations
+
 Avoid
 
 - magic code
@@ -120,6 +153,20 @@ Avoid
 - unnecessary inheritance
 
 - deep nesting
+
+- business logic in Minimal API endpoint mappings
+
+- validation logic duplicated inside endpoint mappings
+
+- ad hoc authorization checks inside handlers
+
+- commands that return query models or queries that change state
+
+- feature-specific code placed in `FactoryMind.Shared`
+
+- generic repositories that hide useful query intent
+
+- LHS/Allman brace formatting from the reference project
 
 ---
 
