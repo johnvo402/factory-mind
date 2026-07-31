@@ -6,6 +6,7 @@ public sealed class OpenAiSettings {
     public string BaseUrl { get; init; } = "https://api.openai.com/v1/";
     public string ApiKey { get; init; } = string.Empty;
     public string Model { get; init; } = "your-model-name";
+    public string EmbeddingModel { get; init; } = "your-embedding-model-name";
     public double Temperature { get; init; } = 0.2;
     public string SystemPrompt { get; init; } =
         "You are FactoryMind AI. Answer only manufacturing-related questions. "

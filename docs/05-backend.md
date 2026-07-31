@@ -257,6 +257,10 @@ Sprint 3 runs PDF parsing and chunking through Hangfire after upload. Hangfire p
 
 PdfPig extracts text in content order. Chunking remains framework-independent Application logic and preserves the source page number for later citations. Image-only PDFs require OCR and are reported as failed in the MVP.
 
+After chunking, the same background use case calls the configured OpenAI-compatible `embeddings` endpoint in batches of 64. The MVP requires 1,536-dimensional vectors and stores them in PostgreSQL through pgvector. Chunks and embeddings are committed together before the document becomes ready.
+
+Configure the embedding model with `OpenAi__EmbeddingModel`. Keep the API key outside source control. The selected compatible provider must accept `POST /embeddings` with `model`, `input`, and `dimensions` and return indexed embedding arrays.
+
 ---
 
 # 8. Configuration

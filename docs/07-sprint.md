@@ -343,15 +343,15 @@ Mỗi task chỉ được Done nếu:
 
 ## AI
 
-* [ ] Chat
-* [ ] Streaming
+* [x] Chat
+* [x] Streaming
 * [ ] Citation
 
 ---
 
 ## Knowledge
 
-* [ ] Upload
+* [x] Upload
 * [ ] Search
 
 ---

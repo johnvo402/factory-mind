@@ -1,6 +1,7 @@
 using FactoryMind.Application.Features.Knowledge;
 using FactoryMind.Domain.Knowledge;
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
 
 namespace FactoryMind.Infrastructure.Persistence.Knowledge;
 
@@ -55,6 +56,7 @@ public sealed class EfDocumentRepository(FactoryMindDbContext dbContext) : IDocu
     public async Task CompleteProcessingAsync(
         KnowledgeDocument document,
         IReadOnlyList<DocumentChunk> chunks,
+        IReadOnlyList<DocumentEmbeddingDraft> embeddings,
         int pageCount,
         DateTime processedAt,
         CancellationToken cancellationToken) {
@@ -63,6 +65,15 @@ public sealed class EfDocumentRepository(FactoryMindDbContext dbContext) : IDocu
             .Where(chunk => chunk.DocumentId == document.Id && chunk.CompanyId == document.CompanyId)
             .ExecuteDeleteAsync(cancellationToken);
         dbContext.DocumentChunks.AddRange(chunks);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        dbContext.DocumentEmbeddings.AddRange(embeddings.Select(embedding =>
+            new DocumentEmbeddingRecord {
+                DocumentChunkId = embedding.DocumentChunkId,
+                CompanyId = embedding.CompanyId,
+                Model = embedding.Model,
+                Dimensions = embedding.Values.Length,
+                Embedding = new Vector(embedding.Values)
+            }));
         await dbContext.SaveChangesAsync(cancellationToken);
 
         var updated = await dbContext.Documents

@@ -278,6 +278,28 @@ CreatedAt
 
 ---
 
+## DocumentEmbedding
+
+```text
+Id
+
+DocumentChunkId
+
+CompanyId
+
+Model
+
+Dimensions
+
+Embedding vector(1536)
+
+CreatedAt
+```
+
+Each chunk has one current embedding in the MVP. Re-indexing atomically replaces the document's chunks and embeddings. Exact cosine search is used before introducing an approximate vector index.
+
+---
+
 ## Conversation
 
 ```text

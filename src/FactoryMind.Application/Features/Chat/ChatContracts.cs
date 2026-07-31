@@ -48,12 +48,6 @@ public interface IChatCompletionClient {
         CancellationToken cancellationToken);
 }
 
-public sealed class AiProviderException : Exception {
-    public AiProviderException(string message, Exception? innerException = null)
-        : base(message, innerException) {
-    }
-}
-
 public static class ChatErrors {
     public static readonly Error ConversationNotFound = new(
         "chat.conversation_not_found",

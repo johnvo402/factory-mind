@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using FactoryMind.Application.Features.Chat;
 using FactoryMind.Domain.Chat;
+using FactoryMind.Shared.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 

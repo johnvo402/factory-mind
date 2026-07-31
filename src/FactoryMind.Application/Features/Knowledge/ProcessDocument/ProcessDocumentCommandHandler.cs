@@ -1,4 +1,5 @@
 using FactoryMind.Domain.Knowledge;
+using FactoryMind.Shared.AI;
 using FactoryMind.Shared.Contracts;
 using Mediator;
 
@@ -8,6 +9,7 @@ public sealed class ProcessDocumentCommandHandler(
     IDocumentRepository repository,
     IFileStorage fileStorage,
     IDocumentTextExtractor textExtractor,
+    IEmbeddingClient embeddingClient,
     DocumentChunker chunker) : IRequestHandler<ProcessDocumentCommand, Result> {
     public async ValueTask<Result> Handle(
         ProcessDocumentCommand command,
@@ -47,9 +49,12 @@ public sealed class ProcessDocumentCommandHandler(
                 });
             }
 
+            var embeddings = await CreateEmbeddingsAsync(entities, cancellationToken);
+
             await repository.CompleteProcessingAsync(
                 document,
                 entities,
+                embeddings,
                 pages.Count,
                 DateTime.UtcNow,
                 cancellationToken);
@@ -75,4 +80,39 @@ public sealed class ProcessDocumentCommandHandler(
 
     private static string LimitError(string message) =>
         message.Length <= 500 ? message : message[..500];
+
+    private async Task<IReadOnlyList<DocumentEmbeddingDraft>> CreateEmbeddingsAsync(
+        IReadOnlyList<DocumentChunk> chunks,
+        CancellationToken cancellationToken) {
+        var embeddings = new List<DocumentEmbeddingDraft>(chunks.Count);
+
+        for (var offset = 0; offset < chunks.Count; offset += DocumentEmbeddingConstraints.BatchSize) {
+            var batch = chunks
+                .Skip(offset)
+                .Take(DocumentEmbeddingConstraints.BatchSize)
+                .ToList();
+            var response = await embeddingClient.CreateAsync(
+                batch.Select(chunk => chunk.Content).ToList(),
+                cancellationToken);
+            if (response.Vectors.Count != batch.Count) {
+                throw new AiProviderException("AI service returned an invalid embedding response.");
+            }
+
+            for (var index = 0; index < batch.Count; index++) {
+                var values = response.Vectors[index];
+                if (values.Length != DocumentEmbeddingConstraints.Dimensions) {
+                    throw new AiProviderException(
+                        $"AI service must return {DocumentEmbeddingConstraints.Dimensions}-dimensional embeddings.");
+                }
+
+                embeddings.Add(new DocumentEmbeddingDraft(
+                    batch[index].Id,
+                    batch[index].CompanyId,
+                    response.Model,
+                    values));
+            }
+        }
+
+        return embeddings;
+    }
 }

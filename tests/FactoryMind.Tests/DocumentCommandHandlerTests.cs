@@ -106,6 +106,7 @@ public sealed class DocumentCommandHandlerTests {
             repository,
             new FakeFileStorage(),
             extractor,
+            new FakeEmbeddingClient(),
             new DocumentChunker());
 
         var result = await handler.Handle(
@@ -119,6 +120,11 @@ public sealed class DocumentCommandHandlerTests {
         Assert.Equal([1, 2], document.Chunks.Select(chunk => chunk.PageNumber));
         Assert.DoesNotContain(document.Chunks, chunk => chunk.Content == "Old content");
         Assert.All(document.Chunks, chunk => Assert.Equal(currentUser.CompanyId, chunk.CompanyId));
+        Assert.Equal(2, repository.Embeddings.Count);
+        Assert.All(repository.Embeddings, embedding => {
+            Assert.Equal(currentUser.CompanyId, embedding.CompanyId);
+            Assert.Equal(DocumentEmbeddingConstraints.Dimensions, embedding.Values.Length);
+        });
         Assert.NotNull(document.ProcessedAt);
     }
 
@@ -137,6 +143,7 @@ public sealed class DocumentCommandHandlerTests {
             repository,
             new FakeFileStorage(),
             new FakeDocumentTextExtractor([new DocumentPageText(1, "  ")]),
+            new FakeEmbeddingClient(),
             new DocumentChunker());
 
         var result = await handler.Handle(
@@ -147,6 +154,37 @@ public sealed class DocumentCommandHandlerTests {
         Assert.Equal(DocumentStatuses.Failed, document.Status);
         Assert.Contains("OCR", document.ProcessingError);
         Assert.Empty(document.Chunks);
+    }
+
+    [Fact]
+    public async Task Process_document_batches_embedding_requests() {
+        var currentUser = new FakeCurrentUser();
+        var repository = new FakeDocumentRepository();
+        var document = new KnowledgeDocument {
+            CompanyId = currentUser.CompanyId,
+            Title = "Long manual",
+            FileName = "long.pdf",
+            Path = "long-object"
+        };
+        repository.Documents.Add(document);
+        var pages = Enumerable.Range(1, 65)
+            .Select(page => new DocumentPageText(page, $"Instructions for page {page}"))
+            .ToList();
+        var embeddingClient = new FakeEmbeddingClient();
+        var handler = new ProcessDocumentCommandHandler(
+            repository,
+            new FakeFileStorage(),
+            new FakeDocumentTextExtractor(pages),
+            embeddingClient,
+            new DocumentChunker());
+
+        var result = await handler.Handle(
+            new ProcessDocumentCommand(document.Id, currentUser.CompanyId),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal([64, 1], embeddingClient.BatchSizes);
+        Assert.Equal(65, repository.Embeddings.Count);
     }
 
     [Fact]
@@ -203,6 +241,7 @@ public sealed class DocumentCommandHandlerTests {
     private sealed class FakeDocumentRepository : IDocumentRepository {
         public List<KnowledgeDocument> Documents { get; } = [];
         public List<KnowledgeDocument> AddedDocuments { get; } = [];
+        public List<DocumentEmbeddingDraft> Embeddings { get; } = [];
         public Guid? RequestedCompanyId { get; private set; }
         public int SaveChangesCount { get; private set; }
 
@@ -246,6 +285,7 @@ public sealed class DocumentCommandHandlerTests {
         public Task CompleteProcessingAsync(
             KnowledgeDocument document,
             IReadOnlyList<DocumentChunk> chunks,
+            IReadOnlyList<DocumentEmbeddingDraft> embeddings,
             int pageCount,
             DateTime processedAt,
             CancellationToken cancellationToken) {
@@ -253,6 +293,8 @@ public sealed class DocumentCommandHandlerTests {
             foreach (var chunk in chunks) {
                 document.Chunks.Add(chunk);
             }
+            Embeddings.Clear();
+            Embeddings.AddRange(embeddings);
 
             document.PageCount = pageCount;
             document.ChunkCount = chunks.Count;
@@ -320,6 +362,20 @@ public sealed class DocumentCommandHandlerTests {
             Stream content,
             CancellationToken cancellationToken) {
             return Task.FromResult(pages);
+        }
+    }
+
+    private sealed class FakeEmbeddingClient : IEmbeddingClient {
+        public List<int> BatchSizes { get; } = [];
+
+        public Task<EmbeddingBatch> CreateAsync(
+            IReadOnlyList<string> inputs,
+            CancellationToken cancellationToken) {
+            BatchSizes.Add(inputs.Count);
+            IReadOnlyList<float[]> vectors = inputs
+                .Select(_ => new float[DocumentEmbeddingConstraints.Dimensions])
+                .ToList();
+            return Task.FromResult(new EmbeddingBatch("test-embedding-model", vectors));
         }
     }
 }

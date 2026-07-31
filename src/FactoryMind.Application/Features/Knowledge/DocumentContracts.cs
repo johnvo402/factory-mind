@@ -11,6 +11,11 @@ public static class DocumentUploadConstraints {
     public const string PdfContentType = "application/pdf";
 }
 
+public static class DocumentEmbeddingConstraints {
+    public const int Dimensions = 1536;
+    public const int BatchSize = 64;
+}
+
 public sealed record DocumentResponse(
     Guid Id,
     string Title,
@@ -41,6 +46,16 @@ public sealed record DocumentPageText(int PageNumber, string Content);
 
 public sealed record DocumentChunkDraft(int Sequence, int PageNumber, string Content);
 
+public sealed record DocumentEmbeddingDraft(
+    Guid DocumentChunkId,
+    Guid CompanyId,
+    string Model,
+    float[] Values);
+
+public sealed record EmbeddingBatch(
+    string Model,
+    IReadOnlyList<float[]> Vectors);
+
 public interface IDocumentRepository {
     Task<IReadOnlyList<KnowledgeDocument>> GetByCompanyAsync(
         Guid companyId,
@@ -64,6 +79,7 @@ public interface IDocumentRepository {
     Task CompleteProcessingAsync(
         KnowledgeDocument document,
         IReadOnlyList<DocumentChunk> chunks,
+        IReadOnlyList<DocumentEmbeddingDraft> embeddings,
         int pageCount,
         DateTime processedAt,
         CancellationToken cancellationToken);
@@ -98,6 +114,12 @@ public interface IDocumentTextExtractor {
 
 public interface IDocumentProcessingQueue {
     void Enqueue(Guid documentId, Guid companyId);
+}
+
+public interface IEmbeddingClient {
+    Task<EmbeddingBatch> CreateAsync(
+        IReadOnlyList<string> inputs,
+        CancellationToken cancellationToken);
 }
 
 public sealed class FileStorageException : Exception {

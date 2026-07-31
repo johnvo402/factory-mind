@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using FactoryMind.Application.Features.Chat;
 using FactoryMind.Infrastructure.AI;
+using FactoryMind.Shared.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 

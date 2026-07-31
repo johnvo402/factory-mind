@@ -1,5 +1,5 @@
 using FactoryMind.Application.Common.Authorization;
-using FactoryMind.Application.Features.Chat;
+using FactoryMind.Shared.AI;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 

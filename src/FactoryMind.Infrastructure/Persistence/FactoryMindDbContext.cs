@@ -1,7 +1,10 @@
+using FactoryMind.Application.Features.Knowledge;
 using FactoryMind.Domain.Chat;
 using FactoryMind.Domain.Identity;
 using FactoryMind.Domain.Knowledge;
+using FactoryMind.Infrastructure.Persistence.Knowledge;
 using Microsoft.EntityFrameworkCore;
+using Pgvector.EntityFrameworkCore;
 
 namespace FactoryMind.Infrastructure.Persistence;
 
@@ -13,8 +16,10 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
     public DbSet<ChatMessage> Messages => Set<ChatMessage>();
     public DbSet<KnowledgeDocument> Documents => Set<KnowledgeDocument>();
     public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
+    public DbSet<DocumentEmbeddingRecord> DocumentEmbeddings => Set<DocumentEmbeddingRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
+        modelBuilder.HasPostgresExtension("vector");
         modelBuilder.Entity<Company>(entity => {
             entity.ToTable("companies");
             entity.Property(company => company.Name).HasMaxLength(200).IsRequired();
@@ -92,6 +97,20 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
             entity.HasOne(chunk => chunk.Document)
                 .WithMany(document => document.Chunks)
                 .HasForeignKey(chunk => chunk.DocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DocumentEmbeddingRecord>(entity => {
+            entity.ToTable("document_embeddings");
+            entity.HasIndex(embedding => embedding.DocumentChunkId).IsUnique();
+            entity.HasIndex(embedding => new { embedding.CompanyId, embedding.DocumentChunkId });
+            entity.Property(embedding => embedding.Model).HasMaxLength(200).IsRequired();
+            entity.Property(embedding => embedding.Embedding)
+                .HasColumnType($"vector({DocumentEmbeddingConstraints.Dimensions})")
+                .IsRequired();
+            entity.HasOne<DocumentChunk>()
+                .WithOne()
+                .HasForeignKey<DocumentEmbeddingRecord>(embedding => embedding.DocumentChunkId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
