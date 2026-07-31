@@ -1,9 +1,16 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { ExcelImportWizardComponent } from '../excel-imports/excel-import-wizard.component';
+import { ExcelImportEntityType } from '../excel-imports/excel-import.models';
+import { InventoryStore } from '../inventories/inventory.store';
 import { MachineWorkspaceComponent } from '../machines/machine-workspace.component';
 import { InventoryWorkspaceComponent } from '../inventories/inventory-workspace.component';
 import { MaterialWorkspaceComponent } from '../materials/material-workspace.component';
+import { MaterialStore } from '../materials/material.store';
+import { MachineStore } from '../machines/machine.store';
 import { ProductWorkspaceComponent } from '../products/product-workspace.component';
+import { ProductStore } from '../products/product.store';
 import { ProductionOrderWorkspaceComponent } from '../production-orders/production-order-workspace.component';
+import { ProductionOrderStore } from '../production-orders/production-order.store';
 
 type DataView = 'machines' | 'materials' | 'inventories' | 'products' | 'production-orders';
 
@@ -15,14 +22,45 @@ type DataView = 'machines' | 'materials' | 'inventories' | 'products' | 'product
     InventoryWorkspaceComponent,
     ProductWorkspaceComponent,
     ProductionOrderWorkspaceComponent,
+    ExcelImportWizardComponent,
   ],
   templateUrl: './data-workspace.component.html',
   styleUrl: './data-workspace.component.scss',
 })
 export class DataWorkspaceComponent {
+  private readonly machines = inject(MachineStore);
+  private readonly materials = inject(MaterialStore);
+  private readonly inventories = inject(InventoryStore);
+  private readonly products = inject(ProductStore);
+  private readonly orders = inject(ProductionOrderStore);
   protected readonly activeView = signal<DataView>('machines');
+  protected readonly importOpen = signal(false);
+  protected readonly importMessage = signal('');
 
   protected selectView(view: DataView): void {
     this.activeView.set(view);
+    this.importMessage.set('');
+  }
+
+  protected importEntityType(): ExcelImportEntityType {
+    switch (this.activeView()) {
+      case 'materials': return 'material';
+      case 'inventories': return 'inventory';
+      case 'products': return 'product';
+      case 'production-orders': return 'production_order';
+      default: return 'machine';
+    }
+  }
+
+  protected async handleImported(count: number): Promise<void> {
+    this.importMessage.set(`Đã import ${count} dòng thành công.`);
+    this.importOpen.set(false);
+    switch (this.activeView()) {
+      case 'materials': await this.materials.load(); break;
+      case 'inventories': await this.inventories.initialize(); break;
+      case 'products': await this.products.load(); break;
+      case 'production-orders': await this.orders.initialize(); break;
+      default: await this.machines.load();
+    }
   }
 }

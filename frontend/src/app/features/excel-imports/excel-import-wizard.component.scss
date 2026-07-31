@@ -1,0 +1,114 @@
+.backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #102b24aa;
+  padding: 24px;
+}
+
+.wizard {
+  width: min(900px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #fff;
+  padding: 24px;
+  box-shadow: 0 24px 70px #081d1766;
+}
+
+header,
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+header span {
+  color: #178069;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h2 { margin-top: 4px; }
+h3 { font-size: 0.9rem; }
+
+button,
+input,
+select { font: inherit; }
+
+.close {
+  border: 0;
+  background: transparent;
+  color: #64736d;
+  cursor: pointer;
+  font-size: 1.5rem;
+}
+
+.file-picker,
+.mapping,
+.preview,
+.row-errors {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.file-picker {
+  border: 1px dashed #a9c4bb;
+  border-radius: 12px;
+  background: #f5faf8;
+  padding: 16px;
+}
+
+.file-picker small { color: #71807a; }
+
+.mapping-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mapping-grid label { display: grid; gap: 5px; }
+.mapping-grid span { color: #65746e; font-size: 0.72rem; }
+select { border: 1px solid #ccd9d4; border-radius: 8px; padding: 9px; }
+
+.table-wrap { overflow: auto; border: 1px solid #dce6e2; border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+th, td { min-width: 120px; border-bottom: 1px solid #e6ecea; padding: 9px; text-align: left; }
+th { background: #f3f7f5; color: #52625c; }
+
+.status,
+.row-errors {
+  margin-top: 14px;
+  border-radius: 9px;
+  background: #f2f7f5;
+  padding: 10px 12px;
+  color: #5f7069;
+  font-size: 0.78rem;
+}
+
+.status.error,
+.row-errors { background: #fff3f1; color: #9e2f25; }
+.status.success { background: #eaf8f1; color: #16725f; }
+.row-errors { max-height: 150px; overflow-y: auto; }
+.row-errors p { margin-top: 5px; }
+
+footer { margin-top: 24px; }
+footer button { border-radius: 8px; padding: 10px 14px; cursor: pointer; font-weight: 700; }
+.secondary { border: 1px solid #ccd9d4; background: #fff; color: #4e5f58; }
+.primary { border: 0; background: #16725f; color: #fff; }
+button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+@media (max-width: 700px) {
+  .mapping-grid { grid-template-columns: 1fr; }
+}

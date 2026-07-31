@@ -5,7 +5,12 @@
       <h1>Dữ liệu nhà máy</h1>
       <p>Quản lý dữ liệu có cấu trúc dùng cho vận hành và Hybrid RAG.</p>
     </div>
+    <button type="button" class="import-button" (click)="importOpen.set(true)">Import Excel</button>
   </header>
+
+  @if (importMessage()) {
+    <p class="import-message">{{ importMessage() }}</p>
+  }
 
   <nav class="tabs" aria-label="Nhóm dữ liệu">
     <button type="button" [class.active]="activeView() === 'machines'" (click)="selectView('machines')">Machine</button>
@@ -21,5 +26,13 @@
     @case ('products') { <app-product-workspace /> }
     @case ('production-orders') { <app-production-order-workspace /> }
     @default { <app-machine-workspace /> }
+  }
+
+  @if (importOpen()) {
+    <app-excel-import-wizard
+      [entityType]="importEntityType()"
+      (closed)="importOpen.set(false)"
+      (imported)="handleImported($event)"
+    />
   }
 </section>

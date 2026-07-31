@@ -1,0 +1,74 @@
+<div class="backdrop" (click)="closed.emit()">
+  <section class="wizard" role="dialog" aria-modal="true" aria-label="Import Excel" (click)="$event.stopPropagation()">
+    <header>
+      <div><span>EXCEL IMPORT</span><h2>Import {{ entityType() }}</h2></div>
+      <button type="button" class="close" (click)="closed.emit()">×</button>
+    </header>
+
+    <label class="file-picker">
+      <strong>1. Chọn file .xlsx</strong>
+      <input type="file" accept=".xlsx" (change)="chooseFile($event)">
+      <small>Tối đa 10 MB và 5.000 dòng.</small>
+    </label>
+
+    @if (store.isLoading()) {
+      <p class="status">Đang xử lý workbook...</p>
+    }
+    @if (store.error()) {
+      <p class="status error">{{ store.error() }}</p>
+    }
+
+    @if (store.preview(); as preview) {
+      <section class="mapping">
+        <h3>2. Xác nhận ánh xạ cột</h3>
+        <div class="mapping-grid">
+          @for (field of preview.requiredFields; track field) {
+            <label>
+              <span>{{ field }}</span>
+              <select [value]="store.mapping()[field]" (change)="changeMapping(field, $event)">
+                <option value="">Chọn cột</option>
+                @for (header of preview.headers; track header) {
+                  <option [value]="header">{{ header }}</option>
+                }
+              </select>
+            </label>
+          }
+        </div>
+      </section>
+
+      <section class="preview">
+        <h3>3. Xem trước {{ preview.totalRows }} dòng</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>@for (header of preview.headers; track header) { <th>{{ header }}</th> }</tr></thead>
+            <tbody>
+              @for (row of preview.rows; track $index) {
+                <tr>@for (header of preview.headers; track header) { <td>{{ row[header] }}</td> }</tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      @if (store.result(); as result) {
+        @if (result.errors.length > 0) {
+          <section class="row-errors">
+            <strong>Workbook chưa được import. Hãy sửa các dòng sau:</strong>
+            @for (error of result.errors; track $index) {
+              <p>Dòng {{ error.row }} · {{ error.field }}: {{ error.message }}</p>
+            }
+          </section>
+        } @else {
+          <p class="status success">Đã import {{ result.importedCount }} dòng thành công.</p>
+        }
+      }
+
+      <footer>
+        <button type="button" class="secondary" (click)="closed.emit()">Đóng</button>
+        <button type="button" class="primary" [disabled]="store.isLoading() || !store.hasCompleteMapping()" (click)="runImport()">
+          Import {{ preview.totalRows }} dòng
+        </button>
+      </footer>
+    }
+  </section>
+</div>

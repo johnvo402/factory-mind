@@ -23,6 +23,7 @@ app.MapAuthEndpoints();
 app.MapChatEndpoints();
 app.MapDocumentEndpoints();
 app.MapDashboardEndpoints();
+app.MapExcelImportEndpoints();
 app.MapKnowledgeEndpoints();
 app.MapInventoryEndpoints();
 app.MapMachineEndpoints();

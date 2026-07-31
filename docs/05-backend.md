@@ -446,3 +446,5 @@ When the configured embedding model changes, a Manager must explicitly queue ten
 
 Dashboard uses one authenticated CQRS query and an explicit `IDashboardRepository` read model. `GET /api/dashboard/summary` returns only tenant-scoped aggregate counts: active production orders, inventory balance rows, available and total machines, plus alerts derived from maintenance/offline machines and failed knowledge documents. The query does not load entity graphs.
 
+Excel import is a stateless two-step CQRS flow. A Manager uploads an `.xlsx` workbook for a bounded preview and suggested field mapping, then submits the workbook again with the confirmed mapping. The Application validates every row, duplicate business key, tenant-owned material/product reference, decimal precision, and status before one transactional save; any row error prevents the whole batch from being persisted. Workbooks are limited to 10 MB, 50 columns, and 5,000 data rows.
+

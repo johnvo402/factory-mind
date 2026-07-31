@@ -417,6 +417,8 @@ Bên dưới là:
 
 The implemented chat home loads these KPI values from the tenant-scoped dashboard summary endpoint. KPI failure is isolated from chat: the user can still start a conversation and retry the dashboard without reloading the workspace.
 
+The Data workspace includes an Excel import wizard for Machine, Material, Product, Inventory, and Production Order. It previews the first rows, proposes a header mapping, requires confirmation, and renders row-level validation errors without partially importing the workbook.
+
 Lý do:
 
 * Người dùng mở ứng dụng vì muốn hỏi AI.

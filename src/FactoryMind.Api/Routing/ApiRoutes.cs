@@ -30,6 +30,12 @@ public static class ApiRoutes {
         public const string Summary = "/summary";
     }
 
+    public static class ExcelImports {
+        public const string Group = Base + "/imports/excel";
+        public const string Preview = "/preview";
+        public const string Import = "/import";
+    }
+
     public static class Knowledge {
         public const string Group = Base + "/knowledge";
         public const string Search = "/search";

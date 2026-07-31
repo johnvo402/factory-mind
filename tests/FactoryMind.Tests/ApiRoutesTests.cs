@@ -10,6 +10,7 @@ public sealed class ApiRoutesTests {
         Assert.Equal("/api/conversations", ApiRoutes.Conversations.Group);
         Assert.Equal("/api/documents", ApiRoutes.Documents.Group);
         Assert.Equal("/api/dashboard", ApiRoutes.Dashboard.Group);
+        Assert.Equal("/api/imports/excel", ApiRoutes.ExcelImports.Group);
         Assert.Equal("/api/knowledge", ApiRoutes.Knowledge.Group);
         Assert.Equal("/api/inventories", ApiRoutes.Inventories.Group);
         Assert.Equal("/api/machines", ApiRoutes.Machines.Group);
@@ -33,6 +34,12 @@ public sealed class ApiRoutesTests {
         Assert.Equal(
             "/api/dashboard/summary",
             ApiRoutes.Dashboard.Group + ApiRoutes.Dashboard.Summary);
+        Assert.Equal(
+            "/api/imports/excel/preview",
+            ApiRoutes.ExcelImports.Group + ApiRoutes.ExcelImports.Preview);
+        Assert.Equal(
+            "/api/imports/excel/import",
+            ApiRoutes.ExcelImports.Group + ApiRoutes.ExcelImports.Import);
         Assert.Equal("/api/knowledge/search", ApiRoutes.Knowledge.Group + ApiRoutes.Knowledge.Search);
         Assert.Equal(
             "/api/machines/{machineId:guid}",

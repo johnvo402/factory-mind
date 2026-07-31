@@ -10,9 +10,36 @@
 }
 
 .data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
   border-bottom: 1px solid #dfe7e4;
   background: #fff;
   padding: 28px clamp(24px, 5vw, 72px) 24px;
+}
+
+.import-button {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 9px;
+  background: #16725f;
+  padding: 10px 14px;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.import-message {
+  margin: 12px clamp(24px, 5vw, 72px) 0;
+  border: 1px solid #b8decf;
+  border-radius: 9px;
+  background: #eaf8f1;
+  padding: 10px 12px;
+  color: #16725f;
+  font-size: 0.78rem;
 }
 
 .eyebrow {

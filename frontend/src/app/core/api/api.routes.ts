@@ -16,6 +16,10 @@ export const API_ROUTES = {
   dashboard: {
     summary: `${API_BASE}/dashboard/summary`,
   },
+  excelImports: {
+    preview: `${API_BASE}/imports/excel/preview`,
+    import: `${API_BASE}/imports/excel/import`,
+  },
   machines: {
     root: `${API_BASE}/machines`,
     byId: (machineId: string) => `${API_BASE}/machines/${machineId}`,
