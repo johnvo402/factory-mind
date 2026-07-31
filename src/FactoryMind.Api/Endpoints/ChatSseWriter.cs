@@ -10,8 +10,8 @@ public sealed class ChatSseWriter(ILogger<ChatSseWriter> logger) {
         HttpContext httpContext,
         ChatStream chatStream,
         CancellationToken cancellationToken) {
-        await using var enumerator = chatStream.Tokens.GetAsyncEnumerator(cancellationToken);
-        var hasFirstToken = await enumerator.MoveNextAsync();
+        await using var enumerator = chatStream.Updates.GetAsyncEnumerator(cancellationToken);
+        var hasFirstUpdate = await enumerator.MoveNextAsync();
 
         httpContext.Response.StatusCode = StatusCodes.Status200OK;
         httpContext.Response.ContentType = "text/event-stream; charset=utf-8";
@@ -25,12 +25,12 @@ public sealed class ChatSseWriter(ILogger<ChatSseWriter> logger) {
             cancellationToken);
 
         try {
-            if (hasFirstToken) {
-                await WriteTokenAsync(httpContext.Response, enumerator.Current, cancellationToken);
+            if (hasFirstUpdate) {
+                await WriteUpdateAsync(httpContext.Response, enumerator.Current, cancellationToken);
             }
 
             while (await enumerator.MoveNextAsync()) {
-                await WriteTokenAsync(httpContext.Response, enumerator.Current, cancellationToken);
+                await WriteUpdateAsync(httpContext.Response, enumerator.Current, cancellationToken);
             }
 
             await WriteEventAsync(httpContext.Response, "done", new { }, cancellationToken);
@@ -42,11 +42,23 @@ public sealed class ChatSseWriter(ILogger<ChatSseWriter> logger) {
         }
     }
 
-    private static Task WriteTokenAsync(
+    private static Task WriteUpdateAsync(
         HttpResponse response,
-        string content,
+        ChatStreamUpdate update,
         CancellationToken cancellationToken) {
-        return WriteEventAsync(response, "token", new { content }, cancellationToken);
+        return update switch {
+            ChatTokenUpdate token => WriteEventAsync(
+                response,
+                "token",
+                new { token.Content },
+                cancellationToken),
+            ChatCitationsUpdate citations => WriteEventAsync(
+                response,
+                "citations",
+                new { citations.Citations },
+                cancellationToken),
+            _ => throw new InvalidOperationException($"Unsupported chat stream update {update.GetType().Name}.")
+        };
     }
 
     private static async Task WriteEventAsync<T>(

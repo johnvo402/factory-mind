@@ -14,6 +14,7 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ChatMessage> Messages => Set<ChatMessage>();
+    public DbSet<ChatCitation> MessageCitations => Set<ChatCitation>();
     public DbSet<KnowledgeDocument> Documents => Set<KnowledgeDocument>();
     public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
     public DbSet<DocumentEmbeddingRecord> DocumentEmbeddings => Set<DocumentEmbeddingRecord>();
@@ -68,6 +69,18 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
             entity.HasOne(message => message.Conversation)
                 .WithMany(conversation => conversation.Messages)
                 .HasForeignKey(message => message.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChatCitation>(entity => {
+            entity.ToTable("message_citations");
+            entity.HasIndex(citation => new { citation.MessageId, citation.ReferenceNumber }).IsUnique();
+            entity.Property(citation => citation.DocumentTitle).HasMaxLength(200).IsRequired();
+            entity.Property(citation => citation.FileName).HasMaxLength(255).IsRequired();
+            entity.Property(citation => citation.Excerpt).HasMaxLength(500).IsRequired();
+            entity.HasOne(citation => citation.Message)
+                .WithMany(message => message.Citations)
+                .HasForeignKey(citation => citation.MessageId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

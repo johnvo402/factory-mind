@@ -336,6 +336,36 @@ Chat queries must filter conversations by both `CompanyId` and `UserId`. A messa
 
 ---
 
+## MessageCitation
+
+```text
+Id
+
+MessageId
+
+ReferenceNumber
+
+DocumentId
+
+ChunkId
+
+DocumentTitle
+
+FileName
+
+PageNumber
+
+Excerpt
+
+Score
+
+CreatedAt
+```
+
+`MessageCitation` is an immutable source snapshot owned by an assistant message. It intentionally does not reference the live document with a foreign key, so historical answers retain their evidence if a source is later renamed or removed.
+
+---
+
 # 5. Index
 
 Chỉ index những gì thật sự dùng.

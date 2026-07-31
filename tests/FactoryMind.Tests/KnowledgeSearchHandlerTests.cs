@@ -19,7 +19,8 @@ public sealed class KnowledgeSearchHandlerTests {
             "Stop the machine before maintenance.",
             0.93);
         repository.Results.Add(expected);
-        var handler = new SearchKnowledgeQueryHandler(embeddingClient, repository, currentUser);
+        var retriever = new KnowledgeRetriever(embeddingClient, repository);
+        var handler = new SearchKnowledgeQueryHandler(retriever, currentUser);
 
         var result = await handler.Handle(
             new SearchKnowledgeQuery("  stop machine  ", 7),

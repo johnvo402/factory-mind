@@ -7,6 +7,7 @@ public sealed class ChatMessage {
     public string Role { get; set; } = ChatRoles.User;
     public string Content { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public ICollection<ChatCitation> Citations { get; set; } = [];
 }
 
 public static class ChatRoles {

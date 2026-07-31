@@ -29,7 +29,19 @@ public sealed class GetMessagesQueryHandler(
                 message.Id,
                 message.Role,
                 message.Content,
-                message.CreatedAt))
+                message.CreatedAt,
+                message.Citations
+                    .OrderBy(citation => citation.ReferenceNumber)
+                    .Select(citation => new CitationResponse(
+                        citation.ReferenceNumber,
+                        citation.DocumentId,
+                        citation.ChunkId,
+                        citation.DocumentTitle,
+                        citation.FileName,
+                        citation.PageNumber,
+                        citation.Excerpt,
+                        citation.Score))
+                    .ToList()))
             .ToList();
 
         return Result<IReadOnlyList<MessageResponse>>.Success(response);

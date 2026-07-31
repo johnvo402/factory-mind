@@ -172,6 +172,8 @@ MVP dùng PostgreSQL + pgvector là đủ.
 
 Sprint 3 exposes tenant-scoped semantic knowledge search through `POST /api/knowledge/search`. The query is embedded with the same configured model used for document chunks, then PostgreSQL returns the nearest ready chunks by exact cosine distance. Results include document, page, chunk content, and similarity score for the later citation step.
 
+Chat now uses the same retrieval path to build a compact knowledge context. The five nearest chunks are labeled `[S1]` through `[S5]`, capped at 8,000 characters, and placed in a system message before the current question. The model must cite supporting labels inline and say that it does not know when the supplied context is insufficient. Only labels present in the completed answer become persisted citations.
+
 ---
 
 # 5. Context Builder

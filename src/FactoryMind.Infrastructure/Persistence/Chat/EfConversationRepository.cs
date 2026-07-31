@@ -35,6 +35,7 @@ public sealed class EfConversationRepository(FactoryMindDbContext dbContext) : I
         CancellationToken cancellationToken) {
         return await dbContext.Messages
             .AsNoTracking()
+            .Include(message => message.Citations)
             .Where(message => message.ConversationId == conversationId
                 && message.Conversation!.CompanyId == companyId
                 && message.Conversation.UserId == userId)

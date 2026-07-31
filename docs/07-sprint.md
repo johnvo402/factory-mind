@@ -345,14 +345,14 @@ Mỗi task chỉ được Done nếu:
 
 * [x] Chat
 * [x] Streaming
-* [ ] Citation
+* [x] Citation
 
 ---
 
 ## Knowledge
 
 * [x] Upload
-* [ ] Search
+* [x] Search
 
 ---
 

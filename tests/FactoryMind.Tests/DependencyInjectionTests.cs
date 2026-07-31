@@ -1,6 +1,7 @@
 using FactoryMind.Application;
 using FactoryMind.Application.Features.Auth.Login;
 using FactoryMind.Application.Features.Chat;
+using FactoryMind.Application.Features.Chat.Rag;
 using FactoryMind.Application.Features.Knowledge;
 using FactoryMind.Infrastructure;
 using FactoryMind.Infrastructure.Persistence.Chat;
@@ -23,6 +24,10 @@ public sealed class DependencyInjectionTests {
 
         Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(ISender));
         Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IValidator<LoginCommand>));
+        Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(IKnowledgeContextBuilder)
+            && descriptor.ImplementationType == typeof(KnowledgeContextBuilder));
+        Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(KnowledgeRetriever));
     }
 
     [Fact]

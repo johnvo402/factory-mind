@@ -13,11 +13,39 @@ public sealed record MessageResponse(
     Guid Id,
     string Role,
     string Content,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    IReadOnlyList<CitationResponse> Citations);
+
+public sealed record CitationResponse(
+    int ReferenceNumber,
+    Guid DocumentId,
+    Guid ChunkId,
+    string DocumentTitle,
+    string FileName,
+    int PageNumber,
+    string Excerpt,
+    double Score);
 
 public sealed record ChatPromptMessage(string Role, string Content);
 
-public sealed record ChatStream(Guid ConversationId, IAsyncEnumerable<string> Tokens);
+public abstract record ChatStreamUpdate;
+
+public sealed record ChatTokenUpdate(string Content) : ChatStreamUpdate;
+
+public sealed record ChatCitationsUpdate(IReadOnlyList<CitationResponse> Citations) : ChatStreamUpdate;
+
+public sealed record ChatStream(Guid ConversationId, IAsyncEnumerable<ChatStreamUpdate> Updates);
+
+public sealed record KnowledgeContext(
+    string Prompt,
+    IReadOnlyList<CitationResponse> Sources);
+
+public interface IKnowledgeContextBuilder {
+    Task<KnowledgeContext> BuildAsync(
+        Guid companyId,
+        string question,
+        CancellationToken cancellationToken);
+}
 
 public interface IConversationRepository {
     Task<IReadOnlyList<Conversation>> GetOwnedConversationsAsync(

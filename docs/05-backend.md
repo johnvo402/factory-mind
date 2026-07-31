@@ -231,9 +231,9 @@ Không Agent.
 
 Không Planner.
 
-Sprint 2 implements a direct OpenAI-compatible chat stream and persists `Conversation` and `Message`. Application exposes model output as `IAsyncEnumerable<string>`; Presentation maps it to Server-Sent Events, and Infrastructure owns the provider-specific HTTP protocol.
+Sprint 2 implements an OpenAI-compatible chat stream and persists `Conversation` and `Message`. Application exposes semantic stream updates; Presentation maps them to Server-Sent Events, and Infrastructure owns the provider-specific HTTP protocol.
 
-Every chat repository operation is scoped by the current `CompanyId` and `UserId`. Intent detection, retrieval, RAG and citations are added only in their scheduled sprints.
+Every chat repository operation is scoped by the current `CompanyId` and `UserId`. Knowledge RAG retrieves up to five company-scoped chunks, injects a bounded `[S#]` context, and persists only sources cited by the completed assistant answer. SSE emits `conversation`, `token`, `citations`, and `done` events. Intent detection and business-data retrieval remain later slices.
 
 ## API route definitions
 
