@@ -1,6 +1,47 @@
 @FactoryMind.Api_HostAddress = http://localhost:5047
+@accessToken = paste-access-token-here
+@conversationId = paste-conversation-id-here
 
-GET {{FactoryMind.Api_HostAddress}}/weatherforecast/
+GET {{FactoryMind.Api_HostAddress}}/health
 Accept: application/json
 
 ###
+
+POST {{FactoryMind.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@factorymind.local",
+  "password": "Demo@123"
+}
+
+###
+
+POST {{FactoryMind.Api_HostAddress}}/api/conversations
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": null
+}
+
+###
+
+GET {{FactoryMind.Api_HostAddress}}/api/conversations
+Authorization: Bearer {{accessToken}}
+
+###
+
+POST {{FactoryMind.Api_HostAddress}}/api/conversations/{{conversationId}}/messages/stream
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+  "content": "Which machine is available?"
+}
+
+###
+
+GET {{FactoryMind.Api_HostAddress}}/api/conversations/{{conversationId}}/messages
+Authorization: Bearer {{accessToken}}

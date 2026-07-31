@@ -4,8 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FactoryMind.Infrastructure.Persistence.Auth;
 
-public sealed class EfAuthRepository(FactoryMindDbContext dbContext) : IAuthRepository
-{
+public sealed class EfAuthRepository(FactoryMindDbContext dbContext) : IAuthRepository {
     public Task<User?> GetActiveUserByEmailAsync(string email, CancellationToken cancellationToken) =>
         dbContext.Users.SingleOrDefaultAsync(user => user.Email == email && user.IsActive, cancellationToken);
 

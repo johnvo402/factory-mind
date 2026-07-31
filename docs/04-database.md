@@ -225,11 +225,33 @@ Status
 ## Document
 
 ```text
+Id
+
+CompanyId
+
+UploadedByUserId
+
 Title
 
-Type
+FileName
+
+ContentType
 
 Path
+
+Size
+
+Status
+
+PageCount
+
+ChunkCount
+
+ProcessingError
+
+ProcessedAt
+
+CreatedAt
 ```
 
 ---
@@ -237,21 +259,39 @@ Path
 ## DocumentChunk
 
 ```text
+Id
+
 DocumentId
+
+CompanyId
+
+Sequence
+
+PageNumber
 
 Content
 
-Embedding
+CreatedAt
 ```
+
+`DocumentChunk` stores extracted text only. Vector data belongs to the later `DocumentEmbedding` table so a document can be re-embedded without rewriting its source chunks.
 
 ---
 
 ## Conversation
 
 ```text
+Id
+
+CompanyId
+
 UserId
 
 Title
+
+CreatedAt
+
+UpdatedAt
 ```
 
 ---
@@ -259,12 +299,18 @@ Title
 ## Message
 
 ```text
+Id
+
 ConversationId
 
 Role
 
 Content
+
+CreatedAt
 ```
+
+Chat queries must filter conversations by both `CompanyId` and `UserId`. A message is accessible only through a conversation owned by that company and user.
 
 ---
 

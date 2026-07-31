@@ -1,7 +1,6 @@
 namespace FactoryMind.Api.Auth;
 
-public sealed class JwtSettings
-{
+public sealed class JwtSettings {
     public const string SectionName = "Jwt";
     public string Issuer { get; init; } = "FactoryMind";
     public string Audience { get; init; } = "FactoryMind.Web";

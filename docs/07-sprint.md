@@ -336,8 +336,8 @@ Mỗi task chỉ được Done nếu:
 
 ## Authentication
 
-* [ ] Login
-* [ ] Logout
+* [x] Login
+* [x] Logout
 
 ---
 

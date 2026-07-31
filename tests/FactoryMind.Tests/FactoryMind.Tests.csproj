@@ -19,8 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\FactoryMind.Api\FactoryMind.Api.csproj" />
     <ProjectReference Include="..\..\src\FactoryMind.Application\FactoryMind.Application.csproj" />
     <ProjectReference Include="..\..\src\FactoryMind.Domain\FactoryMind.Domain.csproj" />
+    <ProjectReference Include="..\..\src\FactoryMind.Infrastructure\FactoryMind.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

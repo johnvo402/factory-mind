@@ -4,18 +4,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FactoryMind.Infrastructure.Persistence;
 
-public sealed class FactoryMindDatabaseInitializer(FactoryMindDbContext dbContext, ICredentialHasher credentialHasher)
-{
-    public async Task InitializeAsync(CancellationToken cancellationToken = default)
-    {
+public sealed class FactoryMindDatabaseInitializer(FactoryMindDbContext dbContext, ICredentialHasher credentialHasher) {
+    public async Task InitializeAsync(CancellationToken cancellationToken = default) {
         await dbContext.Database.MigrateAsync(cancellationToken);
 
-        if (await dbContext.Users.AnyAsync(cancellationToken)) return;
+        if (await dbContext.Users.AnyAsync(cancellationToken)) {
+            return;
+        }
 
         var company = new Company { Name = "FactoryMind Demo" };
         dbContext.Companies.Add(company);
-        dbContext.Users.Add(new User
-        {
+        dbContext.Users.Add(new User {
             Company = company,
             Name = "FactoryMind Admin",
             Email = "admin@factorymind.local",
