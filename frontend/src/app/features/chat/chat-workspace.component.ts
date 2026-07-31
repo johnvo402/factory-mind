@@ -9,12 +9,13 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DashboardSummaryComponent } from '../dashboard/dashboard-summary.component';
 import { ChatMessageComponent } from './chat-message.component';
 import { ChatStore } from './chat.store';
 
 @Component({
   selector: 'app-chat-workspace',
-  imports: [ReactiveFormsModule, ChatMessageComponent],
+  imports: [ReactiveFormsModule, ChatMessageComponent, DashboardSummaryComponent],
   templateUrl: './chat-workspace.component.html',
   styleUrl: './chat-workspace.component.scss',
 })

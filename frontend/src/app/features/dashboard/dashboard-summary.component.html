@@ -1,0 +1,31 @@
+<section class="dashboard-summary" aria-label="Tổng quan nhà máy">
+  @if (store.isLoading() && !store.summary()) {
+    <p class="dashboard-status">Đang tải tổng quan nhà máy...</p>
+  } @else if (store.error()) {
+    <div class="dashboard-status error">
+      <span>{{ store.error() }}</span>
+      <button type="button" (click)="store.load()">Thử lại</button>
+    </div>
+  } @else if (store.summary(); as summary) {
+    <article>
+      <span>Đơn đang chạy</span>
+      <strong>{{ summary.activeOrders }}</strong>
+      <small>planned + in progress</small>
+    </article>
+    <article>
+      <span>Tồn kho</span>
+      <strong>{{ summary.inventoryBalances }}</strong>
+      <small>dòng số dư</small>
+    </article>
+    <article>
+      <span>Máy sẵn sàng</span>
+      <strong>{{ summary.availableMachines }}/{{ summary.totalMachines }}</strong>
+      <small>available / total</small>
+    </article>
+    <article [class.has-alerts]="summary.alerts > 0">
+      <span>Cảnh báo</span>
+      <strong>{{ summary.alerts }}</strong>
+      <small>máy và tài liệu cần xử lý</small>
+    </article>
+  }
+</section>

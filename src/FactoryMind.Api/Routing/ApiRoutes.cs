@@ -25,6 +25,11 @@ public static class ApiRoutes {
         public const string Reindex = "/reindex";
     }
 
+    public static class Dashboard {
+        public const string Group = Base + "/dashboard";
+        public const string Summary = "/summary";
+    }
+
     public static class Knowledge {
         public const string Group = Base + "/knowledge";
         public const string Search = "/search";

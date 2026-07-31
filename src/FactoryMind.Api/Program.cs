@@ -22,6 +22,7 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapChatEndpoints();
 app.MapDocumentEndpoints();
+app.MapDashboardEndpoints();
 app.MapKnowledgeEndpoints();
 app.MapInventoryEndpoints();
 app.MapMachineEndpoints();

@@ -415,6 +415,8 @@ Bên dưới là:
 * 4 KPI nhỏ (Orders, Inventory, Machines, Alerts).
 * Các cuộc trò chuyện gần đây.
 
+The implemented chat home loads these KPI values from the tenant-scoped dashboard summary endpoint. KPI failure is isolated from chat: the user can still start a conversation and retry the dashboard without reloading the workspace.
+
 Lý do:
 
 * Người dùng mở ứng dụng vì muốn hỏi AI.

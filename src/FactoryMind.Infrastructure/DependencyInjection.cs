@@ -1,5 +1,6 @@
 using FactoryMind.Application.Features.Auth;
 using FactoryMind.Application.Features.Chat;
+using FactoryMind.Application.Features.Dashboard;
 using FactoryMind.Application.Features.Knowledge;
 using FactoryMind.Application.Features.Inventories;
 using FactoryMind.Application.Features.Machines;
@@ -12,6 +13,7 @@ using FactoryMind.Infrastructure.Knowledge;
 using FactoryMind.Infrastructure.Persistence;
 using FactoryMind.Infrastructure.Persistence.Auth;
 using FactoryMind.Infrastructure.Persistence.Chat;
+using FactoryMind.Infrastructure.Persistence.Dashboard;
 using FactoryMind.Infrastructure.Persistence.Knowledge;
 using FactoryMind.Infrastructure.Persistence.Inventories;
 using FactoryMind.Infrastructure.Persistence.Machines;
@@ -52,6 +54,7 @@ public static class DependencyInjection {
         services.AddScoped<IAuthRepository, EfAuthRepository>();
         services.AddScoped<IConversationRepository, EfConversationRepository>();
         services.AddScoped<IBusinessContextRepository, EfBusinessContextRepository>();
+        services.AddScoped<IDashboardRepository, EfDashboardRepository>();
         services.AddScoped<IDocumentRepository, EfDocumentRepository>();
         services.AddScoped<IKnowledgeSearchRepository, EfKnowledgeSearchRepository>();
         services.AddScoped<IInventoryRepository, EfInventoryRepository>();

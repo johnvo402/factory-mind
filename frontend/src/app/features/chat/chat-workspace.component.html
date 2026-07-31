@@ -16,6 +16,7 @@
           <p class="eyebrow">AI WORKSPACE</p>
           <h2>Xin chào, {{ userName() }}</h2>
           <p>Hỏi FactoryMind về tài liệu nhà máy. Mỗi câu trả lời sẽ chỉ rõ nguồn và trang liên quan.</p>
+          <app-dashboard-summary />
           <div class="suggestions">
             @for (suggestion of suggestions; track suggestion) {
               <button

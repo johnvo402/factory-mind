@@ -444,3 +444,5 @@ Business context uses `[B#]` labels and document context uses `[S#]`. The comple
 
 When the configured embedding model changes, a Manager must explicitly queue tenant-scoped re-indexing through `POST /api/documents/reindex`. Only ready documents are queued, processing remains asynchronous, and semantic search filters by the configured embedding model so incompatible vectors are never mixed.
 
+Dashboard uses one authenticated CQRS query and an explicit `IDashboardRepository` read model. `GET /api/dashboard/summary` returns only tenant-scoped aggregate counts: active production orders, inventory balance rows, available and total machines, plus alerts derived from maintenance/offline machines and failed knowledge documents. The query does not load entity graphs.
+

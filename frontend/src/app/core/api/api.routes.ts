@@ -13,6 +13,9 @@ export const API_ROUTES = {
     streamMessage: (conversationId: string) =>
       `${API_BASE}/conversations/${conversationId}/messages/stream`,
   },
+  dashboard: {
+    summary: `${API_BASE}/dashboard/summary`,
+  },
   machines: {
     root: `${API_BASE}/machines`,
     byId: (machineId: string) => `${API_BASE}/machines/${machineId}`,

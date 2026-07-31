@@ -1,0 +1,74 @@
+:host {
+  width: 100%;
+  display: block;
+}
+
+.dashboard-summary {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 28px;
+  text-align: left;
+}
+
+article {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #dce6e2;
+  border-radius: 12px;
+  background: #fff;
+  padding: 13px;
+}
+
+article span,
+article small {
+  color: #708079;
+  font-size: 0.68rem;
+}
+
+article strong {
+  color: #183c31;
+  font-size: 1.45rem;
+}
+
+article.has-alerts strong {
+  color: #b54708;
+}
+
+.dashboard-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  border: 1px dashed #cddbd6;
+  border-radius: 10px;
+  padding: 12px;
+  color: #708079;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.dashboard-status.error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-color: #edc9c3;
+  color: #9e2f25;
+}
+
+.dashboard-status button {
+  border: 0;
+  border-radius: 7px;
+  background: #e9f4f0;
+  padding: 6px 9px;
+  color: #16725f;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+@media (max-width: 1000px) {
+  .dashboard-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
