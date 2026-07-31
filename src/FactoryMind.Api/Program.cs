@@ -2,6 +2,7 @@ using FactoryMind.Api;
 using FactoryMind.Api.Endpoints;
 using FactoryMind.Application;
 using FactoryMind.Infrastructure;
+using FactoryMind.Api.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +22,7 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapChatEndpoints();
 app.MapDocumentEndpoints();
-app.MapGet("/health", () => Results.Ok(new { success = true, message = "FactoryMind API is running." }));
+app.MapGet(ApiRoutes.Health, () => Results.Ok(new { success = true, message = "FactoryMind API is running." }));
 app.Run();
 
 public partial class Program;

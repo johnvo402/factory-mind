@@ -3,27 +3,28 @@ using FactoryMind.Application.Features.Chat.CreateConversation;
 using FactoryMind.Application.Features.Chat.GetConversations;
 using FactoryMind.Application.Features.Chat.GetMessages;
 using FactoryMind.Application.Features.Chat.SendMessage;
+using FactoryMind.Api.Routing;
 using Mediator;
 
 namespace FactoryMind.Api.Endpoints;
 
 public static class ChatEndpoints {
     public static IEndpointRouteBuilder MapChatEndpoints(this IEndpointRouteBuilder endpoints) {
-        var group = endpoints.MapGroup("/api/conversations")
+        var group = endpoints.MapGroup(ApiRoutes.Conversations.Group)
             .RequireAuthorization(AuthorizationPolicies.Authenticated);
 
-        group.MapPost("", async (
+        group.MapPost(ApiRoutes.Conversations.Root, async (
             CreateConversationCommand command,
             ISender sender,
             CancellationToken cancellationToken) => {
             return (await sender.Send(command, cancellationToken)).ToHttpResult();
         }).WithRequestValidation<CreateConversationCommand>();
 
-        group.MapGet("", async (ISender sender, CancellationToken cancellationToken) => {
+        group.MapGet(ApiRoutes.Conversations.Root, async (ISender sender, CancellationToken cancellationToken) => {
             return (await sender.Send(new GetConversationsQuery(), cancellationToken)).ToHttpResult();
         });
 
-        group.MapGet("/{conversationId:guid}/messages", async (
+        group.MapGet(ApiRoutes.Conversations.Messages, async (
             Guid conversationId,
             ISender sender,
             CancellationToken cancellationToken) => {
@@ -31,7 +32,7 @@ public static class ChatEndpoints {
             return (await sender.Send(query, cancellationToken)).ToHttpResult();
         });
 
-        group.MapPost("/{conversationId:guid}/messages/stream", async (
+        group.MapPost(ApiRoutes.Conversations.StreamMessage, async (
             Guid conversationId,
             SendMessageRequest request,
             ISender sender,

@@ -235,6 +235,10 @@ Sprint 2 implements a direct OpenAI-compatible chat stream and persists `Convers
 
 Every chat repository operation is scoped by the current `CompanyId` and `UserId`. Intent detection, retrieval, RAG and citations are added only in their scheduled sprints.
 
+## API route definitions
+
+All business endpoints keep the existing `/api` prefix. Presentation keeps route templates in a single `ApiRoutes` class, for example `ApiRoutes.Base`, `ApiRoutes.Auth.Login`, and `ApiRoutes.Documents.Process`. Endpoint mappings must not repeat literal API paths.
+
 ---
 
 # 7. Background Jobs

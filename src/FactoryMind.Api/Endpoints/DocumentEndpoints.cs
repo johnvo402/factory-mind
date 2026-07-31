@@ -3,6 +3,7 @@ using FactoryMind.Application.Features.Knowledge;
 using FactoryMind.Application.Features.Knowledge.GetDocuments;
 using FactoryMind.Application.Features.Knowledge.QueueDocumentProcessing;
 using FactoryMind.Application.Features.Knowledge.UploadDocument;
+using FactoryMind.Api.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,10 +11,10 @@ namespace FactoryMind.Api.Endpoints;
 
 public static class DocumentEndpoints {
     public static IEndpointRouteBuilder MapDocumentEndpoints(this IEndpointRouteBuilder endpoints) {
-        var group = endpoints.MapGroup("/api/documents")
+        var group = endpoints.MapGroup(ApiRoutes.Documents.Group)
             .RequireAuthorization(AuthorizationPolicies.Authenticated);
 
-        group.MapPost("", async (
+        group.MapPost(ApiRoutes.Documents.Root, async (
             [FromForm] UploadDocumentForm form,
             ISender sender,
             CancellationToken cancellationToken) => {
@@ -30,11 +31,11 @@ public static class DocumentEndpoints {
             .WithMetadata(new RequestSizeLimitAttribute(DocumentUploadConstraints.MaximumRequestSize))
             .WithRequestValidation<UploadDocumentForm>();
 
-        group.MapGet("", async (ISender sender, CancellationToken cancellationToken) => {
+        group.MapGet(ApiRoutes.Documents.Root, async (ISender sender, CancellationToken cancellationToken) => {
             return (await sender.Send(new GetDocumentsQuery(), cancellationToken)).ToHttpResult();
         });
 
-        group.MapPost("/{documentId:guid}/process", async (
+        group.MapPost(ApiRoutes.Documents.Process, async (
             Guid documentId,
             ISender sender,
             CancellationToken cancellationToken) => {
