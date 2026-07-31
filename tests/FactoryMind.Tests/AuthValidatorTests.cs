@@ -1,6 +1,4 @@
 using FactoryMind.Application.Features.Auth.Login;
-using FactoryMind.Application.Features.Auth.Logout;
-using FactoryMind.Application.Features.Auth.Refresh;
 using FluentValidation.TestHelper;
 
 namespace FactoryMind.Tests;
@@ -16,25 +14,5 @@ public sealed class AuthValidatorTests {
             .WithErrorMessage("Email is invalid.");
         result.ShouldHaveValidationErrorFor(command => command.Password)
             .WithErrorMessage("Password is required.");
-    }
-
-    [Fact]
-    public async Task Refresh_requires_a_token() {
-        var validator = new RefreshTokenCommandValidator();
-
-        var result = await validator.TestValidateAsync(new RefreshTokenCommand(""));
-
-        result.ShouldHaveValidationErrorFor(command => command.RefreshToken)
-            .WithErrorMessage("Refresh token is required.");
-    }
-
-    [Fact]
-    public async Task Logout_requires_a_token() {
-        var validator = new LogoutCommandValidator();
-
-        var result = await validator.TestValidateAsync(new LogoutCommand(""));
-
-        result.ShouldHaveValidationErrorFor(command => command.RefreshToken)
-            .WithErrorMessage("Refresh token is required.");
     }
 }

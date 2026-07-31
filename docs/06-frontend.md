@@ -376,6 +376,14 @@ Tablet và Mobile chỉ hiển thị cơ bản.
 
 ---
 
+# Authentication session
+
+The access token and user profile live only in an Angular in-memory auth store. The refresh token is an `HttpOnly` cookie and is never read by JavaScript. Application bootstrap restores the session through `POST /api/auth/refresh`; the HTTP interceptor performs one shared refresh on 401 and retries the failed request once.
+
+Development uses the Angular `/api` proxy. Production should serve the frontend and API from the same site.
+
+---
+
 # 🚨 Một thay đổi rất lớn
 
 Lúc đầu mình định có menu **Dashboard**.

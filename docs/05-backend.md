@@ -364,6 +364,8 @@ JWT.
 
 Refresh Token.
 
+The SPA receives a short-lived access token and keeps it in memory only. The rotating refresh token is returned as an `HttpOnly`, `SameSite=Strict` cookie scoped to `/api/auth`; it is `Secure` outside Development. Login and refresh response bodies never expose the raw refresh token. Logout can revoke the cookie even after the access token expires.
+
 Minimal API endpoints use named ASP.NET Core authorization policies. Protected commands and queries also implement `IAuthorizedRequest`; the Mediator `AuthorizationBehavior` checks authentication and the required policy before the handler runs.
 
 This gives two boundaries:

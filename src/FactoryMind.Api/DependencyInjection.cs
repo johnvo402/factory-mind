@@ -26,6 +26,7 @@ public static class DependencyInjection {
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<JwtBearerProblemDetailsEvents>();
         services.AddScoped<ChatSseWriter>();
+        services.AddSingleton<RefreshTokenCookie>();
         services.AddValidatorsFromAssemblyContaining<UploadDocumentFormValidator>();
         services.Configure<FormOptions>(options => {
             options.MultipartBodyLengthLimit = DocumentUploadConstraints.MaximumRequestSize;
@@ -58,7 +59,8 @@ public static class DependencyInjection {
         services.AddCors(options => options.AddDefaultPolicy(policy => policy
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .WithOrigins("http://localhost:4200")));
+            .WithOrigins("http://localhost:4200")
+            .AllowCredentials()));
 
         return services;
     }

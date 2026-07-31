@@ -17,6 +17,16 @@ Content-Type: application/json
 
 ###
 
+# Uses and rotates the HttpOnly refresh cookie set by login.
+POST {{FactoryMind.Api_HostAddress}}/api/auth/refresh
+
+###
+
+# Revokes and deletes the HttpOnly refresh cookie.
+POST {{FactoryMind.Api_HostAddress}}/api/auth/logout
+
+###
+
 POST {{FactoryMind.Api_HostAddress}}/api/conversations
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
