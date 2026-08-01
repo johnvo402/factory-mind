@@ -491,18 +491,16 @@ Không viết SQL Script thủ công.
 Development chỉ seed:
 
 ```text
-Admin
-
-Company Demo
-
-Machine Demo
-
-Material Demo
-
-Inventory Demo
+1 Company demo
+3 Users: Admin, Manager, Operator
+6 Machines với nhiều trạng thái vận hành
+5 Materials
+4 Products
+6 Inventory balances tại nhiều kho
+5 Production Orders với nhiều trạng thái
 ```
 
-Đủ để demo.
+Seed Development chạy idempotent theo email hoặc mã nghiệp vụ. Database local hiện có sẽ được bổ sung bản ghi còn thiếu khi API khởi động, không cần xóa volume.
 
 Production không seed demo business data hoặc demo password. Khi database trống, production chỉ tạo Company và Admin từ các biến `BootstrapAdmin__*`; startup từ chối cấu hình thiếu hoặc password ngắn hơn 12 ký tự.
 

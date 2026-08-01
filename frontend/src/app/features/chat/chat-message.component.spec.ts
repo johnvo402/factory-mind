@@ -42,6 +42,7 @@ describe('ChatMessageComponent', () => {
     expect(element.querySelector('.citation summary')?.textContent).toContain('Safety manual');
     expect(element.querySelector('.citation p')?.textContent).toContain('protective equipment');
     expect(element.querySelector('.evidence-card header')?.textContent).toContain('MC-01');
-    expect(element.querySelector('.evidence-card p')?.textContent).toContain('status=available');
+    expect(element.querySelector('.evidence-card p')?.textContent).toContain('Trạng thái: Sẵn sàng');
+    expect(element.querySelector('.evidence-card p')?.textContent).not.toContain('status=available');
   });
 });

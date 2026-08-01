@@ -1,5 +1,6 @@
 using System.Globalization;
 using FactoryMind.Application.Features.Chat;
+using FactoryMind.Domain.Manufacturing;
 using Microsoft.EntityFrameworkCore;
 
 namespace FactoryMind.Infrastructure.Persistence.Chat;
@@ -34,7 +35,8 @@ public sealed class EfBusinessContextRepository(
                 machine.Id,
                 "machine",
                 $"{machine.Code} - {machine.Name}",
-                $"status={machine.Status}; updatedAt={machine.UpdatedAt:O}")));
+                $"Trạng thái: {MachineStatusLabel(machine.Status)}. "
+                + $"Cập nhật: {FormatTimestamp(machine.UpdatedAt)}.")));
         }
 
         if (scopes.HasFlag(BusinessDataScope.Materials)) {
@@ -54,7 +56,7 @@ public sealed class EfBusinessContextRepository(
                 material.Id,
                 "material",
                 $"{material.Code} - {material.Name}",
-                $"unit={material.Unit}")));
+                $"Đơn vị tính: {material.Unit}.")));
         }
 
         if (scopes.HasFlag(BusinessDataScope.Inventory)) {
@@ -78,8 +80,9 @@ public sealed class EfBusinessContextRepository(
                 inventory.Id,
                 "inventory",
                 $"{inventory.Code} - {inventory.Name}",
-                $"warehouse={inventory.Warehouse}; quantity={Format(inventory.Quantity)} "
-                + $"{inventory.Unit}; updatedAt={inventory.UpdatedAt:O}")));
+                $"Kho lưu trữ: {inventory.Warehouse}. "
+                + $"Số lượng hiện có: {Format(inventory.Quantity)} {inventory.Unit}. "
+                + $"Cập nhật: {FormatTimestamp(inventory.UpdatedAt)}.")));
         }
 
         if (scopes.HasFlag(BusinessDataScope.Products)) {
@@ -98,7 +101,7 @@ public sealed class EfBusinessContextRepository(
                 product.Id,
                 "product",
                 $"{product.Code} - {product.Name}",
-                "Product master data record.")));
+                "Sản phẩm đang có trong danh mục sản xuất.")));
         }
 
         if (scopes.HasFlag(BusinessDataScope.ProductionOrders)) {
@@ -122,11 +125,32 @@ public sealed class EfBusinessContextRepository(
                 order.Id,
                 "production_order",
                 $"{order.Number} - {order.ProductCode} {order.ProductName}",
-                $"quantity={Format(order.Quantity)}; status={order.Status}; updatedAt={order.UpdatedAt:O}")));
+                $"Số lượng: {Format(order.Quantity)}. "
+                + $"Trạng thái: {ProductionOrderStatusLabel(order.Status)}. "
+                + $"Cập nhật: {FormatTimestamp(order.UpdatedAt)}.")));
         }
 
         return records;
     }
 
     private static string Format(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+
+    private static string FormatTimestamp(DateTime value) =>
+        value.ToUniversalTime().ToString("dd/MM/yyyy HH:mm 'UTC'", CultureInfo.InvariantCulture);
+
+    private static string MachineStatusLabel(string status) => status switch {
+        MachineStatuses.Available => "Sẵn sàng",
+        MachineStatuses.Running => "Đang vận hành",
+        MachineStatuses.Maintenance => "Đang bảo trì",
+        MachineStatuses.Offline => "Ngừng hoạt động",
+        _ => status
+    };
+
+    private static string ProductionOrderStatusLabel(string status) => status switch {
+        ProductionOrderStatuses.Planned => "Đã lên kế hoạch",
+        ProductionOrderStatuses.InProgress => "Đang sản xuất",
+        ProductionOrderStatuses.Completed => "Đã hoàn thành",
+        ProductionOrderStatuses.Cancelled => "Đã hủy",
+        _ => status
+    };
 }
