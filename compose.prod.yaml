@@ -40,7 +40,7 @@ services:
       dockerfile: src/FactoryMind.Api/Dockerfile
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__FactoryMind: Host=postgres;Port=5432;Database=${POSTGRES_DB:-factorymind};Username=${POSTGRES_USER:-factorymind};Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       Minio__Endpoint: minio:9000
       Minio__AccessKey: ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}
