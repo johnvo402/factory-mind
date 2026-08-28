@@ -527,6 +527,18 @@ npm run build
 npm test -- --watch=false --browsers=ChromeHeadless
 ```
 
+## Integration tests
+
+Backend integration tests boot the real ASP.NET Core API against an isolated
+PostgreSQL 17 Testcontainer. The container image includes pgvector, so a local
+PostgreSQL installation is not required. Docker must be running. The assembly
+runs sequentially and resets deterministic tenant data before each test so no
+test depends on execution order while the container is shared.
+
+```powershell
+dotnet test tests/FactoryMind.IntegrationTests/FactoryMind.IntegrationTests.csproj
+```
+
 ## Dừng hoặc reset local
 
 Dừng API và frontend bằng `Ctrl+C` trong terminal tương ứng.
