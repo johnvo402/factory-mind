@@ -39,15 +39,26 @@ public sealed class EfExcelImportRepository(
                         material => material.Id,
                         StringComparer.OrdinalIgnoreCase,
                         cancellationToken);
-                var inventoryKeys = await dbContext.Inventories.AsNoTracking()
-                    .Where(inventory => inventory.CompanyId == companyId)
-                    .Select(inventory => new { inventory.MaterialId, inventory.Warehouse })
+                var warehouseIds = await dbContext.Warehouses.AsNoTracking()
+                    .Where(warehouse => warehouse.CompanyId == companyId && warehouse.IsActive)
+                    .ToDictionaryAsync(
+                        warehouse => warehouse.Code,
+                        warehouse => warehouse.Id,
+                        StringComparer.OrdinalIgnoreCase,
+                        cancellationToken);
+                var inventoryKeys = await dbContext.InventoryBalances.AsNoTracking()
+                    .Where(balance => balance.CompanyId == companyId)
+                    .Select(balance => new { balance.MaterialId, balance.WarehouseId })
                     .ToListAsync(cancellationToken);
                 return new(
                     inventoryKeys
-                        .Select(inventory => $"{inventory.MaterialId:N}|{inventory.Warehouse}")
+                        .Select(balance => $"{balance.MaterialId:N}|{balance.WarehouseId:N}")
                         .ToHashSet(StringComparer.OrdinalIgnoreCase),
-                    materialIds);
+                    materialIds
+                        .Select(pair => new KeyValuePair<string, Guid>($"material:{pair.Key}", pair.Value))
+                        .Concat(warehouseIds.Select(pair =>
+                            new KeyValuePair<string, Guid>($"warehouse:{pair.Key}", pair.Value)))
+                        .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase));
             case ExcelImportEntityTypes.ProductionOrder:
                 var productIds = await dbContext.Products.AsNoTracking()
                     .Where(product => product.CompanyId == companyId)
@@ -70,7 +81,8 @@ public sealed class EfExcelImportRepository(
         dbContext.Machines.AddRange(batch.Machines);
         dbContext.Materials.AddRange(batch.Materials);
         dbContext.Products.AddRange(batch.Products);
-        dbContext.Inventories.AddRange(batch.Inventories);
+        dbContext.InventoryTransactions.AddRange(batch.InventoryTransactions);
+        dbContext.InventoryBalances.AddRange(batch.InventoryBalances);
         dbContext.ProductionOrders.AddRange(batch.ProductionOrders);
     }
 

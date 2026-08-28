@@ -434,7 +434,7 @@ Features/
 
 Chỉ thêm mediator, validator, behavior hoặc abstraction khi nó phục vụ use case thực tế. Cấu trúc này giữ command/query rõ ràng, tuân thủ SOLID và vẫn phù hợp cho MVP một người phát triển.
 
-Business-data slices use explicit feature repositories and tenant-scoped CQRS handlers. Inventory references an existing material in the current company, keeps warehouse as a normalized scalar for the MVP, and enforces one balance row per material and warehouse. The API uses FluentValidation before dispatching commands and returns domain failures through the shared RFC 7807 mapping.
+Business-data slices use explicit feature repositories and tenant-scoped CQRS handlers. Inventory now uses tenant-owned Warehouse master data, immutable transactions, and one materialized balance per warehouse/material. Receive, issue, adjustment, and transfer handlers resolve every reference within `ICurrentUser.CompanyId`; the EF repository atomically writes ledger and balance changes. Conditional PostgreSQL decrements prevent concurrent requests from overdrawing a balance. The API uses FluentValidation before dispatching commands and returns expected failures through the shared RFC 7807 mapping.
 
 Production Order follows the same vertical-slice boundary: the handler resolves Product within the current tenant, normalizes the order number and status, and persists only the documented MVP lifecycle. Product references use restrictive deletion so historical order data cannot be orphaned.
 
@@ -446,7 +446,7 @@ When the configured embedding model changes, a Manager must explicitly queue ten
 
 Dashboard uses one authenticated CQRS query and an explicit `IDashboardRepository` read model. `GET /api/dashboard/summary` returns only tenant-scoped aggregate counts: active production orders, inventory balance rows, available and total machines, plus alerts derived from maintenance/offline machines and failed knowledge documents. The query does not load entity graphs.
 
-Excel import is a stateless two-step CQRS flow. A Manager uploads an `.xlsx` workbook for a bounded preview and suggested field mapping, then submits the workbook again with the confirmed mapping. The Application validates every row, duplicate business key, tenant-owned material/product reference, decimal precision, and status before one transactional save; any row error prevents the whole batch from being persisted. Workbooks are limited to 10 MB, 50 columns, and 5,000 data rows.
+Excel import is a stateless two-step CQRS flow. A Manager uploads an `.xlsx` workbook for a bounded preview and suggested field mapping, then submits the workbook again with the confirmed mapping. Inventory imports resolve tenant-owned material and active warehouse codes and create an opening Receipt plus matching balance in the same transactional save; they never create an unexplained balance. Any row error prevents the whole batch from being persisted. Workbooks are limited to 10 MB, 50 columns, and 5,000 data rows.
 
 Settings is Admin-only CQRS. Company and user changes are tenant-scoped through `ISettingsRepository`; user responses never contain password hashes, and a user cannot deactivate or demote their own active Admin account. The AI settings endpoint is deliberately read-only for the MVP: it reports the native Gemini provider, configured chat/embedding model, bounded output size, and whether a server-side key exists, but never returns the key. Re-index remains an explicit Manager/Admin action.
 

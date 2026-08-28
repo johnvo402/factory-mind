@@ -60,27 +60,28 @@ public sealed class EfBusinessContextRepository(
         }
 
         if (scopes.HasFlag(BusinessDataScope.Inventory)) {
-            var inventories = await dbContext.Inventories
+            var inventories = await dbContext.InventoryBalances
                 .AsNoTracking()
-                .Where(inventory => inventory.CompanyId == companyId)
-                .OrderByDescending(inventory => inventory.Quantity)
-                .ThenBy(inventory => inventory.Material!.Code)
+                .Where(balance => balance.CompanyId == companyId)
+                .OrderByDescending(balance => balance.Quantity)
+                .ThenBy(balance => balance.Material!.Code)
                 .Take(limitPerScope)
-                .Select(inventory => new {
-                    inventory.Id,
-                    inventory.Material!.Code,
-                    inventory.Material.Name,
-                    inventory.Material.Unit,
-                    inventory.Warehouse,
-                    inventory.Quantity,
-                    inventory.UpdatedAt
+                .Select(balance => new {
+                    balance.Id,
+                    balance.Material!.Code,
+                    balance.Material.Name,
+                    balance.Material.Unit,
+                    WarehouseCode = balance.Warehouse!.Code,
+                    WarehouseName = balance.Warehouse.Name,
+                    balance.Quantity,
+                    balance.UpdatedAt
                 })
                 .ToListAsync(cancellationToken);
             records.AddRange(inventories.Select(inventory => new BusinessDataRecord(
                 inventory.Id,
                 "inventory",
                 $"{inventory.Code} - {inventory.Name}",
-                $"Kho lưu trữ: {inventory.Warehouse}. "
+                $"Kho lưu trữ: {inventory.WarehouseCode} - {inventory.WarehouseName}. "
                 + $"Số lượng hiện có: {Format(inventory.Quantity)} {inventory.Unit}. "
                 + $"Cập nhật: {FormatTimestamp(inventory.UpdatedAt)}.")));
         }

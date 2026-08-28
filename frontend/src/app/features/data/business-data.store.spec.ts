@@ -59,14 +59,17 @@ describe('Business data stores', () => {
   it('initializes inventory together with material options', async () => {
     const inventoryApi = jasmine.createSpyObj<InventoryApiService>('InventoryApiService', [
       'getInventories',
-      'createInventory',
-      'updateInventory',
-      'deleteInventory',
+      'getWarehouses',
+      'receive',
+      'issue',
+      'adjust',
+      'transfer',
     ]);
     const materialApi = jasmine.createSpyObj<MaterialApiService>('MaterialApiService', [
       'getMaterials',
     ]);
     inventoryApi.getInventories.and.returnValue(success([inventory()]));
+    inventoryApi.getWarehouses.and.returnValue(success([warehouse()]));
     materialApi.getMaterials.and.returnValue(success([material()]));
     TestBed.configureTestingModule({
       providers: [
@@ -81,6 +84,7 @@ describe('Business data stores', () => {
 
     expect(store.inventories()).toEqual([inventory()]);
     expect(store.materials()).toEqual([material()]);
+    expect(store.warehouses()).toEqual([warehouse()]);
   });
 
   it('initializes production orders together with product options', async () => {
@@ -130,12 +134,25 @@ describe('Business data stores', () => {
   function inventory(): Inventory {
     return {
       id: 'inventory-1',
+      warehouseId: 'warehouse-1',
+      warehouseCode: 'WH-RAW',
+      warehouseName: 'Raw Materials',
       materialId: 'material-1',
       materialCode: 'MAT-PP',
       materialName: 'Polypropylene Resin',
       unit: 'kg',
-      warehouse: 'Main Warehouse',
       quantity: 1200,
+      updatedAt: '2026-08-01T00:00:00Z',
+    };
+  }
+
+  function warehouse() {
+    return {
+      id: 'warehouse-1',
+      code: 'WH-RAW',
+      name: 'Raw Materials',
+      description: null,
+      isActive: true,
       createdAt: '2026-08-01T00:00:00Z',
       updatedAt: '2026-08-01T00:00:00Z',
     };

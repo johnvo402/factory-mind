@@ -6,7 +6,7 @@ public static class ExcelImportDefinition {
             [ExcelImportEntityTypes.Machine] = ["code", "name", "status"],
             [ExcelImportEntityTypes.Material] = ["code", "name", "unit"],
             [ExcelImportEntityTypes.Product] = ["code", "name"],
-            [ExcelImportEntityTypes.Inventory] = ["materialCode", "warehouse", "quantity"],
+            [ExcelImportEntityTypes.Inventory] = ["materialCode", "warehouseCode", "quantity"],
             [ExcelImportEntityTypes.ProductionOrder] = ["number", "productCode", "quantity", "status"]
         };
 

@@ -28,6 +28,14 @@ public abstract class IntegrationTestBase(PostgreSqlFixture fixture) : IAsyncLif
 
     protected static string MachinesRoute => ApiRoutes.Machines.Group + ApiRoutes.Machines.Root;
 
+    protected static string MaterialsRoute => ApiRoutes.Materials.Group + ApiRoutes.Materials.Root;
+
+    protected static string WarehousesRoute => ApiRoutes.Warehouses.Group + ApiRoutes.Warehouses.Root;
+
+    protected static string InventoriesRoute => ApiRoutes.Inventories.Group + ApiRoutes.Inventories.Root;
+
+    protected static string InventoryRoute(string route) => ApiRoutes.Inventories.Group + route;
+
     protected static string MachineByIdRoute(Guid machineId) =>
         ApiRoutes.Machines.Group + ApiRoutes.Machines.ById.Replace(
             "{machineId:guid}",

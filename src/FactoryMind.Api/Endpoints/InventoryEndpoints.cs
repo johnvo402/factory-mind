@@ -1,9 +1,11 @@
 using FactoryMind.Api.Routing;
 using FactoryMind.Application.Common.Authorization;
-using FactoryMind.Application.Features.Inventories.CreateInventory;
-using FactoryMind.Application.Features.Inventories.DeleteInventory;
-using FactoryMind.Application.Features.Inventories.GetInventories;
-using FactoryMind.Application.Features.Inventories.UpdateInventory;
+using FactoryMind.Application.Features.Inventories.AdjustInventory;
+using FactoryMind.Application.Features.Inventories.GetInventoryBalances;
+using FactoryMind.Application.Features.Inventories.GetInventoryTransactions;
+using FactoryMind.Application.Features.Inventories.IssueInventory;
+using FactoryMind.Application.Features.Inventories.ReceiveInventory;
+using FactoryMind.Application.Features.Inventories.TransferInventory;
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,48 +17,84 @@ public static class InventoryEndpoints {
             .RequireAuthorization(AuthorizationPolicies.Manager);
 
         group.MapGet(ApiRoutes.Inventories.Root, async (
-            [AsParameters] BusinessDataSearchRequest request,
+            [AsParameters] InventoryBalanceQueryRequest request,
             ISender sender,
-            CancellationToken cancellationToken) => {
-                return (await sender.Send(
-                    new GetInventoriesQuery(request.Search),
-                    cancellationToken)).ToHttpResult();
-            })
-            .WithRequestValidation<BusinessDataSearchRequest>();
+            CancellationToken cancellationToken) => (await sender.Send(
+                new GetInventoryBalancesQuery(request.WarehouseId, request.MaterialId, request.Search),
+                cancellationToken)).ToHttpResult())
+            .WithRequestValidation<InventoryBalanceQueryRequest>();
 
-        group.MapPost(ApiRoutes.Inventories.Root, async (
-            [FromBody] InventoryRequest request,
+        group.MapGet(ApiRoutes.Inventories.Transactions, async (
+            [AsParameters] InventoryTransactionQueryRequest request,
             ISender sender,
-            CancellationToken cancellationToken) => {
-                return (await sender.Send(
-                    new CreateInventoryCommand(request.MaterialId, request.Warehouse, request.Quantity),
-                    cancellationToken)).ToHttpResult();
-            })
-            .WithRequestValidation<InventoryRequest>();
+            CancellationToken cancellationToken) => (await sender.Send(
+                new GetInventoryTransactionsQuery(
+                    request.WarehouseId,
+                    request.MaterialId,
+                    request.TransactionType,
+                    request.From,
+                    request.To,
+                    request.Page ?? 1,
+                    request.PageSize ?? 50),
+                cancellationToken)).ToHttpResult())
+            .WithRequestValidation<InventoryTransactionQueryRequest>();
 
-        group.MapPut(ApiRoutes.Inventories.ById, async (
-            Guid inventoryId,
-            [FromBody] InventoryRequest request,
+        group.MapPost(ApiRoutes.Inventories.Receive, async (
+            [FromBody] InventoryMovementRequest request,
             ISender sender,
-            CancellationToken cancellationToken) => {
-                return (await sender.Send(
-                    new UpdateInventoryCommand(
-                        inventoryId,
-                        request.MaterialId,
-                        request.Warehouse,
-                        request.Quantity),
-                    cancellationToken)).ToHttpResult();
-            })
-            .WithRequestValidation<InventoryRequest>();
+            CancellationToken cancellationToken) => (await sender.Send(
+                new ReceiveInventoryCommand(
+                    request.WarehouseId,
+                    request.MaterialId,
+                    request.Quantity,
+                    request.Note,
+                    request.ReferenceType,
+                    request.ReferenceId),
+                cancellationToken)).ToHttpResult())
+            .WithRequestValidation<InventoryMovementRequest>();
 
-        group.MapDelete(ApiRoutes.Inventories.ById, async (
-            Guid inventoryId,
+        group.MapPost(ApiRoutes.Inventories.Issue, async (
+            [FromBody] InventoryMovementRequest request,
             ISender sender,
-            CancellationToken cancellationToken) => {
-                return (await sender.Send(
-                    new DeleteInventoryCommand(inventoryId),
-                    cancellationToken)).ToHttpResult();
-            });
+            CancellationToken cancellationToken) => (await sender.Send(
+                new IssueInventoryCommand(
+                    request.WarehouseId,
+                    request.MaterialId,
+                    request.Quantity,
+                    request.Note,
+                    request.ReferenceType,
+                    request.ReferenceId),
+                cancellationToken)).ToHttpResult())
+            .WithRequestValidation<InventoryMovementRequest>();
+
+        group.MapPost(ApiRoutes.Inventories.Adjust, async (
+            [FromBody] InventoryAdjustmentRequest request,
+            ISender sender,
+            CancellationToken cancellationToken) => (await sender.Send(
+                new AdjustInventoryCommand(
+                    request.WarehouseId,
+                    request.MaterialId,
+                    request.Direction,
+                    request.Quantity,
+                    request.Note,
+                    request.ReferenceType,
+                    request.ReferenceId),
+                cancellationToken)).ToHttpResult())
+            .WithRequestValidation<InventoryAdjustmentRequest>();
+
+        group.MapPost(ApiRoutes.Inventories.Transfer, async (
+            [FromBody] InventoryTransferRequest request,
+            ISender sender,
+            CancellationToken cancellationToken) => (await sender.Send(
+                new TransferInventoryCommand(
+                    request.SourceWarehouseId,
+                    request.DestinationWarehouseId,
+                    request.MaterialId,
+                    request.Quantity,
+                    request.Note,
+                    request.ReferenceType),
+                cancellationToken)).ToHttpResult())
+            .WithRequestValidation<InventoryTransferRequest>();
 
         return endpoints;
     }

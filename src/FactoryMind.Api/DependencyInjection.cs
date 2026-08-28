@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using FactoryMind.Api.Auth;
 using FactoryMind.Api.Endpoints;
 using FactoryMind.Api.Errors;
@@ -28,6 +29,8 @@ public static class DependencyInjection {
         }
 
         services.AddHttpContextAccessor();
+        services.ConfigureHttpJsonOptions(options =>
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
         services.AddScoped<IPolicyChecker, HttpPolicyChecker>();
         services.AddScoped<ICurrentUser, HttpCurrentUser>();
         services.AddScoped<ITokenService, JwtTokenService>();

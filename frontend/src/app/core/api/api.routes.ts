@@ -48,7 +48,15 @@ export const API_ROUTES = {
   },
   inventories: {
     root: `${API_BASE}/inventories`,
-    byId: (inventoryId: string) => `${API_BASE}/inventories/${inventoryId}`,
+    transactions: `${API_BASE}/inventories/transactions`,
+    receive: `${API_BASE}/inventories/receive`,
+    issue: `${API_BASE}/inventories/issue`,
+    adjust: `${API_BASE}/inventories/adjust`,
+    transfer: `${API_BASE}/inventories/transfer`,
+  },
+  warehouses: {
+    root: `${API_BASE}/warehouses`,
+    byId: (warehouseId: string) => `${API_BASE}/warehouses/${warehouseId}`,
   },
   productionOrders: {
     root: `${API_BASE}/production-orders`,

@@ -4,6 +4,7 @@ using FactoryMind.Application.Features.Machines;
 using FactoryMind.Application.Features.Materials;
 using FactoryMind.Application.Features.Products;
 using FactoryMind.Application.Features.ProductionOrders;
+using FactoryMind.Application.Features.Warehouses;
 using FactoryMind.Domain.Chat;
 using FactoryMind.Domain.Identity;
 using FactoryMind.Domain.Knowledge;
@@ -28,7 +29,9 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
     public DbSet<Machine> Machines => Set<Machine>();
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<Product> Products => Set<Product>();
-    public DbSet<Inventory> Inventories => Set<Inventory>();
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
+    public DbSet<InventoryBalance> InventoryBalances => Set<InventoryBalance>();
+    public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
@@ -186,25 +189,85 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
                 .HasForeignKey(product => product.CompanyId);
         });
 
-        modelBuilder.Entity<Inventory>(entity => {
-            entity.ToTable("inventories");
-            entity.HasIndex(inventory => new {
-                inventory.CompanyId,
-                inventory.MaterialId,
-                inventory.Warehouse
-            }).IsUnique();
-            entity.HasIndex(inventory => new { inventory.CompanyId, inventory.Warehouse });
-            entity.Property(inventory => inventory.Warehouse)
-                .HasMaxLength(InventoryConstraints.MaximumWarehouseLength)
+        modelBuilder.Entity<Warehouse>(entity => {
+            entity.ToTable("warehouses");
+            entity.HasIndex(warehouse => new { warehouse.CompanyId, warehouse.Code }).IsUnique();
+            entity.HasIndex(warehouse => new { warehouse.CompanyId, warehouse.Name });
+            entity.Property(warehouse => warehouse.Code)
+                .HasMaxLength(WarehouseConstraints.MaximumCodeLength)
                 .IsRequired();
-            entity.Property(inventory => inventory.Quantity)
+            entity.Property(warehouse => warehouse.Name)
+                .HasMaxLength(WarehouseConstraints.MaximumNameLength)
+                .IsRequired();
+            entity.Property(warehouse => warehouse.Description)
+                .HasMaxLength(WarehouseConstraints.MaximumDescriptionLength);
+            entity.HasOne(warehouse => warehouse.Company)
+                .WithMany(company => company.Warehouses)
+                .HasForeignKey(warehouse => warehouse.CompanyId);
+        });
+
+        modelBuilder.Entity<InventoryBalance>(entity => {
+            entity.ToTable("inventory_balances", table => table.HasCheckConstraint(
+                "CK_inventory_balances_Quantity_nonnegative", "\"Quantity\" >= 0"));
+            entity.HasIndex(balance => new {
+                balance.CompanyId,
+                balance.WarehouseId,
+                balance.MaterialId
+            }).IsUnique();
+            entity.HasIndex(balance => new { balance.CompanyId, balance.WarehouseId });
+            entity.Property(balance => balance.Quantity)
                 .HasPrecision(InventoryConstraints.QuantityPrecision, InventoryConstraints.QuantityScale);
-            entity.HasOne(inventory => inventory.Company)
-                .WithMany(company => company.Inventories)
-                .HasForeignKey(inventory => inventory.CompanyId);
-            entity.HasOne(inventory => inventory.Material)
+            entity.HasOne(balance => balance.Company)
+                .WithMany(company => company.InventoryBalances)
+                .HasForeignKey(balance => balance.CompanyId);
+            entity.HasOne(balance => balance.Warehouse)
                 .WithMany()
-                .HasForeignKey(inventory => inventory.MaterialId)
+                .HasForeignKey(balance => balance.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(balance => balance.Material)
+                .WithMany()
+                .HasForeignKey(balance => balance.MaterialId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<InventoryTransaction>(entity => {
+            entity.ToTable("inventory_transactions", table => table.HasCheckConstraint(
+                "CK_inventory_transactions_Quantity_positive", "\"Quantity\" > 0"));
+            entity.HasIndex(transaction => new {
+                transaction.CompanyId,
+                transaction.CreatedAt
+            });
+            entity.HasIndex(transaction => new {
+                transaction.CompanyId,
+                transaction.WarehouseId,
+                transaction.MaterialId,
+                transaction.CreatedAt
+            });
+            entity.HasIndex(transaction => new {
+                transaction.CompanyId,
+                transaction.ReferenceId
+            });
+            entity.Property(transaction => transaction.Type).HasConversion<string>().HasMaxLength(40);
+            entity.Property(transaction => transaction.Quantity)
+                .HasPrecision(InventoryConstraints.QuantityPrecision, InventoryConstraints.QuantityScale);
+            entity.Property(transaction => transaction.ReferenceType)
+                .HasMaxLength(InventoryConstraints.MaximumReferenceTypeLength);
+            entity.Property(transaction => transaction.Note)
+                .HasMaxLength(InventoryConstraints.MaximumNoteLength);
+            entity.HasOne(transaction => transaction.Company)
+                .WithMany(company => company.InventoryTransactions)
+                .HasForeignKey(transaction => transaction.CompanyId);
+            entity.HasOne(transaction => transaction.Warehouse)
+                .WithMany()
+                .HasForeignKey(transaction => transaction.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(transaction => transaction.Material)
+                .WithMany()
+                .HasForeignKey(transaction => transaction.MaterialId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(transaction => transaction.CreatedByUser)
+                .WithMany(user => user.CreatedInventoryTransactions)
+                .HasForeignKey(transaction => transaction.CreatedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

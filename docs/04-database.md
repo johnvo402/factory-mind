@@ -192,27 +192,20 @@ UpdatedAt
 
 ---
 
-## Inventory
+## Warehouse inventory ledger
 
 ```text
-Id
+Warehouse(Id, CompanyId, Code, Name, Description?, IsActive, CreatedAt, UpdatedAt)
 
-CompanyId
+InventoryTransaction(Id, CompanyId, WarehouseId, MaterialId, Type, Quantity,
+                     ReferenceType?, ReferenceId?, Note?, CreatedByUserId?, CreatedAt)
 
-MaterialId
-
-Warehouse
-
-Quantity
-
-CreatedAt
-
-UpdatedAt
+InventoryBalance(Id, CompanyId, WarehouseId, MaterialId, Quantity, UpdatedAt)
 ```
 
-Inventory is an MVP balance snapshot rather than a movement ledger. A company can have at most one entry for the same material and warehouse. `Quantity` uses `numeric(18,3)` and cannot be negative through the API. Deleting a referenced material is restricted.
+`Warehouse.Code` is unique inside a company. `InventoryTransaction` is the immutable source of stock history and stores a positive `numeric(18,3)` quantity; its strongly typed operation determines whether the signed change is positive or negative. `InventoryBalance` is a materialized current value, unique for `(CompanyId, WarehouseId, MaterialId)`, with a database check preventing negative quantities.
 
-Không cần bảng Warehouse riêng trong MVP nếu mỗi doanh nghiệp chỉ có một kho hoặc số kho rất ít. Nếu sau này phát sinh nhiều kho thì mới tách.
+Ledger insertion and balance mutation commit in one database transaction. Transfers write correlated `TransferOut` and `TransferIn` rows and update both balances atomically. Foreign keys to warehouses and materials are restrictive so historical records cannot be orphaned; deleting a warehouse means deactivation.
 
 ---
 

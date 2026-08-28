@@ -1,5 +1,6 @@
 using FactoryMind.Domain.Chat;
 using FactoryMind.Domain.Knowledge;
+using FactoryMind.Domain.Manufacturing;
 
 namespace FactoryMind.Domain.Identity;
 
@@ -16,6 +17,7 @@ public sealed class User {
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
     public ICollection<Conversation> Conversations { get; set; } = [];
     public ICollection<KnowledgeDocument> UploadedDocuments { get; set; } = [];
+    public ICollection<InventoryTransaction> CreatedInventoryTransactions { get; set; } = [];
 }
 
 public static class UserRoles {

@@ -102,14 +102,18 @@ public sealed class ExcelImportHandlerTests {
     [Fact]
     public async Task Inventory_import_resolves_material_code_inside_the_current_company() {
         var materialId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
         var reader = new FakeWorkbookReader(new(
-            ["Material Code", "Warehouse", "Quantity"],
-            [Row(("Material Code", "mat-pp"), ("Warehouse", "Main"), ("Quantity", "1200.500"))],
+            ["Material Code", "Warehouse Code", "Quantity"],
+            [Row(("Material Code", "mat-pp"), ("Warehouse Code", "wh-raw"), ("Quantity", "1200.500"))],
             1));
         var repository = new FakeImportRepository {
             ReferenceData = new(
                 new HashSet<string>(),
-                new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase) { ["MAT-PP"] = materialId })
+                new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase) {
+                    ["material:MAT-PP"] = materialId,
+                    ["warehouse:WH-RAW"] = warehouseId
+                })
         };
         var currentUser = new FakeCurrentUser();
         var handler = new ImportExcelCommandHandler(reader, repository, currentUser);
@@ -119,16 +123,19 @@ public sealed class ExcelImportHandlerTests {
                 "inventory",
                 Map(
                     ("materialCode", "Material Code"),
-                    ("warehouse", "Warehouse"),
+                    ("warehouseCode", "Warehouse Code"),
                     ("quantity", "Quantity")),
                 Stream.Null),
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        var inventory = Assert.Single(repository.Batch!.Inventories);
-        Assert.Equal(materialId, inventory.MaterialId);
-        Assert.Equal(currentUser.CompanyId, inventory.CompanyId);
-        Assert.Equal(1200.500m, inventory.Quantity);
+        var transaction = Assert.Single(repository.Batch!.InventoryTransactions);
+        var balance = Assert.Single(repository.Batch.InventoryBalances);
+        Assert.Equal(materialId, transaction.MaterialId);
+        Assert.Equal(warehouseId, transaction.WarehouseId);
+        Assert.Equal(currentUser.CompanyId, transaction.CompanyId);
+        Assert.Equal(1200.500m, transaction.Quantity);
+        Assert.Equal(1200.500m, balance.Quantity);
     }
 
     private static IReadOnlyDictionary<string, string> Row(params (string Key, string Value)[] values) =>

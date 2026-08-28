@@ -70,7 +70,17 @@ public static class ApiRoutes {
     public static class Inventories {
         public const string Group = Base + "/inventories";
         public const string Root = "";
-        public const string ById = "/{inventoryId:guid}";
+        public const string Transactions = "/transactions";
+        public const string Receive = "/receive";
+        public const string Issue = "/issue";
+        public const string Adjust = "/adjust";
+        public const string Transfer = "/transfer";
+    }
+
+    public static class Warehouses {
+        public const string Group = Base + "/warehouses";
+        public const string Root = "";
+        public const string ById = "/{warehouseId:guid}";
     }
 
     public static class ProductionOrders {

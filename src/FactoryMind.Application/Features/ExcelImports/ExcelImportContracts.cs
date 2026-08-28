@@ -54,12 +54,13 @@ public sealed record ExcelImportBatch(
     IReadOnlyList<Machine> Machines,
     IReadOnlyList<Material> Materials,
     IReadOnlyList<Product> Products,
-    IReadOnlyList<Inventory> Inventories,
+    IReadOnlyList<InventoryTransaction> InventoryTransactions,
+    IReadOnlyList<InventoryBalance> InventoryBalances,
     IReadOnlyList<ProductionOrder> ProductionOrders) {
     public int Count => Machines.Count
         + Materials.Count
         + Products.Count
-        + Inventories.Count
+        + InventoryTransactions.Count
         + ProductionOrders.Count;
 }
 

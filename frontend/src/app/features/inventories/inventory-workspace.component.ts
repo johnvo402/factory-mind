@@ -1,35 +1,72 @@
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Inventory, InventoryInput } from './inventory.models';
+import {
+  Inventory,
+  InventoryAdjustmentInput,
+  InventoryMovementInput,
+  InventoryTransactionType,
+  InventoryTransferInput,
+  Warehouse,
+  WarehouseUpdateInput,
+} from './inventory.models';
 import { InventoryStore } from './inventory.store';
+
+type InventoryOperation = 'receive' | 'issue' | 'adjust' | 'transfer';
 
 @Component({
   selector: 'app-inventory-workspace',
-  imports: [DecimalPipe, ReactiveFormsModule],
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule],
   templateUrl: './inventory-workspace.component.html',
-  styleUrl: '../data/entity-workspace.scss',
+  styleUrls: ['../data/entity-workspace.scss', './inventory-workspace.component.scss'],
 })
 export class InventoryWorkspaceComponent implements OnInit {
   protected readonly store = inject(InventoryStore);
-  protected readonly editingId = signal<string | null>(null);
-  protected readonly editorOpen = signal(false);
-  protected readonly confirmDeleteId = signal<string | null>(null);
+  protected readonly operation = signal<InventoryOperation | null>(null);
+  protected readonly historyOpen = signal(false);
+  protected readonly warehouseEditorOpen = signal(false);
+  protected readonly editingWarehouseId = signal<string | null>(null);
   protected readonly searchControl = new FormControl('', { nonNullable: true });
-  protected readonly inventoryForm = new FormGroup({
+  protected readonly operationForm = new FormGroup({
+    sourceWarehouseId: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    destinationWarehouseId: new FormControl('', { nonNullable: true }),
     materialId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    warehouse: new FormControl('', {
+    quantity: new FormControl(1, {
       nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(100)],
+      validators: [Validators.required, Validators.min(0.001)],
     }),
-    quantity: new FormControl(0, {
+    direction: new FormControl<'Increase' | 'Decrease'>('Increase', { nonNullable: true }),
+    note: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(500)] }),
+    referenceType: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.min(0)],
+      validators: [Validators.maxLength(100)],
     }),
+  });
+  protected readonly warehouseForm = new FormGroup({
+    code: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(50)],
+    }),
+    name: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(200)],
+    }),
+    description: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.maxLength(500)],
+    }),
+    isActive: new FormControl(true, { nonNullable: true }),
   });
 
   ngOnInit(): void {
     void this.store.initialize();
+  }
+
+  protected activeWarehouses(): Warehouse[] {
+    return this.store.warehouses().filter((warehouse) => warehouse.isActive);
   }
 
   protected search(event: SubmitEvent): void {
@@ -42,52 +79,134 @@ export class InventoryWorkspaceComponent implements OnInit {
     void this.store.load('');
   }
 
-  protected startCreate(): void {
+  protected startOperation(operation: InventoryOperation, inventory?: Inventory): void {
     this.store.clearError();
-    this.editingId.set(null);
-    this.inventoryForm.reset({
-      materialId: this.store.materials()[0]?.id ?? '',
-      warehouse: '',
-      quantity: 0,
+    const sourceWarehouseId = inventory?.warehouseId ?? this.activeWarehouses()[0]?.id ?? '';
+    const destination = this.activeWarehouses().find(
+      (warehouse) => warehouse.id !== sourceWarehouseId,
+    );
+    this.operationForm.reset({
+      sourceWarehouseId,
+      destinationWarehouseId: destination?.id ?? '',
+      materialId: inventory?.materialId ?? this.store.materials()[0]?.id ?? '',
+      quantity: 1,
+      direction: 'Increase',
+      note: '',
+      referenceType: '',
     });
-    this.editorOpen.set(true);
+    this.operationForm.controls.note.setValidators([
+      ...(operation === 'adjust' ? [Validators.required] : []),
+      Validators.maxLength(500),
+    ]);
+    this.operationForm.controls.note.updateValueAndValidity();
+    this.operation.set(operation);
   }
 
-  protected startEdit(inventory: Inventory): void {
-    this.store.clearError();
-    this.editingId.set(inventory.id);
-    this.inventoryForm.reset({
-      materialId: inventory.materialId,
-      warehouse: inventory.warehouse,
-      quantity: inventory.quantity,
-    });
-    this.editorOpen.set(true);
+  protected cancelOperation(): void {
+    this.operation.set(null);
   }
 
-  protected cancelEdit(): void {
-    this.editorOpen.set(false);
-    this.editingId.set(null);
+  protected operationTitle(): string {
+    return {
+      receive: 'Nhập kho',
+      issue: 'Xuất kho',
+      adjust: 'Điều chỉnh tồn kho',
+      transfer: 'Chuyển kho',
+    }[this.operation() ?? 'receive'];
   }
 
-  protected async save(): Promise<void> {
-    if (this.inventoryForm.invalid) {
-      this.inventoryForm.markAllAsTouched();
+  protected async submitOperation(): Promise<void> {
+    const operation = this.operation();
+    if (!operation) return;
+    if (operation === 'transfer' && !this.operationForm.controls.destinationWarehouseId.value) {
+      this.operationForm.controls.destinationWarehouseId.setErrors({ required: true });
+    }
+    if (this.operationForm.invalid) {
+      this.operationForm.markAllAsTouched();
       return;
     }
-
-    const input: InventoryInput = this.inventoryForm.getRawValue();
-    if (await this.store.save(this.editingId(), input)) {
-      this.cancelEdit();
+    const value = this.operationForm.getRawValue();
+    const movement: InventoryMovementInput = {
+      warehouseId: value.sourceWarehouseId,
+      materialId: value.materialId,
+      quantity: value.quantity,
+      note: value.note.trim() || null,
+      referenceType: value.referenceType.trim() || null,
+      referenceId: null,
+    };
+    let saved = false;
+    if (operation === 'receive') saved = await this.store.receive(movement);
+    if (operation === 'issue') saved = await this.store.issue(movement);
+    if (operation === 'adjust') {
+      const adjustment: InventoryAdjustmentInput = { ...movement, direction: value.direction };
+      saved = await this.store.adjust(adjustment);
     }
+    if (operation === 'transfer') {
+      const transfer: InventoryTransferInput = {
+        sourceWarehouseId: value.sourceWarehouseId,
+        destinationWarehouseId: value.destinationWarehouseId,
+        materialId: value.materialId,
+        quantity: value.quantity,
+        note: value.note.trim() || null,
+        referenceType: value.referenceType.trim() || null,
+      };
+      saved = await this.store.transfer(transfer);
+    }
+    if (saved) this.cancelOperation();
   }
 
-  protected requestDelete(inventoryId: string): void {
-    this.confirmDeleteId.set(inventoryId);
+  protected async showHistory(): Promise<void> {
+    if (await this.store.loadHistory()) this.historyOpen.set(true);
   }
 
-  protected async confirmDelete(inventoryId: string): Promise<void> {
-    if (await this.store.delete(inventoryId)) {
-      this.confirmDeleteId.set(null);
+  protected operationLabel(type: InventoryTransactionType): string {
+    return {
+      Receipt: 'Nhập kho',
+      Issue: 'Xuất kho',
+      AdjustmentIncrease: 'Điều chỉnh tăng',
+      AdjustmentDecrease: 'Điều chỉnh giảm',
+      TransferIn: 'Chuyển vào',
+      TransferOut: 'Chuyển ra',
+      ProductionConsume: 'Sản xuất tiêu thụ',
+      ProductionOutput: 'Sản xuất hoàn thành',
+    }[type];
+  }
+
+  protected openWarehouseEditor(): void {
+    this.editingWarehouseId.set(null);
+    this.warehouseForm.reset({ code: '', name: '', description: '', isActive: true });
+    this.warehouseEditorOpen.set(true);
+  }
+
+  protected editWarehouse(warehouse: Warehouse): void {
+    this.editingWarehouseId.set(warehouse.id);
+    this.warehouseForm.reset({
+      code: warehouse.code,
+      name: warehouse.name,
+      description: warehouse.description ?? '',
+      isActive: warehouse.isActive,
+    });
+  }
+
+  protected newWarehouse(): void {
+    this.editingWarehouseId.set(null);
+    this.warehouseForm.reset({ code: '', name: '', description: '', isActive: true });
+  }
+
+  protected async saveWarehouse(): Promise<void> {
+    if (this.warehouseForm.invalid) {
+      this.warehouseForm.markAllAsTouched();
+      return;
+    }
+    const value = this.warehouseForm.getRawValue();
+    const input: WarehouseUpdateInput = {
+      code: value.code,
+      name: value.name,
+      description: value.description.trim() || null,
+      isActive: value.isActive,
+    };
+    if (await this.store.saveWarehouse(this.editingWarehouseId(), input)) {
+      this.newWarehouse();
     }
   }
 }

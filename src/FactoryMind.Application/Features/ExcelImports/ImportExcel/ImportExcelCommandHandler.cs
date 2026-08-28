@@ -5,6 +5,7 @@ using FactoryMind.Application.Features.Machines;
 using FactoryMind.Application.Features.Materials;
 using FactoryMind.Application.Features.Products;
 using FactoryMind.Application.Features.ProductionOrders;
+using FactoryMind.Application.Features.Warehouses;
 using FactoryMind.Domain.Manufacturing;
 using FactoryMind.Shared.Contracts;
 using Mediator;
@@ -60,7 +61,8 @@ public sealed class ImportExcelCommandHandler(
         var machines = new List<Machine>();
         var materials = new List<Material>();
         var products = new List<Product>();
-        var inventories = new List<Inventory>();
+        var inventoryTransactions = new List<InventoryTransaction>();
+        var inventoryBalances = new List<InventoryBalance>();
         var orders = new List<ProductionOrder>();
         var errors = new List<ExcelRowError>();
         var keys = new HashSet<string>(referenceData.ExistingKeys, StringComparer.OrdinalIgnoreCase);
@@ -80,7 +82,16 @@ public sealed class ImportExcelCommandHandler(
                     AddProduct(row, mapping, rowNumber, keys, products, errors, now);
                     break;
                 case ExcelImportEntityTypes.Inventory:
-                    AddInventory(row, mapping, rowNumber, keys, referenceData.RelatedIds, inventories, errors, now);
+                    AddInventory(
+                        row,
+                        mapping,
+                        rowNumber,
+                        keys,
+                        referenceData.RelatedIds,
+                        inventoryTransactions,
+                        inventoryBalances,
+                        errors,
+                        now);
                     break;
                 case ExcelImportEntityTypes.ProductionOrder:
                     AddProductionOrder(row, mapping, rowNumber, keys, referenceData.RelatedIds, orders, errors, now);
@@ -89,7 +100,13 @@ public sealed class ImportExcelCommandHandler(
         }
 
         return new ExcelImportPlan(
-            new ExcelImportBatch(machines, materials, products, inventories, orders),
+            new ExcelImportBatch(
+                machines,
+                materials,
+                products,
+                inventoryTransactions,
+                inventoryBalances,
+                orders),
             errors);
     }
 
@@ -178,25 +195,46 @@ public sealed class ImportExcelCommandHandler(
         int rowNumber,
         HashSet<string> keys,
         IReadOnlyDictionary<string, Guid> relatedIds,
-        List<Inventory> entities,
+        List<InventoryTransaction> transactions,
+        List<InventoryBalance> balances,
         List<ExcelRowError> errors,
         DateTime now) {
         var start = errors.Count;
         var materialCode = Required(row, mapping, "materialCode", rowNumber, MaterialConstraints.MaximumCodeLength, errors)
             .ToUpperInvariant();
-        var warehouse = Required(row, mapping, "warehouse", rowNumber, InventoryConstraints.MaximumWarehouseLength, errors);
-        var quantity = Decimal(row, mapping, "quantity", rowNumber, allowZero: true, errors);
-        if (!relatedIds.TryGetValue(materialCode, out var materialId)) {
+        var warehouseCode = Required(
+            row,
+            mapping,
+            "warehouseCode",
+            rowNumber,
+            WarehouseConstraints.MaximumCodeLength,
+            errors)
+            .ToUpperInvariant();
+        var quantity = Decimal(row, mapping, "quantity", rowNumber, allowZero: false, errors);
+        if (!relatedIds.TryGetValue($"material:{materialCode}", out var materialId)) {
             errors.Add(new(rowNumber, "materialCode", "Material code was not found in this company."));
         }
-        AddDuplicateError($"{materialId:N}|{warehouse}", "warehouse", rowNumber, keys, errors);
+        if (!relatedIds.TryGetValue($"warehouse:{warehouseCode}", out var warehouseId)) {
+            errors.Add(new(rowNumber, "warehouseCode", "Active warehouse code was not found in this company."));
+        }
+        AddDuplicateError($"{materialId:N}|{warehouseId:N}", "warehouseCode", rowNumber, keys, errors);
         if (errors.Count == start) {
-            entities.Add(new Inventory {
+            transactions.Add(new InventoryTransaction {
                 CompanyId = currentUser.CompanyId,
+                WarehouseId = warehouseId,
                 MaterialId = materialId,
-                Warehouse = warehouse,
+                Type = InventoryTransactionType.Receipt,
                 Quantity = quantity,
-                CreatedAt = now,
+                Note = "Opening balance imported from Excel.",
+                ReferenceType = "ExcelImport",
+                CreatedByUserId = currentUser.UserId,
+                CreatedAt = now
+            });
+            balances.Add(new InventoryBalance {
+                CompanyId = currentUser.CompanyId,
+                WarehouseId = warehouseId,
+                MaterialId = materialId,
+                Quantity = quantity,
                 UpdatedAt = now
             });
         }

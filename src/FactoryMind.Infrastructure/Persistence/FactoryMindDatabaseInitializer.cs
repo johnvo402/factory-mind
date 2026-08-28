@@ -55,7 +55,8 @@ public sealed class FactoryMindDatabaseInitializer(
         await SeedMachinesAsync(company, cancellationToken);
         var materials = await SeedMaterialsAsync(company, cancellationToken);
         var products = await SeedProductsAsync(company, cancellationToken);
-        await SeedInventoriesAsync(company, materials, cancellationToken);
+        var warehouses = await SeedWarehousesAsync(company, cancellationToken);
+        await SeedInventoriesAsync(company, materials, warehouses, cancellationToken);
         await SeedProductionOrdersAsync(company, products, cancellationToken);
     }
 
@@ -165,35 +166,70 @@ public sealed class FactoryMindDatabaseInitializer(
     private async Task SeedInventoriesAsync(
         Company company,
         IReadOnlyDictionary<string, Material> materials,
+        IReadOnlyDictionary<string, Warehouse> warehouses,
         CancellationToken cancellationToken) {
-        var existingInventoryKeys = (await dbContext.Inventories
-                .Where(inventory => inventory.CompanyId == company.Id)
-                .Select(inventory => new { inventory.MaterialId, inventory.Warehouse })
-                .ToListAsync(cancellationToken))
-            .Select(inventory => InventoryKey(inventory.MaterialId, inventory.Warehouse))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (await dbContext.InventoryBalances.AnyAsync(
+            balance => balance.CompanyId == company.Id, cancellationToken)) {
+            return;
+        }
+
         var seeds = new[] {
-            new { MaterialCode = "MAT-PP", Warehouse = "Main Warehouse", Quantity = 1200m },
-            new { MaterialCode = "MAT-PP", Warehouse = "Reserve Warehouse", Quantity = 400m },
-            new { MaterialCode = "MAT-ABS", Warehouse = "Main Warehouse", Quantity = 650m },
-            new { MaterialCode = "MAT-STEEL304", Warehouse = "Metal Warehouse", Quantity = 2400m },
-            new { MaterialCode = "MAT-BOX", Warehouse = "Packaging Warehouse", Quantity = 5000m },
-            new { MaterialCode = "MAT-LUBE", Warehouse = "Maintenance Warehouse", Quantity = 180m }
+            new { MaterialCode = "MAT-PP", WarehouseCode = "WH-RAW", Quantity = 1200m },
+            new { MaterialCode = "MAT-PP", WarehouseCode = "WH-WIP", Quantity = 400m },
+            new { MaterialCode = "MAT-ABS", WarehouseCode = "WH-RAW", Quantity = 650m },
+            new { MaterialCode = "MAT-STEEL304", WarehouseCode = "WH-RAW", Quantity = 2400m },
+            new { MaterialCode = "MAT-BOX", WarehouseCode = "WH-FG", Quantity = 5000m },
+            new { MaterialCode = "MAT-LUBE", WarehouseCode = "WH-WIP", Quantity = 180m }
         };
 
         foreach (var seed in seeds) {
             var material = materials[seed.MaterialCode];
-            if (existingInventoryKeys.Contains(InventoryKey(material.Id, seed.Warehouse))) {
-                continue;
-            }
-
-            dbContext.Inventories.Add(new Inventory {
+            var warehouse = warehouses[seed.WarehouseCode];
+            var now = DateTime.UtcNow;
+            dbContext.InventoryBalances.Add(new InventoryBalance {
                 Company = company,
+                Warehouse = warehouse,
                 Material = material,
-                Warehouse = seed.Warehouse,
-                Quantity = seed.Quantity
+                Quantity = seed.Quantity,
+                UpdatedAt = now
+            });
+            dbContext.InventoryTransactions.Add(new InventoryTransaction {
+                Company = company,
+                Warehouse = warehouse,
+                Material = material,
+                Type = InventoryTransactionType.Receipt,
+                Quantity = seed.Quantity,
+                ReferenceType = "DevelopmentSeed",
+                Note = "Opening demo stock.",
+                CreatedAt = now
             });
         }
+    }
+
+    private async Task<IReadOnlyDictionary<string, Warehouse>> SeedWarehousesAsync(
+        Company company,
+        CancellationToken cancellationToken) {
+        var warehouses = (await dbContext.Warehouses
+                .Where(warehouse => warehouse.CompanyId == company.Id)
+                .ToListAsync(cancellationToken))
+            .ToDictionary(warehouse => warehouse.Code, StringComparer.OrdinalIgnoreCase);
+        var seeds = new[] {
+            new { Code = "WH-RAW", Name = "Raw Materials", Description = "Raw material receiving and storage." },
+            new { Code = "WH-FG", Name = "Finished Goods", Description = "Completed goods awaiting dispatch." },
+            new { Code = "WH-WIP", Name = "Work In Progress", Description = "Materials currently staged for production." }
+        };
+        foreach (var seed in seeds.Where(seed => !warehouses.ContainsKey(seed.Code))) {
+            var warehouse = new Warehouse {
+                Company = company,
+                Code = seed.Code,
+                Name = seed.Name,
+                Description = seed.Description,
+                IsActive = true
+            };
+            dbContext.Warehouses.Add(warehouse);
+            warehouses.Add(warehouse.Code, warehouse);
+        }
+        return warehouses;
     }
 
     private async Task SeedProductionOrdersAsync(
@@ -223,8 +259,6 @@ public sealed class FactoryMindDatabaseInitializer(
             });
         }
     }
-
-    private static string InventoryKey(Guid materialId, string warehouse) => $"{materialId:N}:{warehouse}";
 
     private BootstrapAdminSettings ResolveBootstrapSettings() {
         if (environment.IsDevelopment()) {
