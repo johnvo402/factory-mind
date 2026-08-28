@@ -253,6 +253,22 @@ UpdatedAt
 
 ---
 
+## Bill of Materials
+
+```text
+BillOfMaterial(Id, CompanyId, ProductId, Revision, OutputQuantity, Status,
+               CreatedAt, UpdatedAt)
+
+BomItem(Id, BillOfMaterialId, MaterialId, Quantity, ScrapPercentage?,
+        CreatedAt, UpdatedAt)
+```
+
+A Product may have many BOM revisions but at most one `active` revision per Company. Revisions use `draft`, `active`, and `archived`; there is no physical-delete API. `OutputQuantity` and item `Quantity` use `numeric(18,6)` and must be positive. Optional scrap is limited to 0–100 percent. `(CompanyId, ProductId, Revision)` and `(BillOfMaterialId, MaterialId)` are unique, while a filtered unique index protects the single active revision invariant. Product and Material deletes are restrictive so BOM history is retained.
+
+Material-requirement planning reads the active BOM and sums current `InventoryBalance` quantities for each Material across all warehouses in the same Company. The query does not write balances or ledger transactions.
+
+---
+
 ## Document
 
 ```text

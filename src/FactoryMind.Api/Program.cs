@@ -20,6 +20,7 @@ app.UseStatusCodePages();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapAuthEndpoints();
+app.MapBomEndpoints();
 app.MapChatEndpoints();
 app.MapDocumentEndpoints();
 app.MapDashboardEndpoints();

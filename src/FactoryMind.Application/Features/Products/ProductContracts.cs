@@ -40,6 +40,11 @@ public interface IProductRepository {
         Guid? excludedProductId,
         CancellationToken cancellationToken);
 
+    Task<bool> HasBillOfMaterialsAsync(
+        Guid productId,
+        Guid companyId,
+        CancellationToken cancellationToken);
+
     void Add(Product product);
     void Remove(Product product);
     Task SaveChangesAsync(CancellationToken cancellationToken);
@@ -54,5 +59,10 @@ public static class ProductErrors {
     public static readonly Error CodeAlreadyExists = new(
         "products.code_already_exists",
         "A product with this code already exists.",
+        409);
+
+    public static readonly Error ReferencedByBom = new(
+        "products.referenced_by_bom",
+        "A product referenced by a bill of materials cannot be deleted.",
         409);
 }

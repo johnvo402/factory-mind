@@ -39,6 +39,15 @@ public sealed class EfMaterialRepository(FactoryMindDbContext dbContext) : IMate
                 (!excludedMaterialId.HasValue || material.Id != excludedMaterialId.Value),
             cancellationToken);
 
+    public Task<bool> HasBomItemsAsync(
+        Guid materialId,
+        Guid companyId,
+        CancellationToken cancellationToken) => dbContext.BomItems.AnyAsync(
+            item => item.MaterialId == materialId &&
+                item.BillOfMaterial != null &&
+                item.BillOfMaterial.CompanyId == companyId,
+            cancellationToken);
+
     public void Add(Material material) => dbContext.Materials.Add(material);
     public void Remove(Material material) => dbContext.Materials.Remove(material);
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>

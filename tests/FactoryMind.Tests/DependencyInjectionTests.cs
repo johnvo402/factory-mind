@@ -1,5 +1,6 @@
 using FactoryMind.Application;
 using FactoryMind.Application.Features.Auth.Login;
+using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.Chat;
 using FactoryMind.Application.Features.Chat.Rag;
 using FactoryMind.Application.Features.Knowledge;
@@ -10,6 +11,7 @@ using FactoryMind.Application.Features.Products;
 using FactoryMind.Application.Features.ProductionOrders;
 using FactoryMind.Infrastructure;
 using FactoryMind.Infrastructure.Persistence.Chat;
+using FactoryMind.Infrastructure.Persistence.Boms;
 using FactoryMind.Infrastructure.Persistence.Knowledge;
 using FactoryMind.Infrastructure.Persistence.Inventories;
 using FactoryMind.Infrastructure.Persistence.Machines;
@@ -38,6 +40,7 @@ public sealed class DependencyInjectionTests {
             descriptor.ServiceType == typeof(IKnowledgeContextBuilder)
             && descriptor.ImplementationType == typeof(KnowledgeContextBuilder));
         Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(KnowledgeRetriever));
+        Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(MaterialRequirementCalculator));
         Assert.Contains(services, descriptor =>
             descriptor.ServiceType == typeof(IIntentRouter)
             && descriptor.ImplementationType == typeof(IntentRouter));
@@ -63,6 +66,9 @@ public sealed class DependencyInjectionTests {
         Assert.Contains(services, descriptor =>
             descriptor.ServiceType == typeof(IConversationRepository)
             && descriptor.ImplementationType == typeof(EfConversationRepository));
+        Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(IBomRepository)
+            && descriptor.ImplementationType == typeof(EfBomRepository));
         Assert.Contains(services, descriptor =>
             descriptor.ServiceType == typeof(IBusinessContextRepository)
             && descriptor.ImplementationType == typeof(EfBusinessContextRepository));

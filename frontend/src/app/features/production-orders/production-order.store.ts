@@ -1,6 +1,8 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { businessDataErrorMessage } from '../data/business-data-error';
+import { BomApiService } from '../boms/bom-api.service';
+import { MaterialRequirements } from '../boms/bom.models';
 import { ProductApiService } from '../products/product-api.service';
 import { Product } from '../products/product.models';
 import { ProductionOrderApiService } from './production-order-api.service';
@@ -10,12 +12,16 @@ import { ProductionOrder, ProductionOrderInput } from './production-order.models
 export class ProductionOrderStore {
   private readonly api = inject(ProductionOrderApiService);
   private readonly productApi = inject(ProductApiService);
+  private readonly bomApi = inject(BomApiService);
   private readonly orderItems = signal<ProductionOrder[]>([]);
   private readonly productItems = signal<Product[]>([]);
   private readonly loadingState = signal(false);
   private readonly savingState = signal(false);
   private readonly errorState = signal('');
   private readonly searchState = signal('');
+  private readonly requirementState = signal<MaterialRequirements | null>(null);
+  private readonly requirementLoadingState = signal(false);
+  private readonly requirementErrorState = signal('');
 
   readonly orders = this.orderItems.asReadonly();
   readonly products = this.productItems.asReadonly();
@@ -23,6 +29,9 @@ export class ProductionOrderStore {
   readonly isSaving = this.savingState.asReadonly();
   readonly error = this.errorState.asReadonly();
   readonly search = this.searchState.asReadonly();
+  readonly requirements = this.requirementState.asReadonly();
+  readonly isLoadingRequirements = this.requirementLoadingState.asReadonly();
+  readonly requirementError = this.requirementErrorState.asReadonly();
 
   async initialize(): Promise<void> {
     this.loadingState.set(true);
@@ -91,5 +100,25 @@ export class ProductionOrderStore {
 
   clearError(): void {
     this.errorState.set('');
+  }
+
+  async checkMaterials(orderId: string): Promise<void> {
+    this.requirementLoadingState.set(true);
+    this.requirementErrorState.set('');
+    this.requirementState.set(null);
+    try {
+      const response = await firstValueFrom(this.bomApi.getProductionOrderRequirements(orderId));
+      this.requirementState.set(response.data ?? null);
+    } catch (error: unknown) {
+      this.requirementErrorState.set(businessDataErrorMessage(error));
+    } finally {
+      this.requirementLoadingState.set(false);
+    }
+  }
+
+  clearRequirements(): void {
+    this.requirementState.set(null);
+    this.requirementErrorState.set('');
+    this.requirementLoadingState.set(false);
   }
 }

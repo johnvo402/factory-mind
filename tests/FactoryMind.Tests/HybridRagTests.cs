@@ -7,6 +7,7 @@ public sealed class HybridRagTests {
     [Theory]
     [InlineData("Máy nào đang rảnh?", ChatIntent.Business, BusinessDataScope.Machines)]
     [InlineData("Kho còn bao nhiêu nguyên liệu?", ChatIntent.Business, BusinessDataScope.Materials | BusinessDataScope.Inventory)]
+    [InlineData("BOM sản phẩm này gồm vật tư gì?", ChatIntent.Business, BusinessDataScope.Materials | BusinessDataScope.Products)]
     [InlineData("Hướng dẫn SOP an toàn", ChatIntent.Knowledge, BusinessDataScope.None)]
     [InlineData("Theo SOP, máy nào đang bảo trì?", ChatIntent.Hybrid, BusinessDataScope.Machines)]
     [InlineData("Có nên nhận đơn hàng này?", ChatIntent.Hybrid, BusinessDataScope.ProductionOrders)]

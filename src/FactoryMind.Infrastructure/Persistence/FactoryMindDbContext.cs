@@ -1,4 +1,5 @@
 using FactoryMind.Application.Features.Knowledge;
+using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.Inventories;
 using FactoryMind.Application.Features.Machines;
 using FactoryMind.Application.Features.Materials;
@@ -29,6 +30,8 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
     public DbSet<Machine> Machines => Set<Machine>();
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<BillOfMaterial> BillOfMaterials => Set<BillOfMaterial>();
+    public DbSet<BomItem> BomItems => Set<BomItem>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
     public DbSet<InventoryBalance> InventoryBalances => Set<InventoryBalance>();
     public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
@@ -187,6 +190,50 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
             entity.HasOne(product => product.Company)
                 .WithMany(company => company.Products)
                 .HasForeignKey(product => product.CompanyId);
+        });
+
+        modelBuilder.Entity<BillOfMaterial>(entity => {
+            entity.ToTable("bill_of_materials", table => table.HasCheckConstraint(
+                "CK_bill_of_materials_OutputQuantity_positive",
+                "\"OutputQuantity\" > 0"));
+            entity.HasIndex(bom => new { bom.CompanyId, bom.ProductId, bom.Revision }).IsUnique();
+            entity.HasIndex(bom => new { bom.CompanyId, bom.ProductId })
+                .IsUnique()
+                .HasFilter("\"Status\" = 'active'");
+            entity.Property(bom => bom.OutputQuantity)
+                .HasPrecision(BomConstraints.QuantityPrecision, BomConstraints.QuantityScale);
+            entity.Property(bom => bom.Status)
+                .HasMaxLength(BomConstraints.MaximumStatusLength)
+                .IsRequired();
+            entity.HasOne(bom => bom.Company)
+                .WithMany(company => company.BillOfMaterials)
+                .HasForeignKey(bom => bom.CompanyId);
+            entity.HasOne(bom => bom.Product)
+                .WithMany()
+                .HasForeignKey(bom => bom.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(bom => bom.Items)
+                .WithOne(item => item.BillOfMaterial)
+                .HasForeignKey(item => item.BillOfMaterialId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BomItem>(entity => {
+            entity.ToTable("bom_items", table => {
+                table.HasCheckConstraint("CK_bom_items_Quantity_positive", "\"Quantity\" > 0");
+                table.HasCheckConstraint(
+                    "CK_bom_items_ScrapPercentage_range",
+                    $"\"ScrapPercentage\" IS NULL OR (\"ScrapPercentage\" >= 0 AND \"ScrapPercentage\" <= {BomConstraints.MaximumScrapPercentage})");
+            });
+            entity.HasIndex(item => new { item.BillOfMaterialId, item.MaterialId }).IsUnique();
+            entity.Property(item => item.Quantity)
+                .HasPrecision(BomConstraints.QuantityPrecision, BomConstraints.QuantityScale);
+            entity.Property(item => item.ScrapPercentage)
+                .HasPrecision(BomConstraints.ScrapPrecision, BomConstraints.ScrapScale);
+            entity.HasOne(item => item.Material)
+                .WithMany()
+                .HasForeignKey(item => item.MaterialId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Warehouse>(entity => {

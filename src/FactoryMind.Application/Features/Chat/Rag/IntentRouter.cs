@@ -20,13 +20,13 @@ public sealed class IntentRouter : IIntentRouter {
                 "may", "machine", "thiet bi", "bao tri", "maintenance", "available", "running"
             ],
             [BusinessDataScope.Materials] = [
-                "nguyen lieu", "vat lieu", "material"
+                "nguyen lieu", "vat lieu", "vat tu", "material", "bom", "dinh muc"
             ],
             [BusinessDataScope.Inventory] = [
                 "kho", "ton", "inventory", "stock", "warehouse"
             ],
             [BusinessDataScope.Products] = [
-                "san pham", "product"
+                "san pham", "product", "bom", "dinh muc", "cau tao", "lam tu"
             ],
             [BusinessDataScope.ProductionOrders] = [
                 "lenh san xuat", "don hang", "production order", "order", "tien do"

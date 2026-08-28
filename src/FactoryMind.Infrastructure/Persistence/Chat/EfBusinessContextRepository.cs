@@ -98,11 +98,20 @@ public sealed class EfBusinessContextRepository(
                     product.Name
                 })
                 .ToListAsync(cancellationToken);
+            var productIds = products.Select(product => product.Id).ToList();
+            var activeBoms = await dbContext.BillOfMaterials
+                .AsNoTracking()
+                .Include(bom => bom.Items)
+                    .ThenInclude(item => item.Material)
+                .Where(bom => bom.CompanyId == companyId &&
+                    productIds.Contains(bom.ProductId) &&
+                    bom.Status == BillOfMaterialStatuses.Active)
+                .ToDictionaryAsync(bom => bom.ProductId, cancellationToken);
             records.AddRange(products.Select(product => new BusinessDataRecord(
                 product.Id,
                 "product",
                 $"{product.Code} - {product.Name}",
-                "Sản phẩm đang có trong danh mục sản xuất.")));
+                ProductDetail(product.Id, activeBoms))));
         }
 
         if (scopes.HasFlag(BusinessDataScope.ProductionOrders)) {
@@ -134,7 +143,27 @@ public sealed class EfBusinessContextRepository(
         return records;
     }
 
-    private static string Format(decimal value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+    private static string Format(decimal value) => value.ToString("0.######", CultureInfo.InvariantCulture);
+
+    private static string ProductDetail(
+        Guid productId,
+        IReadOnlyDictionary<Guid, BillOfMaterial> activeBoms) {
+        if (!activeBoms.TryGetValue(productId, out var bom)) {
+            return "Sản phẩm chưa có BOM active.";
+        }
+
+        var components = string.Join(
+            "; ",
+            bom.Items
+                .OrderBy(item => item.Material!.Code)
+                .Select(item =>
+                    $"{item.Material!.Code} {Format(item.Quantity)} {item.Material.Unit}" +
+                    (item.ScrapPercentage.HasValue
+                        ? $" (hao hụt {Format(item.ScrapPercentage.Value)}%)"
+                        : string.Empty)));
+        return $"BOM active revision {bom.Revision}, output {Format(bom.OutputQuantity)}. " +
+            $"Thành phần: {components}.";
+    }
 
     private static string FormatTimestamp(DateTime value) =>
         value.ToUniversalTime().ToString("dd/MM/yyyy HH:mm 'UTC'", CultureInfo.InvariantCulture);

@@ -22,3 +22,104 @@
   background: #fde8e5;
   color: #a6382f;
 }
+
+.requirements-panel {
+  width: min(680px, 94vw);
+  height: 100dvh;
+  overflow-y: auto;
+}
+
+.requirements-panel > header p {
+  margin-top: 6px;
+  color: #6a7873;
+  font-size: 0.8rem;
+}
+
+.requirements-panel .error {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.order-requirements {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.requirements-summary {
+  display: grid;
+  gap: 5px;
+  border-left: 4px solid #178069;
+  border-radius: 9px;
+  background: #e8f5ef;
+  padding: 15px 16px;
+  color: #145d4c;
+}
+
+.requirements-summary.shortage {
+  border-left-color: #b42318;
+  background: #fff0ee;
+  color: #8f2d25;
+}
+
+.requirements-summary span {
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.requirements-list {
+  display: grid;
+  gap: 10px;
+}
+
+.material-row {
+  border: 1px solid #bcdccd;
+  border-radius: 10px;
+  background: #fff;
+  padding: 15px;
+}
+
+.material-row.shortage {
+  border-color: #e8b7b1;
+}
+
+.material-row header,
+.material-row dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.material-row header div {
+  display: grid;
+  gap: 3px;
+}
+
+.material-row header span,
+.material-row dt {
+  color: #6a7873;
+  font-size: 0.78rem;
+}
+
+.material-row header b {
+  color: #176a52;
+  font-size: 0.78rem;
+}
+
+.material-row.shortage header b {
+  color: #a6382f;
+}
+
+.material-row dl {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.material-row dd {
+  margin: 0;
+  color: #2d4038;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}

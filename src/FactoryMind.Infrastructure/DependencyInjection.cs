@@ -1,4 +1,5 @@
 using FactoryMind.Application.Features.Auth;
+using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.Chat;
 using FactoryMind.Application.Features.Dashboard;
 using FactoryMind.Application.Features.ExcelImports;
@@ -15,6 +16,7 @@ using FactoryMind.Infrastructure.Jobs;
 using FactoryMind.Infrastructure.Knowledge;
 using FactoryMind.Infrastructure.Persistence;
 using FactoryMind.Infrastructure.Persistence.Auth;
+using FactoryMind.Infrastructure.Persistence.Boms;
 using FactoryMind.Infrastructure.Persistence.Chat;
 using FactoryMind.Infrastructure.Persistence.Dashboard;
 using FactoryMind.Infrastructure.Persistence.ExcelImports;
@@ -61,6 +63,7 @@ public static class DependencyInjection {
         services.Configure<BootstrapAdminSettings>(
             configuration.GetSection(BootstrapAdminSettings.SectionName));
         services.AddScoped<IAuthRepository, EfAuthRepository>();
+        services.AddScoped<IBomRepository, EfBomRepository>();
         services.AddScoped<IConversationRepository, EfConversationRepository>();
         services.AddScoped<IBusinessContextRepository, EfBusinessContextRepository>();
         services.AddScoped<IDashboardRepository, EfDashboardRepository>();

@@ -367,6 +367,94 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     b.ToTable("documents", (string)null);
                 });
 
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.BillOfMaterial", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("OutputQuantity")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("CompanyId", "ProductId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'active'");
+
+                    b.HasIndex("CompanyId", "ProductId", "Revision")
+                        .IsUnique();
+
+                    b.ToTable("bill_of_materials", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_bill_of_materials_OutputQuantity_positive", "\"OutputQuantity\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.BomItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BillOfMaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<decimal?>("ScrapPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterialId");
+
+                    b.HasIndex("BillOfMaterialId", "MaterialId")
+                        .IsUnique();
+
+                    b.ToTable("bom_items", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_bom_items_Quantity_positive", "\"Quantity\" > 0");
+
+                            t.HasCheckConstraint("CK_bom_items_ScrapPercentage_range", "\"ScrapPercentage\" IS NULL OR (\"ScrapPercentage\" >= 0 AND \"ScrapPercentage\" <= 100)");
+                        });
+                });
+
             modelBuilder.Entity("FactoryMind.Domain.Manufacturing.InventoryBalance", b =>
                 {
                     b.Property<Guid>("Id")
@@ -809,6 +897,44 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     b.Navigation("UploadedByUser");
                 });
 
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.BillOfMaterial", b =>
+                {
+                    b.HasOne("FactoryMind.Domain.Identity.Company", "Company")
+                        .WithMany("BillOfMaterials")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.BomItem", b =>
+                {
+                    b.HasOne("FactoryMind.Domain.Manufacturing.BillOfMaterial", "BillOfMaterial")
+                        .WithMany("Items")
+                        .HasForeignKey("BillOfMaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.Material", "Material")
+                        .WithMany()
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BillOfMaterial");
+
+                    b.Navigation("Material");
+                });
+
             modelBuilder.Entity("FactoryMind.Domain.Manufacturing.InventoryBalance", b =>
                 {
                     b.HasOne("FactoryMind.Domain.Identity.Company", "Company")
@@ -956,6 +1082,8 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("FactoryMind.Domain.Identity.Company", b =>
                 {
+                    b.Navigation("BillOfMaterials");
+
                     b.Navigation("Conversations");
 
                     b.Navigation("Documents");
@@ -991,6 +1119,11 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("FactoryMind.Domain.Knowledge.KnowledgeDocument", b =>
                 {
                     b.Navigation("Chunks");
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.BillOfMaterial", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

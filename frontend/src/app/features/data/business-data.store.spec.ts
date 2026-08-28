@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Observable, of } from 'rxjs';
 import { ApiResponse } from '../../core/api/api.models';
+import { BomApiService } from '../boms/bom-api.service';
 import { InventoryApiService } from '../inventories/inventory-api.service';
 import { Inventory } from '../inventories/inventory.models';
 import { InventoryStore } from '../inventories/inventory.store';
@@ -93,6 +94,9 @@ describe('Business data stores', () => {
       ['getProductionOrders', 'createProductionOrder', 'updateProductionOrder', 'deleteProductionOrder'],
     );
     const productApi = jasmine.createSpyObj<ProductApiService>('ProductApiService', ['getProducts']);
+    const bomApi = jasmine.createSpyObj<BomApiService>('BomApiService', [
+      'getProductionOrderRequirements',
+    ]);
     orderApi.getProductionOrders.and.returnValue(success([productionOrder()]));
     productApi.getProducts.and.returnValue(success([product()]));
     TestBed.configureTestingModule({
@@ -100,6 +104,7 @@ describe('Business data stores', () => {
         ProductionOrderStore,
         { provide: ProductionOrderApiService, useValue: orderApi },
         { provide: ProductApiService, useValue: productApi },
+        { provide: BomApiService, useValue: bomApi },
       ],
     });
     const store = TestBed.inject(ProductionOrderStore);

@@ -294,6 +294,11 @@ public sealed class InventoryCommandHandlerTests {
             Guid? excludedMaterialId,
             CancellationToken cancellationToken) => Task.FromResult(false);
 
+        public Task<bool> HasBomItemsAsync(
+            Guid materialId,
+            Guid companyId,
+            CancellationToken cancellationToken) => Task.FromResult(false);
+
         public void Add(Material material) => Materials.Add(material);
         public void Remove(Material material) => Materials.Remove(material);
         public Task SaveChangesAsync(CancellationToken cancellationToken) => Task.CompletedTask;

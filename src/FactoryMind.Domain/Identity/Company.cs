@@ -14,6 +14,7 @@ public sealed class Company {
     public ICollection<Machine> Machines { get; set; } = [];
     public ICollection<Material> Materials { get; set; } = [];
     public ICollection<Product> Products { get; set; } = [];
+    public ICollection<BillOfMaterial> BillOfMaterials { get; set; } = [];
     public ICollection<Warehouse> Warehouses { get; set; } = [];
     public ICollection<InventoryBalance> InventoryBalances { get; set; } = [];
     public ICollection<InventoryTransaction> InventoryTransactions { get; set; } = [];

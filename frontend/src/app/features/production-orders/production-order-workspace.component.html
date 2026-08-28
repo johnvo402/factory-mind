@@ -39,6 +39,7 @@
                   <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(order.id)">Xác nhận</button>
                   <button type="button" class="ghost" (click)="confirmDeleteId.set(null)">Hủy</button>
                 } @else {
+                  <button type="button" class="ghost" [attr.aria-label]="'Kiểm tra vật tư cho ' + order.number" (click)="checkMaterials(order)">Kiểm tra vật tư</button>
                   <button type="button" class="ghost" [attr.aria-label]="'Sửa ' + order.number" (click)="startEdit(order)">Sửa</button>
                   <button type="button" class="ghost danger-text" [attr.aria-label]="'Xóa ' + order.number" (click)="requestDelete(order.id)">Xóa</button>
                 }
@@ -86,6 +87,53 @@
             <button type="submit" class="primary" [disabled]="store.isSaving()">{{ store.isSaving() ? 'Đang lưu...' : 'Lưu lệnh sản xuất' }}</button>
           </footer>
         </form>
+      </section>
+    </div>
+  }
+
+  @if (requirementsOpen() && requirementOrder(); as order) {
+    <div class="editor-backdrop" (click)="closeRequirements()">
+      <section class="editor requirements-panel" role="dialog" aria-modal="true" aria-labelledby="order-requirements-title" (click)="$event.stopPropagation()">
+        <header>
+          <div>
+            <span class="eyebrow">MATERIAL PLANNING</span>
+            <h2 id="order-requirements-title">{{ order.number }}</h2>
+            <p>{{ order.productCode }} — {{ order.productName }} · {{ order.quantity | number: '1.0-3' }} sản phẩm</p>
+          </div>
+          <button type="button" class="close" aria-label="Đóng kiểm tra vật tư" (click)="closeRequirements()">×</button>
+        </header>
+
+        @if (store.isLoadingRequirements()) {
+          <div class="state" role="status">Đang tính nhu cầu và đối chiếu tồn kho...</div>
+        } @else if (store.requirementError()) {
+          <div class="error" role="alert">
+            {{ store.requirementError() }}
+            <button type="button" class="secondary" (click)="checkMaterials(order)">Thử lại</button>
+          </div>
+        } @else if (store.requirements(); as requirements) {
+          <div class="order-requirements" role="status" aria-live="polite">
+            <div class="requirements-summary" [class.shortage]="!requirements.canProduce">
+              <strong>{{ requirements.canProduce ? 'Đủ vật tư để thực hiện lệnh' : 'Lệnh đang thiếu vật tư' }}</strong>
+              <span>Tính theo active BOM revision {{ requirements.bomRevision }}. Đây là bản xem trước, tồn kho chưa thay đổi.</span>
+            </div>
+
+            <div class="requirements-list">
+              @for (material of requirements.materials; track material.materialId) {
+                <article class="material-row" [class.shortage]="!material.isSufficient">
+                  <header>
+                    <div><strong>{{ material.materialCode }}</strong><span>{{ material.materialName }}</span></div>
+                    <b>{{ material.isSufficient ? 'Đủ' : 'Thiếu' }}</b>
+                  </header>
+                  <dl>
+                    <div><dt>Cần</dt><dd>{{ material.requiredQuantity | number: '1.0-6' }} {{ material.unit }}</dd></div>
+                    <div><dt>Hiện có</dt><dd>{{ material.availableQuantity | number: '1.0-6' }} {{ material.unit }}</dd></div>
+                    <div><dt>Thiếu hụt</dt><dd>{{ material.shortageQuantity | number: '1.0-6' }} {{ material.unit }}</dd></div>
+                  </dl>
+                </article>
+              }
+            </div>
+          </div>
+        }
       </section>
     </div>
   }

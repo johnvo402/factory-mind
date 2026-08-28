@@ -112,6 +112,11 @@ public sealed class ProductionOrderCommandHandlerTests {
             Guid? excludedProductId,
             CancellationToken cancellationToken) => Task.FromResult(false);
 
+        public Task<bool> HasBillOfMaterialsAsync(
+            Guid productId,
+            Guid companyId,
+            CancellationToken cancellationToken) => Task.FromResult(false);
+
         public void Add(Product product) => Products.Add(product);
         public void Remove(Product product) => Products.Remove(product);
         public Task SaveChangesAsync(CancellationToken cancellationToken) => Task.CompletedTask;

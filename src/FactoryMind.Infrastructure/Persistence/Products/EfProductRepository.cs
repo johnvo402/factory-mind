@@ -39,6 +39,13 @@ public sealed class EfProductRepository(FactoryMindDbContext dbContext) : IProdu
                 (!excludedProductId.HasValue || product.Id != excludedProductId.Value),
             cancellationToken);
 
+    public Task<bool> HasBillOfMaterialsAsync(
+        Guid productId,
+        Guid companyId,
+        CancellationToken cancellationToken) => dbContext.BillOfMaterials.AnyAsync(
+            bom => bom.ProductId == productId && bom.CompanyId == companyId,
+            cancellationToken);
+
     public void Add(Product product) => dbContext.Products.Add(product);
     public void Remove(Product product) => dbContext.Products.Remove(product);
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>

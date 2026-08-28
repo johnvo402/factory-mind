@@ -43,6 +43,11 @@ public interface IMaterialRepository {
         Guid? excludedMaterialId,
         CancellationToken cancellationToken);
 
+    Task<bool> HasBomItemsAsync(
+        Guid materialId,
+        Guid companyId,
+        CancellationToken cancellationToken);
+
     void Add(Material material);
     void Remove(Material material);
     Task SaveChangesAsync(CancellationToken cancellationToken);
@@ -57,5 +62,10 @@ public static class MaterialErrors {
     public static readonly Error CodeAlreadyExists = new(
         "materials.code_already_exists",
         "A material with this code already exists.",
+        409);
+
+    public static readonly Error ReferencedByBom = new(
+        "materials.referenced_by_bom",
+        "A material referenced by a bill of materials cannot be deleted.",
         409);
 }

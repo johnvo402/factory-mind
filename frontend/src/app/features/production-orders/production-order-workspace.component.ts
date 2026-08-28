@@ -19,6 +19,8 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
   protected readonly editingId = signal<string | null>(null);
   protected readonly editorOpen = signal(false);
   protected readonly confirmDeleteId = signal<string | null>(null);
+  protected readonly requirementsOpen = signal(false);
+  protected readonly requirementOrder = signal<ProductionOrder | null>(null);
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly orderForm = new FormGroup({
     number: new FormControl('', {
@@ -109,5 +111,17 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
       cancelled: 'Đã hủy',
     };
     return labels[status];
+  }
+
+  protected async checkMaterials(order: ProductionOrder): Promise<void> {
+    this.requirementOrder.set(order);
+    this.requirementsOpen.set(true);
+    await this.store.checkMaterials(order.id);
+  }
+
+  protected closeRequirements(): void {
+    this.requirementsOpen.set(false);
+    this.requirementOrder.set(null);
+    this.store.clearRequirements();
   }
 }

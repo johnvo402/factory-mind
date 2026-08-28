@@ -18,6 +18,13 @@ public sealed class DeleteMaterialCommandHandler(
             return Result.Failure(MaterialErrors.NotFound);
         }
 
+        if (await repository.HasBomItemsAsync(
+                material.Id,
+                currentUser.CompanyId,
+                cancellationToken)) {
+            return Result.Failure(MaterialErrors.ReferencedByBom);
+        }
+
         repository.Remove(material);
         await repository.SaveChangesAsync(cancellationToken);
         return Result.Success();

@@ -65,6 +65,11 @@ public static class ApiRoutes {
         public const string Group = Base + "/products";
         public const string Root = "";
         public const string ById = "/{productId:guid}";
+        public const string Boms = ById + "/boms";
+        public const string BomById = Boms + "/{bomId:guid}";
+        public const string ActivateBom = BomById + "/activate";
+        public const string ArchiveBom = BomById + "/archive";
+        public const string MaterialRequirements = ById + "/material-requirements";
     }
 
     public static class Inventories {
@@ -87,5 +92,6 @@ public static class ApiRoutes {
         public const string Group = Base + "/production-orders";
         public const string Root = "";
         public const string ById = "/{productionOrderId:guid}";
+        public const string MaterialRequirements = ById + "/material-requirements";
     }
 }

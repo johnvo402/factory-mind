@@ -45,6 +45,15 @@ export const API_ROUTES = {
   products: {
     root: `${API_BASE}/products`,
     byId: (productId: string) => `${API_BASE}/products/${productId}`,
+    boms: (productId: string) => `${API_BASE}/products/${productId}/boms`,
+    bomById: (productId: string, bomId: string) =>
+      `${API_BASE}/products/${productId}/boms/${bomId}`,
+    activateBom: (productId: string, bomId: string) =>
+      `${API_BASE}/products/${productId}/boms/${bomId}/activate`,
+    archiveBom: (productId: string, bomId: string) =>
+      `${API_BASE}/products/${productId}/boms/${bomId}/archive`,
+    materialRequirements: (productId: string) =>
+      `${API_BASE}/products/${productId}/material-requirements`,
   },
   inventories: {
     root: `${API_BASE}/inventories`,
@@ -61,5 +70,7 @@ export const API_ROUTES = {
   productionOrders: {
     root: `${API_BASE}/production-orders`,
     byId: (productionOrderId: string) => `${API_BASE}/production-orders/${productionOrderId}`,
+    materialRequirements: (productionOrderId: string) =>
+      `${API_BASE}/production-orders/${productionOrderId}/material-requirements`,
   },
 } as const;

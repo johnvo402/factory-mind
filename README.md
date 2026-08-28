@@ -77,6 +77,7 @@ Ngoài phạm vi hiện tại:
 | Machines | Quản lý mã máy, tên và trạng thái vận hành | Manager/Admin |
 | Materials | Quản lý nguyên liệu và đơn vị tính | Manager/Admin |
 | Products | Quản lý danh mục sản phẩm | Manager/Admin |
+| Bill of Materials | Quản lý BOM theo revision và xem trước nhu cầu/thiếu hụt nguyên liệu mà không thay đổi tồn kho | Manager/Admin |
 | Inventory | Warehouse master data, immutable stock ledger, current balances và receive/issue/adjust/transfer | Manager/Admin |
 | Production Orders | Quản lý order number, Product, quantity và lifecycle status | Manager/Admin |
 | Excel Import | Preview header/rows, gợi ý mapping, validate toàn file và import transaction | Manager/Admin |
@@ -261,11 +262,15 @@ erDiagram
     COMPANY ||--o{ INVENTORY_BALANCE : owns
     COMPANY ||--o{ INVENTORY_TRANSACTION : owns
     COMPANY ||--o{ PRODUCTION_ORDER : owns
+    COMPANY ||--o{ BILL_OF_MATERIAL : owns
     WAREHOUSE ||--o{ INVENTORY_BALANCE : stores
     WAREHOUSE ||--o{ INVENTORY_TRANSACTION : records
     MATERIAL ||--o{ INVENTORY_BALANCE : balances
     MATERIAL ||--o{ INVENTORY_TRANSACTION : moves
     PRODUCT ||--o{ PRODUCTION_ORDER : requested_by
+    PRODUCT ||--o{ BILL_OF_MATERIAL : defines
+    BILL_OF_MATERIAL ||--o{ BOM_ITEM : contains
+    MATERIAL ||--o{ BOM_ITEM : component
     USER ||--o{ CONVERSATION : starts
     CONVERSATION ||--o{ MESSAGE : contains
     MESSAGE ||--o{ MESSAGE_CITATION : cites
@@ -280,6 +285,8 @@ Một số invariant quan trọng:
 - Business code/number là duy nhất trong từng Company, không phải global.
 - Inventory balance duy nhất theo `CompanyId + WarehouseId + MaterialId`; mọi thay đổi balance phải có transaction giải thích.
 - Production Order phải tham chiếu Product thuộc cùng Company.
+- BOM revision và mọi Material component phải thuộc cùng Company; mỗi Product chỉ có tối đa một revision Active.
+- Material requirement là phép tính preview chỉ đọc, tổng hợp tồn kho Material trên tất cả warehouse của tenant và không tạo Inventory Transaction.
 - Product/Material đang được tham chiếu không bị xóa làm mất lịch sử nghiệp vụ.
 - Document search chỉ dùng chunks của document `ready`, đúng Company và đúng embedding model hiện tại.
 - Citations/evidence trong Message là immutable snapshots để lịch sử chat không đổi khi dữ liệu nguồn được cập nhật sau này.
@@ -505,11 +512,14 @@ Tất cả business endpoints dùng prefix `/api` và tenant được lấy từ
 | `/api/machines` | `GET`, `POST`, `PUT`, `DELETE` | Machine CRUD | Manager/Admin |
 | `/api/materials` | `GET`, `POST`, `PUT`, `DELETE` | Material CRUD | Manager/Admin |
 | `/api/products` | `GET`, `POST`, `PUT`, `DELETE` | Product CRUD | Manager/Admin |
+| `/api/products/{productId}/boms` | `GET`, `POST`, `PUT` và lifecycle actions | BOM revisions và component list | Manager/Admin |
+| `/api/products/{productId}/material-requirements` | `GET` | Preview vật tư theo số lượng và active BOM | Manager/Admin |
 | `/api/warehouses` | `GET`, `POST`, `PUT`, `DELETE` | Warehouse CRUD; DELETE deactivates | Manager/Admin |
 | `/api/inventories` | `GET` | Current tenant-scoped balances | Manager/Admin |
 | `/api/inventories/transactions` | `GET` | Filtered, paged inventory ledger history | Manager/Admin |
 | `/api/inventories/receive`, `/issue`, `/adjust`, `/transfer` | `POST` | Atomic stock operations | Manager/Admin |
 | `/api/production-orders` | `GET`, `POST`, `PUT`, `DELETE` | Production Order CRUD | Manager/Admin |
+| `/api/production-orders/{id}/material-requirements` | `GET` | Preview vật tư theo quantity của Production Order | Manager/Admin |
 | `/api/settings/company` | `GET`, `PUT` | Company settings | Admin |
 | `/api/settings/users` | `GET`, `POST`, `PUT` | Tenant user management | Admin |
 | `/api/settings/ai` | `GET` | Model metadata và key readiness, không trả key | Admin |

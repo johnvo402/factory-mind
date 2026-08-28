@@ -346,6 +346,22 @@ Mỗi task chỉ được Done nếu:
 
 ---
 
+# Manufacturing planning increment
+
+## Versioned BOM and material requirements
+
+* Draft, Active, and Archived BOM revisions per Product.
+* One active revision per Product and Company.
+* Decimal output quantity, component quantity, and optional scrap.
+* Read-only Product and Production Order material-requirement previews.
+* Availability summed from tenant-scoped warehouse balances.
+* Product BOM management and accessible shortage/adequacy UI.
+* No reservation, consumption, production output, or scheduling.
+
+Implementation status: implemented as the next focused manufacturing-domain slice after the warehouse inventory ledger. Production execution must later snapshot/reference the BOM revision it uses.
+
+---
+
 # MVP Checklist
 
 ## Authentication

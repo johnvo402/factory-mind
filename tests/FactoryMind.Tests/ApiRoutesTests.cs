@@ -57,11 +57,20 @@ public sealed class ApiRoutesTests {
         Assert.Equal(
             "/api/products/{productId:guid}",
             ApiRoutes.Products.Group + ApiRoutes.Products.ById);
+        Assert.Equal(
+            "/api/products/{productId:guid}/boms/{bomId:guid}/activate",
+            ApiRoutes.Products.Group + ApiRoutes.Products.ActivateBom);
+        Assert.Equal(
+            "/api/products/{productId:guid}/material-requirements",
+            ApiRoutes.Products.Group + ApiRoutes.Products.MaterialRequirements);
         Assert.Equal("/api/inventories/transactions", ApiRoutes.Inventories.Group + ApiRoutes.Inventories.Transactions);
         Assert.Equal("/api/inventories/receive", ApiRoutes.Inventories.Group + ApiRoutes.Inventories.Receive);
         Assert.Equal("/api/warehouses/{warehouseId:guid}", ApiRoutes.Warehouses.Group + ApiRoutes.Warehouses.ById);
         Assert.Equal(
             "/api/production-orders/{productionOrderId:guid}",
             ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.ById);
+        Assert.Equal(
+            "/api/production-orders/{productionOrderId:guid}/material-requirements",
+            ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.MaterialRequirements);
     }
 }
