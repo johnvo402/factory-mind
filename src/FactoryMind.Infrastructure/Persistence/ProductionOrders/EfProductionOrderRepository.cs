@@ -60,7 +60,7 @@ public sealed class EfProductionOrderRepository(FactoryMindDbContext dbContext) 
                 .SetProperty(candidate => candidate.Quantity, order.Quantity)
                 .SetProperty(candidate => candidate.UpdatedAt, order.UpdatedAt), cancellationToken);
         if (affected == 1) {
-            dbContext.Entry(order).State = EntityState.Unchanged;
+            dbContext.Entry(order).State = EntityState.Detached;
         }
         return affected == 1;
     }

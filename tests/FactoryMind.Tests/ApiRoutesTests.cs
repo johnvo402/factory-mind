@@ -72,5 +72,14 @@ public sealed class ApiRoutesTests {
         Assert.Equal(
             "/api/production-orders/{productionOrderId:guid}/material-requirements",
             ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.MaterialRequirements);
+        Assert.Equal(
+            "/api/production-orders/{productionOrderId:guid}/release",
+            ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.Release);
+        Assert.Equal(
+            "/api/production-orders/{productionOrderId:guid}/start",
+            ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.Start);
+        Assert.Equal(
+            "/api/production-orders/{productionOrderId:guid}/cancel",
+            ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.Cancel);
     }
 }

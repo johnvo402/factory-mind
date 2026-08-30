@@ -30,6 +30,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime {
     public async Task ResetDatabaseAsync() {
         using var scope = ApiFactory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        await dbContext.Database.MigrateAsync();
         await dbContext.Database.ExecuteSqlRawAsync("TRUNCATE TABLE companies CASCADE;");
 
         var credentialHasher = scope.ServiceProvider.GetRequiredService<ICredentialHasher>();
