@@ -15,7 +15,6 @@ public sealed class InventoryCommandHandlerTests {
     [InlineData(InventoryTransactionType.Receipt, 4)]
     [InlineData(InventoryTransactionType.AdjustmentIncrease, 4)]
     [InlineData(InventoryTransactionType.TransferIn, 4)]
-    [InlineData(InventoryTransactionType.ProductionOutput, 4)]
     [InlineData(InventoryTransactionType.Issue, -4)]
     [InlineData(InventoryTransactionType.AdjustmentDecrease, -4)]
     [InlineData(InventoryTransactionType.TransferOut, -4)]
@@ -24,6 +23,16 @@ public sealed class InventoryCommandHandlerTests {
         InventoryTransactionType type,
         decimal expected) {
         Assert.Equal(expected, type.ToSignedQuantity(4));
+    }
+
+    [Fact]
+    public void Product_output_signed_quantity_is_positive() {
+        var transaction = new ProductInventoryTransaction {
+            Type = ProductInventoryTransactionType.ProductionOutput,
+            Quantity = 4m
+        };
+
+        Assert.Equal(4m, transaction.SignedQuantity());
     }
 
     [Fact]

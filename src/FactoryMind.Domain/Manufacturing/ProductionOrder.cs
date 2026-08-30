@@ -15,6 +15,7 @@ public sealed class ProductionOrder {
     public string Status { get; set; } = ProductionOrderStatuses.Planned;
     public DateTime? ReleasedAt { get; set; }
     public DateTime? StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
     public DateTime? CancelledAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

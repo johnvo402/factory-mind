@@ -5,6 +5,7 @@ using FactoryMind.Application.Features.Machines;
 using FactoryMind.Application.Features.Materials;
 using FactoryMind.Application.Features.Products;
 using FactoryMind.Application.Features.ProductionOrders;
+using FactoryMind.Application.Features.ProductInventories;
 using FactoryMind.Application.Features.Warehouses;
 using FactoryMind.Domain.Chat;
 using FactoryMind.Domain.Identity;
@@ -35,6 +36,8 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
     public DbSet<InventoryBalance> InventoryBalances => Set<InventoryBalance>();
     public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
+    public DbSet<ProductInventoryBalance> ProductInventoryBalances => Set<ProductInventoryBalance>();
+    public DbSet<ProductInventoryTransaction> ProductInventoryTransactions => Set<ProductInventoryTransaction>();
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
@@ -314,6 +317,73 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
                 .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(transaction => transaction.CreatedByUser)
                 .WithMany(user => user.CreatedInventoryTransactions)
+                .HasForeignKey(transaction => transaction.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductInventoryBalance>(entity => {
+            entity.ToTable("product_inventory_balances", table => table.HasCheckConstraint(
+                "CK_product_inventory_balances_Quantity_nonnegative", "\"Quantity\" >= 0"));
+            entity.HasIndex(balance => new {
+                balance.CompanyId,
+                balance.WarehouseId,
+                balance.ProductId
+            }).IsUnique();
+            entity.HasIndex(balance => new { balance.CompanyId, balance.WarehouseId });
+            entity.Property(balance => balance.Quantity)
+                .HasPrecision(ProductInventoryConstraints.QuantityPrecision, ProductInventoryConstraints.QuantityScale);
+            entity.HasOne(balance => balance.Company)
+                .WithMany(company => company.ProductInventoryBalances)
+                .HasForeignKey(balance => balance.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(balance => balance.Warehouse)
+                .WithMany()
+                .HasForeignKey(balance => balance.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(balance => balance.Product)
+                .WithMany()
+                .HasForeignKey(balance => balance.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductInventoryTransaction>(entity => {
+            entity.ToTable("product_inventory_transactions", table => table.HasCheckConstraint(
+                "CK_product_inventory_transactions_Quantity_positive", "\"Quantity\" > 0"));
+            entity.HasIndex(transaction => new {
+                transaction.CompanyId,
+                transaction.CreatedAt
+            });
+            entity.HasIndex(transaction => new {
+                transaction.CompanyId,
+                transaction.WarehouseId,
+                transaction.ProductId,
+                transaction.CreatedAt
+            }).HasDatabaseName("IX_product_inventory_transactions_company_warehouse_product_created");
+            entity.HasIndex(transaction => new {
+                transaction.CompanyId,
+                transaction.ReferenceId
+            });
+            entity.Property(transaction => transaction.Type).HasConversion<string>().HasMaxLength(40);
+            entity.Property(transaction => transaction.Quantity)
+                .HasPrecision(ProductInventoryConstraints.QuantityPrecision, ProductInventoryConstraints.QuantityScale);
+            entity.Property(transaction => transaction.ReferenceType)
+                .HasMaxLength(ProductInventoryConstraints.MaximumReferenceTypeLength);
+            entity.Property(transaction => transaction.Note)
+                .HasMaxLength(ProductInventoryConstraints.MaximumNoteLength);
+            entity.HasOne(transaction => transaction.Company)
+                .WithMany(company => company.ProductInventoryTransactions)
+                .HasForeignKey(transaction => transaction.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(transaction => transaction.Warehouse)
+                .WithMany()
+                .HasForeignKey(transaction => transaction.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(transaction => transaction.Product)
+                .WithMany()
+                .HasForeignKey(transaction => transaction.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(transaction => transaction.CreatedByUser)
+                .WithMany(user => user.CreatedProductInventoryTransactions)
                 .HasForeignKey(transaction => transaction.CreatedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });

@@ -254,7 +254,7 @@ public sealed class BomCommandHandlerTests {
             Guid? excludedProductId,
             CancellationToken cancellationToken) => Task.FromResult(false);
 
-        public Task<bool> HasBillOfMaterialsAsync(
+        public Task<bool> HasReferencesAsync(
             Guid productId,
             Guid companyId,
             CancellationToken cancellationToken) => Task.FromResult(false);

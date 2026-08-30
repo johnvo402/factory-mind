@@ -670,6 +670,107 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     b.ToTable("products", (string)null);
                 });
 
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.ProductInventoryBalance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("CompanyId", "WarehouseId");
+
+                    b.HasIndex("CompanyId", "WarehouseId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("product_inventory_balances", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_product_inventory_balances_Quantity_nonnegative", "\"Quantity\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.ProductInventoryTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<Guid?>("ReferenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReferenceType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("CompanyId", "CreatedAt");
+
+                    b.HasIndex("CompanyId", "ReferenceId");
+
+                    b.HasIndex("CompanyId", "WarehouseId", "ProductId", "CreatedAt")
+                        .HasDatabaseName("IX_product_inventory_transactions_company_warehouse_product_created");
+
+                    b.ToTable("product_inventory_transactions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_product_inventory_transactions_Quantity_positive", "\"Quantity\" > 0");
+                        });
+                });
+
             modelBuilder.Entity("FactoryMind.Domain.Manufacturing.ProductionOrder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -684,6 +785,9 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1043,6 +1147,67 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.ProductInventoryBalance", b =>
+                {
+                    b.HasOne("FactoryMind.Domain.Identity.Company", "Company")
+                        .WithMany("ProductInventoryBalances")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.ProductInventoryTransaction", b =>
+                {
+                    b.HasOne("FactoryMind.Domain.Identity.Company", "Company")
+                        .WithMany("ProductInventoryTransactions")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Identity.User", "CreatedByUser")
+                        .WithMany("CreatedProductInventoryTransactions")
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+                });
+
             modelBuilder.Entity("FactoryMind.Domain.Manufacturing.ProductionOrder", b =>
                 {
                     b.HasOne("FactoryMind.Domain.Manufacturing.BillOfMaterial", "BillOfMaterial")
@@ -1117,6 +1282,10 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Materials");
 
+                    b.Navigation("ProductInventoryBalances");
+
+                    b.Navigation("ProductInventoryTransactions");
+
                     b.Navigation("ProductionOrders");
 
                     b.Navigation("Products");
@@ -1131,6 +1300,8 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     b.Navigation("Conversations");
 
                     b.Navigation("CreatedInventoryTransactions");
+
+                    b.Navigation("CreatedProductInventoryTransactions");
 
                     b.Navigation("RefreshTokens");
 

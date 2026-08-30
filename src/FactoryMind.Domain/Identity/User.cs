@@ -18,6 +18,7 @@ public sealed class User {
     public ICollection<Conversation> Conversations { get; set; } = [];
     public ICollection<KnowledgeDocument> UploadedDocuments { get; set; } = [];
     public ICollection<InventoryTransaction> CreatedInventoryTransactions { get; set; } = [];
+    public ICollection<ProductInventoryTransaction> CreatedProductInventoryTransactions { get; set; } = [];
 }
 
 public static class UserRoles {

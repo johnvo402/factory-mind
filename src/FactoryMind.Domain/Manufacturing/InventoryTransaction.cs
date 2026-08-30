@@ -29,16 +29,14 @@ public enum InventoryTransactionType {
     AdjustmentDecrease,
     TransferIn,
     TransferOut,
-    ProductionConsume,
-    ProductionOutput
+    ProductionConsume
 }
 
 public static class InventoryTransactionTypeExtensions {
     public static decimal ToSignedQuantity(this InventoryTransactionType type, decimal quantity) => type switch {
         InventoryTransactionType.Receipt or
         InventoryTransactionType.AdjustmentIncrease or
-        InventoryTransactionType.TransferIn or
-        InventoryTransactionType.ProductionOutput => quantity,
+        InventoryTransactionType.TransferIn => quantity,
         InventoryTransactionType.Issue or
         InventoryTransactionType.AdjustmentDecrease or
         InventoryTransactionType.TransferOut or

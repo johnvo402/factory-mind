@@ -30,6 +30,7 @@ app.MapInventoryEndpoints();
 app.MapMachineEndpoints();
 app.MapMaterialEndpoints();
 app.MapProductEndpoints();
+app.MapProductInventoryEndpoints();
 app.MapProductionOrderEndpoints();
 app.MapSettingsEndpoints();
 app.MapWarehouseEndpoints();

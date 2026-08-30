@@ -22,6 +22,7 @@ public sealed record ProductionOrderResponse(
     int? BomRevision,
     DateTime? ReleasedAt,
     DateTime? StartedAt,
+    DateTime? CompletedAt,
     DateTime? CancelledAt,
     DateTime CreatedAt,
     DateTime UpdatedAt) {
@@ -37,6 +38,7 @@ public sealed record ProductionOrderResponse(
         order.BillOfMaterial?.Revision,
         order.ReleasedAt,
         order.StartedAt,
+        order.CompletedAt,
         order.CancelledAt,
         order.CreatedAt,
         order.UpdatedAt);
@@ -87,7 +89,8 @@ public enum ProductionExecutionStatus {
     ActiveBomNotFound,
     InsufficientStock,
     WarehouseUnavailable,
-    MaterialUnavailable
+    MaterialUnavailable,
+    ProductUnavailable
 }
 
 public interface IProductionExecutionRepository {
@@ -113,6 +116,13 @@ public interface IProductionExecutionRepository {
         Guid productionOrderId,
         Guid companyId,
         DateTime cancelledAt,
+        CancellationToken cancellationToken);
+
+    Task<ProductionExecutionResult> TryCompleteAsync(
+        Guid productionOrderId,
+        Guid companyId,
+        ProductInventoryTransaction outputTransaction,
+        DateTime completedAt,
         CancellationToken cancellationToken);
 }
 

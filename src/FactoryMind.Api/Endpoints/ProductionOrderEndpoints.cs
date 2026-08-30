@@ -2,6 +2,7 @@ using FactoryMind.Api.Routing;
 using FactoryMind.Application.Common.Authorization;
 using FactoryMind.Application.Features.ProductionOrders;
 using FactoryMind.Application.Features.ProductionOrders.CancelProductionOrder;
+using FactoryMind.Application.Features.ProductionOrders.CompleteProductionOrder;
 using FactoryMind.Application.Features.ProductionOrders.CreateProductionOrder;
 using FactoryMind.Application.Features.ProductionOrders.DeleteProductionOrder;
 using FactoryMind.Application.Features.ProductionOrders.GetProductionOrders;
@@ -80,6 +81,17 @@ public static class ProductionOrderEndpoints {
                     cancellationToken)).ToHttpResult();
             })
             .WithRequestValidation<StartProductionOrderRequest>();
+
+        group.MapPost(ApiRoutes.ProductionOrders.Complete, async (
+            Guid productionOrderId,
+            [FromBody] CompleteProductionOrderRequest request,
+            ISender sender,
+            CancellationToken cancellationToken) => {
+                return (await sender.Send(
+                    new CompleteProductionOrderCommand(productionOrderId, request.WarehouseId),
+                    cancellationToken)).ToHttpResult();
+            })
+            .WithRequestValidation<CompleteProductionOrderRequest>();
 
         group.MapPost(ApiRoutes.ProductionOrders.Cancel, async (
             Guid productionOrderId,

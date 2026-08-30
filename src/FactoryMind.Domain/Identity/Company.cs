@@ -18,5 +18,7 @@ public sealed class Company {
     public ICollection<Warehouse> Warehouses { get; set; } = [];
     public ICollection<InventoryBalance> InventoryBalances { get; set; } = [];
     public ICollection<InventoryTransaction> InventoryTransactions { get; set; } = [];
+    public ICollection<ProductInventoryBalance> ProductInventoryBalances { get; set; } = [];
+    public ICollection<ProductInventoryTransaction> ProductInventoryTransactions { get; set; } = [];
     public ICollection<ProductionOrder> ProductionOrders { get; set; } = [];
 }

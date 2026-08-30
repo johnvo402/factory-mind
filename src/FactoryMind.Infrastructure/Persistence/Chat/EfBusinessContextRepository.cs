@@ -84,6 +84,30 @@ public sealed class EfBusinessContextRepository(
                 $"Kho lưu trữ: {inventory.WarehouseCode} - {inventory.WarehouseName}. "
                 + $"Số lượng hiện có: {Format(inventory.Quantity)} {inventory.Unit}. "
                 + $"Cập nhật: {FormatTimestamp(inventory.UpdatedAt)}.")));
+
+            var productInventories = await dbContext.ProductInventoryBalances
+                .AsNoTracking()
+                .Where(balance => balance.CompanyId == companyId)
+                .OrderByDescending(balance => balance.Quantity)
+                .ThenBy(balance => balance.Product!.Code)
+                .Take(limitPerScope)
+                .Select(balance => new {
+                    balance.Id,
+                    balance.Product!.Code,
+                    balance.Product.Name,
+                    WarehouseCode = balance.Warehouse!.Code,
+                    WarehouseName = balance.Warehouse.Name,
+                    balance.Quantity,
+                    balance.UpdatedAt
+                })
+                .ToListAsync(cancellationToken);
+            records.AddRange(productInventories.Select(inventory => new BusinessDataRecord(
+                inventory.Id,
+                "product_inventory",
+                $"{inventory.Code} - {inventory.Name}",
+                $"Kho thành phẩm: {inventory.WarehouseCode} - {inventory.WarehouseName}. "
+                + $"Số lượng thành phẩm hiện có: {Format(inventory.Quantity)}. "
+                + $"Cập nhật: {FormatTimestamp(inventory.UpdatedAt)}.")));
         }
 
         if (scopes.HasFlag(BusinessDataScope.Products)) {
@@ -131,6 +155,7 @@ public sealed class EfBusinessContextRepository(
                     BomRevision = order.BillOfMaterial == null
                         ? (int?)null
                         : order.BillOfMaterial.Revision,
+                    order.CompletedAt,
                     order.UpdatedAt
                 })
                 .ToListAsync(cancellationToken);
@@ -142,6 +167,9 @@ public sealed class EfBusinessContextRepository(
                 + $"Trạng thái: {ProductionOrderStatusLabel(order.Status)}. "
                 + (order.BomRevision.HasValue
                     ? $"BOM đã khóa: revision {order.BomRevision.Value}. "
+                    : string.Empty)
+                + (order.CompletedAt.HasValue
+                    ? $"Hoàn thành: {FormatTimestamp(order.CompletedAt.Value)}. "
                     : string.Empty)
                 + $"Cập nhật: {FormatTimestamp(order.UpdatedAt)}.")));
         }

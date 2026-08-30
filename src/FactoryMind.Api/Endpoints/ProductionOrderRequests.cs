@@ -17,6 +17,8 @@ public sealed record ProductionMaterialAllocationRequest(
 public sealed record StartProductionOrderRequest(
     IReadOnlyList<ProductionMaterialAllocationRequest> Allocations);
 
+public sealed record CompleteProductionOrderRequest(Guid WarehouseId);
+
 public sealed class ProductionOrderRequestValidator : AbstractValidator<ProductionOrderRequest> {
     public ProductionOrderRequestValidator() {
         RuleFor(request => request.Number)
@@ -64,5 +66,12 @@ public sealed class StartProductionOrderRequestValidator : AbstractValidator<Sta
             .NotEmpty().WithMessage("At least one material allocation is required.");
         RuleForEach(request => request.Allocations)
             .SetValidator(new ProductionMaterialAllocationRequestValidator());
+    }
+}
+
+public sealed class CompleteProductionOrderRequestValidator : AbstractValidator<CompleteProductionOrderRequest> {
+    public CompleteProductionOrderRequestValidator() {
+        RuleFor(request => request.WarehouseId)
+            .NotEmpty().WithMessage("Destination warehouse is required.");
     }
 }

@@ -18,11 +18,11 @@ public sealed class DeleteProductCommandHandler(
             return Result.Failure(ProductErrors.NotFound);
         }
 
-        if (await repository.HasBillOfMaterialsAsync(
+        if (await repository.HasReferencesAsync(
                 product.Id,
                 currentUser.CompanyId,
                 cancellationToken)) {
-            return Result.Failure(ProductErrors.ReferencedByBom);
+            return Result.Failure(ProductErrors.Referenced);
         }
 
         repository.Remove(product);

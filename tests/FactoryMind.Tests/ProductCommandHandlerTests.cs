@@ -77,7 +77,7 @@ public sealed class ProductCommandHandlerTests {
                 product.Code == code &&
                 (!excludedProductId.HasValue || product.Id != excludedProductId.Value)));
 
-        public Task<bool> HasBillOfMaterialsAsync(
+        public Task<bool> HasReferencesAsync(
             Guid productId,
             Guid companyId,
             CancellationToken cancellationToken) => Task.FromResult(false);

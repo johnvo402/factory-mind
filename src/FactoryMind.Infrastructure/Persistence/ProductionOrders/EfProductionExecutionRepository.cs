@@ -163,6 +163,91 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
             : new(ProductionExecutionStatus.StateConflict, null);
     }
 
+    public async Task<ProductionExecutionResult> TryCompleteAsync(
+        Guid productionOrderId,
+        Guid companyId,
+        ProductInventoryTransaction outputTransaction,
+        DateTime completedAt,
+        CancellationToken cancellationToken) {
+        if (outputTransaction.CompanyId != companyId ||
+            outputTransaction.Quantity <= 0 ||
+            outputTransaction.Type != ProductInventoryTransactionType.ProductionOutput ||
+            outputTransaction.ReferenceType != "ProductionOrder" ||
+            outputTransaction.ReferenceId != productionOrderId) {
+            return new(ProductionExecutionStatus.StateConflict, null);
+        }
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            IsolationLevel.ReadCommitted,
+            cancellationToken);
+        var claimed = await dbContext.ProductionOrders
+            .Where(order => order.Id == productionOrderId &&
+                order.CompanyId == companyId &&
+                order.Status == ProductionOrderStatuses.InProgress &&
+                order.BillOfMaterialId != null &&
+                order.StartedAt != null &&
+                order.ProductId == outputTransaction.ProductId &&
+                order.Quantity == outputTransaction.Quantity)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(order => order.Status, ProductionOrderStatuses.Completed)
+                .SetProperty(order => order.CompletedAt, completedAt)
+                .SetProperty(order => order.UpdatedAt, completedAt), cancellationToken);
+        if (claimed != 1) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.StateConflict, null);
+        }
+
+        var warehouse = await dbContext.Warehouses
+            .FromSqlInterpolated($"""
+                SELECT * FROM warehouses
+                WHERE "Id" = {outputTransaction.WarehouseId}
+                  AND "CompanyId" = {companyId}
+                  AND "IsActive" = TRUE
+                FOR SHARE
+                """)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        if (warehouse is null) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.WarehouseUnavailable, null);
+        }
+
+        var product = await dbContext.Products
+            .FromSqlInterpolated($"""
+                SELECT * FROM products
+                WHERE "Id" = {outputTransaction.ProductId}
+                  AND "CompanyId" = {companyId}
+                FOR SHARE
+                """)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        if (product is null) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.ProductUnavailable, null);
+        }
+
+        var balanceId = Guid.NewGuid();
+        await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO product_inventory_balances
+                ("Id", "CompanyId", "WarehouseId", "ProductId", "Quantity", "UpdatedAt")
+            VALUES
+                ({balanceId}, {companyId}, {outputTransaction.WarehouseId},
+                 {outputTransaction.ProductId}, {outputTransaction.Quantity}, {completedAt})
+            ON CONFLICT ("CompanyId", "WarehouseId", "ProductId")
+            DO UPDATE SET
+                "Quantity" = product_inventory_balances."Quantity" + EXCLUDED."Quantity",
+                "UpdatedAt" = EXCLUDED."UpdatedAt"
+            """, cancellationToken);
+
+        dbContext.ProductInventoryTransactions.Add(outputTransaction);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return new(ProductionExecutionStatus.Success, await GetAsync(
+            productionOrderId,
+            companyId,
+            cancellationToken));
+    }
+
     private IQueryable<ProductionOrder> GetOrderQuery() => dbContext.ProductionOrders
         .AsNoTracking()
         .Include(order => order.Product)

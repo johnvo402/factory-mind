@@ -82,6 +82,12 @@ public static class ApiRoutes {
         public const string Transfer = "/transfer";
     }
 
+    public static class ProductInventories {
+        public const string Group = Base + "/product-inventories";
+        public const string Root = "";
+        public const string Transactions = "/transactions";
+    }
+
     public static class Warehouses {
         public const string Group = Base + "/warehouses";
         public const string Root = "";
@@ -94,6 +100,7 @@ public static class ApiRoutes {
         public const string ById = "/{productionOrderId:guid}";
         public const string Release = ById + "/release";
         public const string Start = ById + "/start";
+        public const string Complete = ById + "/complete";
         public const string Cancel = ById + "/cancel";
         public const string MaterialRequirements = ById + "/material-requirements";
     }
