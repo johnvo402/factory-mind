@@ -362,6 +362,18 @@ Implementation status: implemented as the next focused manufacturing-domain slic
 
 ---
 
+## Production execution increment
+
+* Explicit Planned -> Released -> InProgress lifecycle; Cancel only before consumption.
+* Release locks the exact active BOM revision without reserving stock.
+* Start requires explicit warehouse allocations and recalculates requirements on the server.
+* Whole-order raw-material consumption, ledger insertion, and state change are atomic and double-start safe.
+* No Complete command, finished-goods inventory, output transaction, reservation, or reversal yet.
+
+Implementation status: production execution stops safely at InProgress after raw-material consumption. Legacy Completed orders remain readable and existing rows keep nullable execution metadata.
+
+---
+
 # MVP Checklist
 
 ## Authentication

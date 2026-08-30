@@ -269,6 +269,7 @@ erDiagram
     MATERIAL ||--o{ INVENTORY_TRANSACTION : moves
     PRODUCT ||--o{ PRODUCTION_ORDER : requested_by
     PRODUCT ||--o{ BILL_OF_MATERIAL : defines
+    BILL_OF_MATERIAL ||--o{ PRODUCTION_ORDER : locked_by
     BILL_OF_MATERIAL ||--o{ BOM_ITEM : contains
     MATERIAL ||--o{ BOM_ITEM : component
     USER ||--o{ CONVERSATION : starts
@@ -285,8 +286,10 @@ Một số invariant quan trọng:
 - Business code/number là duy nhất trong từng Company, không phải global.
 - Inventory balance duy nhất theo `CompanyId + WarehouseId + MaterialId`; mọi thay đổi balance phải có transaction giải thích.
 - Production Order phải tham chiếu Product thuộc cùng Company.
+- Production Order mới luôn bắt đầu ở Planned. Release khóa đúng BOM revision; Start chỉ chạy từ Released và tiêu thụ toàn bộ phân bổ vật tư trong một PostgreSQL transaction.
 - BOM revision và mọi Material component phải thuộc cùng Company; mỗi Product chỉ có tối đa một revision Active.
-- Material requirement là phép tính preview chỉ đọc, tổng hợp tồn kho Material trên tất cả warehouse của tenant và không tạo Inventory Transaction.
+- Material requirement là phép tính preview chỉ đọc: Planned dùng active BOM, còn Released/InProgress dùng BOM đã khóa. Release không giữ chỗ tồn kho.
+- `ProductionConsume` giữ quantity dương trong ledger, signed quantity âm, và tham chiếu Production Order; mọi balance decrement, ledger insert và chuyển trạng thái InProgress cùng commit hoặc cùng rollback.
 - Product/Material đang được tham chiếu không bị xóa làm mất lịch sử nghiệp vụ.
 - Document search chỉ dùng chunks của document `ready`, đúng Company và đúng embedding model hiện tại.
 - Citations/evidence trong Message là immutable snapshots để lịch sử chat không đổi khi dữ liệu nguồn được cập nhật sau này.
@@ -518,8 +521,10 @@ Tất cả business endpoints dùng prefix `/api` và tenant được lấy từ
 | `/api/inventories` | `GET` | Current tenant-scoped balances | Manager/Admin |
 | `/api/inventories/transactions` | `GET` | Filtered, paged inventory ledger history | Manager/Admin |
 | `/api/inventories/receive`, `/issue`, `/adjust`, `/transfer` | `POST` | Atomic stock operations | Manager/Admin |
-| `/api/production-orders` | `GET`, `POST`, `PUT`, `DELETE` | Production Order CRUD | Manager/Admin |
-| `/api/production-orders/{id}/material-requirements` | `GET` | Preview vật tư theo quantity của Production Order | Manager/Admin |
+| `/api/production-orders` | `GET`, `POST`, `PUT`, `DELETE` | Planned Production Order planning data | Manager/Admin |
+| `/api/production-orders/{id}/release`, `/cancel` | `POST` | Explicit lifecycle; Release locks active BOM | Manager/Admin |
+| `/api/production-orders/{id}/start` | `POST` | Validate allocations and atomically consume raw materials | Manager/Admin |
+| `/api/production-orders/{id}/material-requirements` | `GET` | Planned uses active BOM; execution uses locked BOM | Manager/Admin |
 | `/api/settings/company` | `GET`, `PUT` | Company settings | Admin |
 | `/api/settings/users` | `GET`, `POST`, `PUT` | Tenant user management | Admin |
 | `/api/settings/ai` | `GET` | Model metadata và key readiness, không trả key | Admin |

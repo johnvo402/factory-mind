@@ -337,6 +337,10 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
                 .WithMany()
                 .HasForeignKey(order => order.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(order => order.BillOfMaterial)
+                .WithMany()
+                .HasForeignKey(order => order.BillOfMaterialId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

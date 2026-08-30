@@ -1,8 +1,12 @@
 using FactoryMind.Api.Routing;
 using FactoryMind.Application.Common.Authorization;
+using FactoryMind.Application.Features.ProductionOrders;
+using FactoryMind.Application.Features.ProductionOrders.CancelProductionOrder;
 using FactoryMind.Application.Features.ProductionOrders.CreateProductionOrder;
 using FactoryMind.Application.Features.ProductionOrders.DeleteProductionOrder;
 using FactoryMind.Application.Features.ProductionOrders.GetProductionOrders;
+using FactoryMind.Application.Features.ProductionOrders.ReleaseProductionOrder;
+using FactoryMind.Application.Features.ProductionOrders.StartProductionOrder;
 using FactoryMind.Application.Features.ProductionOrders.UpdateProductionOrder;
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
@@ -32,8 +36,7 @@ public static class ProductionOrderEndpoints {
                     new CreateProductionOrderCommand(
                         request.Number,
                         request.ProductId,
-                        request.Quantity,
-                        request.Status),
+                        request.Quantity),
                     cancellationToken)).ToHttpResult();
             })
             .WithRequestValidation<ProductionOrderRequest>();
@@ -48,11 +51,44 @@ public static class ProductionOrderEndpoints {
                         productionOrderId,
                         request.Number,
                         request.ProductId,
-                        request.Quantity,
-                        request.Status),
+                        request.Quantity),
                     cancellationToken)).ToHttpResult();
             })
             .WithRequestValidation<ProductionOrderRequest>();
+
+        group.MapPost(ApiRoutes.ProductionOrders.Release, async (
+            Guid productionOrderId,
+            ISender sender,
+            CancellationToken cancellationToken) => {
+                return (await sender.Send(
+                    new ReleaseProductionOrderCommand(productionOrderId),
+                    cancellationToken)).ToHttpResult();
+            });
+
+        group.MapPost(ApiRoutes.ProductionOrders.Start, async (
+            Guid productionOrderId,
+            [FromBody] StartProductionOrderRequest request,
+            ISender sender,
+            CancellationToken cancellationToken) => {
+                return (await sender.Send(
+                    new StartProductionOrderCommand(
+                        productionOrderId,
+                        request.Allocations.Select(allocation => new ProductionMaterialAllocation(
+                            allocation.MaterialId,
+                            allocation.WarehouseId,
+                            allocation.Quantity)).ToList()),
+                    cancellationToken)).ToHttpResult();
+            })
+            .WithRequestValidation<StartProductionOrderRequest>();
+
+        group.MapPost(ApiRoutes.ProductionOrders.Cancel, async (
+            Guid productionOrderId,
+            ISender sender,
+            CancellationToken cancellationToken) => {
+                return (await sender.Send(
+                    new CancelProductionOrderCommand(productionOrderId),
+                    cancellationToken)).ToHttpResult();
+            });
 
         group.MapDelete(ApiRoutes.ProductionOrders.ById, async (
             Guid productionOrderId,

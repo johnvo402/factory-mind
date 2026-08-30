@@ -76,6 +76,7 @@ public static class DependencyInjection {
         services.AddScoped<IMaterialRepository, EfMaterialRepository>();
         services.AddScoped<IProductRepository, EfProductRepository>();
         services.AddScoped<IProductionOrderRepository, EfProductionOrderRepository>();
+        services.AddScoped<IProductionExecutionRepository, EfProductionExecutionRepository>();
         services.AddScoped<ISettingsRepository, EfSettingsRepository>();
         services.AddSingleton<IAiSettingsReader, GeminiSettingsReader>();
         services.AddScoped<DocumentProcessingJob>();

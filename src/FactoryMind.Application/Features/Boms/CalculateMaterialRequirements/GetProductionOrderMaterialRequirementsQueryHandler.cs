@@ -1,5 +1,6 @@
 using FactoryMind.Application.Common.Identity;
 using FactoryMind.Application.Features.ProductionOrders;
+using FactoryMind.Domain.Manufacturing;
 using FactoryMind.Shared.Contracts;
 using Mediator;
 
@@ -23,12 +24,23 @@ public sealed class GetProductionOrderMaterialRequirementsQueryHandler(
             return Result<MaterialRequirementsResponse>.Failure(ProductionOrderErrors.NotFound);
         }
 
-        var bom = await repository.GetActiveAsync(
-            order.ProductId,
-            currentUser.CompanyId,
-            cancellationToken);
+        var bom = order.BillOfMaterialId.HasValue
+            ? await repository.GetByIdAsync(
+                order.BillOfMaterialId.Value,
+                order.ProductId,
+                currentUser.CompanyId,
+                cancellationToken)
+            : order.Status == ProductionOrderStatuses.Planned
+                ? await repository.GetActiveAsync(
+                    order.ProductId,
+                    currentUser.CompanyId,
+                    cancellationToken)
+                : null;
         if (bom is null) {
-            return Result<MaterialRequirementsResponse>.Failure(BomErrors.ActiveNotFound);
+            return Result<MaterialRequirementsResponse>.Failure(order.BillOfMaterialId.HasValue ||
+                order.Status != ProductionOrderStatuses.Planned
+                    ? ProductionOrderErrors.LockedBomRequired
+                    : BomErrors.ActiveNotFound);
         }
 
         var availability = await repository.GetAvailableQuantitiesAsync(

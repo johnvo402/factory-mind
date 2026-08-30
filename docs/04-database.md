@@ -203,7 +203,7 @@ InventoryTransaction(Id, CompanyId, WarehouseId, MaterialId, Type, Quantity,
 InventoryBalance(Id, CompanyId, WarehouseId, MaterialId, Quantity, UpdatedAt)
 ```
 
-`Warehouse.Code` is unique inside a company. `InventoryTransaction` is the immutable source of stock history and stores a positive `numeric(18,3)` quantity; its strongly typed operation determines whether the signed change is positive or negative. `InventoryBalance` is a materialized current value, unique for `(CompanyId, WarehouseId, MaterialId)`, with a database check preventing negative quantities.
+`Warehouse.Code` is unique inside a company. `InventoryTransaction` is the immutable source of stock history and stores a positive `numeric(18,6)` quantity; its strongly typed operation determines whether the signed change is positive or negative. `InventoryBalance` is a materialized current value, unique for `(CompanyId, WarehouseId, MaterialId)`, with a database check preventing negative quantities. Six-decimal stock precision matches BOM requirement rounding during production consumption.
 
 Ledger insertion and balance mutation commit in one database transaction. Transfers write correlated `TransferOut` and `TransferIn` rows and update both balances atomically. Foreign keys to warehouses and materials are restrictive so historical records cannot be orphaned; deleting a warehouse means deactivation.
 
@@ -240,16 +240,26 @@ Number
 
 ProductId
 
+BillOfMaterialId?
+
 Quantity
 
 Status
+
+ReleasedAt?
+
+StartedAt?
+
+CancelledAt?
 
 CreatedAt
 
 UpdatedAt
 ```
 
-`ProductionOrder.Number` is normalized to uppercase and unique per company. `Quantity` uses `numeric(18,3)` and must be greater than zero. Product deletion is restricted while an order references it. MVP statuses are `planned`, `in_progress`, `completed`, and `cancelled`.
+`ProductionOrder.Number` is normalized to uppercase and unique per company. `Quantity` uses `numeric(18,3)` and must be greater than zero. Product deletion is restricted while an order references it. Statuses are `planned`, `released`, `in_progress`, legacy-readable `completed`, and `cancelled`.
+
+New orders begin Planned. Release stores the exact active `BillOfMaterialId` and `ReleasedAt`; Start records `StartedAt` only after every explicitly allocated raw-material decrement and `ProductionConsume` ledger insert succeeds in one transaction. Cancel records `CancelledAt` and is allowed only before consumption. The nullable BOM reference and timestamps preserve existing rows without inventing history, and the restrictive BOM foreign key prevents deletion of a referenced revision.
 
 ---
 
@@ -265,7 +275,7 @@ BomItem(Id, BillOfMaterialId, MaterialId, Quantity, ScrapPercentage?,
 
 A Product may have many BOM revisions but at most one `active` revision per Company. Revisions use `draft`, `active`, and `archived`; there is no physical-delete API. `OutputQuantity` and item `Quantity` use `numeric(18,6)` and must be positive. Optional scrap is limited to 0–100 percent. `(CompanyId, ProductId, Revision)` and `(BillOfMaterialId, MaterialId)` are unique, while a filtered unique index protects the single active revision invariant. Product and Material deletes are restrictive so BOM history is retained.
 
-Material-requirement planning reads the active BOM and sums current `InventoryBalance` quantities for each Material across all warehouses in the same Company. The query does not write balances or ledger transactions.
+Material-requirement planning reads the active BOM for a Planned order and the locked BOM for Released/InProgress execution, then sums current `InventoryBalance` quantities for each Material across all warehouses in the same Company. The query does not write balances or ledger transactions. Release also writes no ledger entry and does not reserve stock.
 
 ---
 

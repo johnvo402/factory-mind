@@ -128,6 +128,9 @@ public sealed class EfBusinessContextRepository(
                     ProductName = order.Product.Name,
                     order.Quantity,
                     order.Status,
+                    BomRevision = order.BillOfMaterial == null
+                        ? (int?)null
+                        : order.BillOfMaterial.Revision,
                     order.UpdatedAt
                 })
                 .ToListAsync(cancellationToken);
@@ -137,6 +140,9 @@ public sealed class EfBusinessContextRepository(
                 $"{order.Number} - {order.ProductCode} {order.ProductName}",
                 $"Số lượng: {Format(order.Quantity)}. "
                 + $"Trạng thái: {ProductionOrderStatusLabel(order.Status)}. "
+                + (order.BomRevision.HasValue
+                    ? $"BOM đã khóa: revision {order.BomRevision.Value}. "
+                    : string.Empty)
                 + $"Cập nhật: {FormatTimestamp(order.UpdatedAt)}.")));
         }
 
@@ -178,6 +184,7 @@ public sealed class EfBusinessContextRepository(
 
     private static string ProductionOrderStatusLabel(string status) => status switch {
         ProductionOrderStatuses.Planned => "Đã lên kế hoạch",
+        ProductionOrderStatuses.Released => "Đã phát hành",
         ProductionOrderStatuses.InProgress => "Đang sản xuất",
         ProductionOrderStatuses.Completed => "Đã hoàn thành",
         ProductionOrderStatuses.Cancelled => "Đã hủy",

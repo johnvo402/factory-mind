@@ -7,7 +7,6 @@ namespace FactoryMind.Application.Features.ProductionOrders.CreateProductionOrde
 public sealed record CreateProductionOrderCommand(
     string Number,
     Guid ProductId,
-    decimal Quantity,
-    string Status) : IRequest<Result<ProductionOrderResponse>>, IAuthorizedRequest {
+    decimal Quantity) : IRequest<Result<ProductionOrderResponse>>, IAuthorizedRequest {
     public string Policy => AuthorizationPolicies.Manager;
 }

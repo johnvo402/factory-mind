@@ -38,7 +38,7 @@ public sealed class CreateProductionOrderCommandHandler(
             ProductId = product.Id,
             Product = product,
             Quantity = command.Quantity,
-            Status = command.Status.Trim().ToLowerInvariant(),
+            Status = ProductionOrderStatuses.Planned,
             CreatedAt = now,
             UpdatedAt = now
         };

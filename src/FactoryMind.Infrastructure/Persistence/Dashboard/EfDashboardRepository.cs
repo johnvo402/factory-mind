@@ -14,6 +14,7 @@ public sealed class EfDashboardRepository(
             .AsNoTracking()
             .CountAsync(order => order.CompanyId == companyId
                 && (order.Status == ProductionOrderStatuses.Planned
+                    || order.Status == ProductionOrderStatuses.Released
                     || order.Status == ProductionOrderStatuses.InProgress), cancellationToken);
         var inventoryBalances = await dbContext.InventoryBalances
             .AsNoTracking()

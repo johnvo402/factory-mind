@@ -8,7 +8,7 @@ namespace FactoryMind.Tests;
 
 public sealed class ProductionOrderCommandHandlerTests {
     [Fact]
-    public async Task Create_normalizes_number_status_and_uses_current_company_product() {
+    public async Task Create_normalizes_number_starts_planned_and_uses_current_company_product() {
         var currentUser = new FakeCurrentUser();
         var productRepository = new FakeProductRepository();
         var orderRepository = new FakeProductionOrderRepository();
@@ -24,14 +24,14 @@ public sealed class ProductionOrderCommandHandlerTests {
             currentUser);
 
         var result = await handler.Handle(
-            new CreateProductionOrderCommand(" po-001 ", product.Id, 500.125m, " IN_PROGRESS "),
+            new CreateProductionOrderCommand(" po-001 ", product.Id, 500.125m),
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         var order = Assert.Single(orderRepository.Orders);
         Assert.Equal(currentUser.CompanyId, order.CompanyId);
         Assert.Equal("PO-001", order.Number);
-        Assert.Equal(ProductionOrderStatuses.InProgress, order.Status);
+        Assert.Equal(ProductionOrderStatuses.Planned, order.Status);
         Assert.Equal("PRD-001", result.Value?.ProductCode);
     }
 
@@ -48,7 +48,7 @@ public sealed class ProductionOrderCommandHandlerTests {
             currentUser);
 
         var result = await handler.Handle(
-            new CreateProductionOrderCommand("PO-001", product.Id, 100m, "planned"),
+            new CreateProductionOrderCommand("PO-001", product.Id, 100m),
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -86,8 +86,22 @@ public sealed class ProductionOrderCommandHandlerTests {
                 order.Number == number &&
                 (!excludedProductionOrderId.HasValue || order.Id != excludedProductionOrderId.Value)));
 
+        public Task<bool> TryUpdatePlannedAsync(
+            ProductionOrder order,
+            CancellationToken cancellationToken) => Task.FromResult(
+            order.Status == ProductionOrderStatuses.Planned);
+
+        public Task<bool> TryDeletePlannedAsync(
+            Guid productionOrderId,
+            Guid companyId,
+            CancellationToken cancellationToken) {
+            var order = Orders.SingleOrDefault(candidate => candidate.Id == productionOrderId &&
+                candidate.CompanyId == companyId &&
+                candidate.Status == ProductionOrderStatuses.Planned);
+            return Task.FromResult(order is not null && Orders.Remove(order));
+        }
+
         public void Add(ProductionOrder order) => Orders.Add(order);
-        public void Remove(ProductionOrder order) => Orders.Remove(order);
         public Task SaveChangesAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 

@@ -421,6 +421,8 @@ The Data workspace includes an Excel import wizard for Machine, Material, Produc
 
 The Inventory workspace is a warehouse ledger view rather than balance CRUD. It lists current material/warehouse quantities and last update time, provides Receive, Issue, Adjust, and Transfer forms, manages active/deactivated warehouses, and opens a paged transaction history. Positive and negative changes use both a sign and accessible color treatment. Forms keep visible labels, inline validation, focus indicators, and disabled/loading feedback consistent with the existing workspace styling.
 
+The Production Order workspace treats status as a business state instead of an editable field. Planned rows expose material preview, edit, Release, and Cancel; Released rows expose the locked BOM revision, material preview, explicit multi-warehouse allocation, Start, and Cancel; InProgress rows show execution timestamps and remain frozen. Allocation inputs keep per-Material totals visible, use inline validation, and enable Start only when every server-calculated requirement is matched. Server validation remains authoritative.
+
 Knowledge is a first-class workspace for PDF upload, asynchronous processing status, retry after parsing failure, and semantic-search inspection with document, page, excerpt, and score. While documents are uploaded or processing, the list polls quietly without blocking the rest of the UI.
 
 Settings has Company, Users, and AI tabs. Admins can rename the company and manage tenant users. The AI tab shows the active Gemini models, key readiness, and a re-index action; it never accepts, stores, or renders provider credentials in browser state.

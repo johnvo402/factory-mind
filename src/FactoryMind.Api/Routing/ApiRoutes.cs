@@ -92,6 +92,9 @@ public static class ApiRoutes {
         public const string Group = Base + "/production-orders";
         public const string Root = "";
         public const string ById = "/{productionOrderId:guid}";
+        public const string Release = ById + "/release";
+        public const string Start = ById + "/start";
+        public const string Cancel = ById + "/cancel";
         public const string MaterialRequirements = ById + "/material-requirements";
     }
 }

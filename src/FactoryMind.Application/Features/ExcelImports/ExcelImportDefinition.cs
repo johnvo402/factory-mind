@@ -7,7 +7,7 @@ public static class ExcelImportDefinition {
             [ExcelImportEntityTypes.Material] = ["code", "name", "unit"],
             [ExcelImportEntityTypes.Product] = ["code", "name"],
             [ExcelImportEntityTypes.Inventory] = ["materialCode", "warehouseCode", "quantity"],
-            [ExcelImportEntityTypes.ProductionOrder] = ["number", "productCode", "quantity", "status"]
+            [ExcelImportEntityTypes.ProductionOrder] = ["number", "productCode", "quantity"]
         };
 
     public static IReadOnlyList<string>? GetRequiredFields(string entityType) =>

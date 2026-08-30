@@ -259,7 +259,7 @@ public sealed class BomMaterialRequirementsIntegrationTests(PostgreSqlFixture fi
         decimal quantity) {
         using var response = await client.PostAsJsonAsync(
             ProductionOrdersRoute,
-            new ProductionOrderRequest(number, productId, quantity, ProductionOrderStatuses.Planned));
+            new ProductionOrderRequest(number, productId, quantity));
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<ApiResponse<ProductionOrderResponse>>())!.Data!;
     }

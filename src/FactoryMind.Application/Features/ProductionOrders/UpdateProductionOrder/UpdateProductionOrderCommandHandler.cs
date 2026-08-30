@@ -1,6 +1,7 @@
 using FactoryMind.Application.Common.Identity;
 using FactoryMind.Application.Features.BusinessData;
 using FactoryMind.Application.Features.Products;
+using FactoryMind.Domain.Manufacturing;
 using FactoryMind.Shared.Contracts;
 using Mediator;
 
@@ -19,6 +20,9 @@ public sealed class UpdateProductionOrderCommandHandler(
             cancellationToken);
         if (order is null) {
             return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.NotFound);
+        }
+        if (order.Status != ProductionOrderStatuses.Planned) {
+            return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.PlannedRequired);
         }
 
         var product = await productRepository.GetByIdAsync(
@@ -42,9 +46,10 @@ public sealed class UpdateProductionOrderCommandHandler(
         order.ProductId = product.Id;
         order.Product = product;
         order.Quantity = command.Quantity;
-        order.Status = command.Status.Trim().ToLowerInvariant();
         order.UpdatedAt = DateTime.UtcNow;
-        await repository.SaveChangesAsync(cancellationToken);
+        if (!await repository.TryUpdatePlannedAsync(order, cancellationToken)) {
+            return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.PlannedRequired);
+        }
         return Result<ProductionOrderResponse>.Success(ProductionOrderResponse.From(order));
     }
 }

@@ -12,6 +12,7 @@ public sealed class EfProductionOrderRepository(FactoryMindDbContext dbContext) 
         var query = dbContext.ProductionOrders
             .AsNoTracking()
             .Include(order => order.Product)
+            .Include(order => order.BillOfMaterial)
             .Where(order => order.CompanyId == companyId);
         if (search is not null) {
             var pattern = $"%{search}%";
@@ -31,6 +32,7 @@ public sealed class EfProductionOrderRepository(FactoryMindDbContext dbContext) 
         Guid companyId,
         CancellationToken cancellationToken) => dbContext.ProductionOrders
         .Include(order => order.Product)
+        .Include(order => order.BillOfMaterial)
         .SingleOrDefaultAsync(
             order => order.Id == productionOrderId && order.CompanyId == companyId,
             cancellationToken);
@@ -45,7 +47,33 @@ public sealed class EfProductionOrderRepository(FactoryMindDbContext dbContext) 
                 (!excludedProductionOrderId.HasValue || order.Id != excludedProductionOrderId.Value),
             cancellationToken);
 
+    public async Task<bool> TryUpdatePlannedAsync(
+        ProductionOrder order,
+        CancellationToken cancellationToken) {
+        var affected = await dbContext.ProductionOrders
+            .Where(candidate => candidate.Id == order.Id &&
+                candidate.CompanyId == order.CompanyId &&
+                candidate.Status == ProductionOrderStatuses.Planned)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(candidate => candidate.Number, order.Number)
+                .SetProperty(candidate => candidate.ProductId, order.ProductId)
+                .SetProperty(candidate => candidate.Quantity, order.Quantity)
+                .SetProperty(candidate => candidate.UpdatedAt, order.UpdatedAt), cancellationToken);
+        if (affected == 1) {
+            dbContext.Entry(order).State = EntityState.Unchanged;
+        }
+        return affected == 1;
+    }
+
+    public async Task<bool> TryDeletePlannedAsync(
+        Guid productionOrderId,
+        Guid companyId,
+        CancellationToken cancellationToken) => await dbContext.ProductionOrders
+        .Where(order => order.Id == productionOrderId &&
+            order.CompanyId == companyId &&
+            order.Status == ProductionOrderStatuses.Planned)
+        .ExecuteDeleteAsync(cancellationToken) == 1;
+
     public void Add(ProductionOrder order) => dbContext.ProductionOrders.Add(order);
-    public void Remove(ProductionOrder order) => dbContext.ProductionOrders.Remove(order);
     public Task SaveChangesAsync(CancellationToken cancellationToken) => dbContext.SaveChangesAsync(cancellationToken);
 }

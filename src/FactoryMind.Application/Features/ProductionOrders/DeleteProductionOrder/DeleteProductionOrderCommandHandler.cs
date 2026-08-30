@@ -1,4 +1,5 @@
 using FactoryMind.Application.Common.Identity;
+using FactoryMind.Domain.Manufacturing;
 using FactoryMind.Shared.Contracts;
 using Mediator;
 
@@ -18,8 +19,10 @@ public sealed class DeleteProductionOrderCommandHandler(
             return Result.Failure(ProductionOrderErrors.NotFound);
         }
 
-        repository.Remove(order);
-        await repository.SaveChangesAsync(cancellationToken);
+        if (order.Status != ProductionOrderStatuses.Planned ||
+            !await repository.TryDeletePlannedAsync(order.Id, currentUser.CompanyId, cancellationToken)) {
+            return Result.Failure(ProductionOrderErrors.PlannedRequired);
+        }
         return Result.Success();
     }
 }

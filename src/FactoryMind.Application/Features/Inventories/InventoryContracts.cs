@@ -5,7 +5,7 @@ namespace FactoryMind.Application.Features.Inventories;
 
 public static class InventoryConstraints {
     public const int QuantityPrecision = 18;
-    public const int QuantityScale = 3;
+    public const int QuantityScale = 6;
     public const int MaximumReferenceTypeLength = 100;
     public const int MaximumNoteLength = 500;
     public const int MaximumSearchLength = 200;

@@ -8,7 +8,6 @@ public sealed record UpdateProductionOrderCommand(
     Guid ProductionOrderId,
     string Number,
     Guid ProductId,
-    decimal Quantity,
-    string Status) : IRequest<Result<ProductionOrderResponse>>, IAuthorizedRequest {
+    decimal Quantity) : IRequest<Result<ProductionOrderResponse>>, IAuthorizedRequest {
     public string Policy => AuthorizationPolicies.Manager;
 }

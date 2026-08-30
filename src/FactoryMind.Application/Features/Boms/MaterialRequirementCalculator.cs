@@ -29,9 +29,9 @@ public sealed class MaterialRequirementCalculator {
         decimal productionFactor,
         IReadOnlyDictionary<Guid, decimal> availableQuantities) {
         var scrapMultiplier = 1m + (item.ScrapPercentage ?? 0m) / 100m;
-        var requiredQuantity = Round(item.Quantity * productionFactor * scrapMultiplier);
+        var requiredQuantity = RoundQuantity(item.Quantity * productionFactor * scrapMultiplier);
         var availableQuantity = availableQuantities.GetValueOrDefault(item.MaterialId);
-        var shortageQuantity = Math.Max(Round(requiredQuantity - availableQuantity), 0m);
+        var shortageQuantity = Math.Max(RoundQuantity(requiredQuantity - availableQuantity), 0m);
 
         return new MaterialRequirementItemResponse(
             item.MaterialId,
@@ -46,7 +46,7 @@ public sealed class MaterialRequirementCalculator {
             availableQuantity >= requiredQuantity);
     }
 
-    private static decimal Round(decimal value) => decimal.Round(
+    public static decimal RoundQuantity(decimal value) => decimal.Round(
         value,
         BomConstraints.QuantityScale,
         MidpointRounding.AwayFromZero);

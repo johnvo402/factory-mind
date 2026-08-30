@@ -255,13 +255,8 @@ public sealed class ImportExcelCommandHandler(
         var productCode = Required(row, mapping, "productCode", rowNumber, ProductConstraints.MaximumCodeLength, errors)
             .ToUpperInvariant();
         var quantity = Decimal(row, mapping, "quantity", rowNumber, allowZero: false, errors);
-        var status = Required(row, mapping, "status", rowNumber, ProductionOrderConstraints.MaximumStatusLength, errors)
-            .ToLowerInvariant();
         if (!relatedIds.TryGetValue(productCode, out var productId)) {
             errors.Add(new(rowNumber, "productCode", "Product code was not found in this company."));
-        }
-        if (status.Length > 0 && !ProductionOrderStatuses.All.Contains(status)) {
-            errors.Add(new(rowNumber, "status", "Production order status is invalid."));
         }
         AddDuplicateError(number, "number", rowNumber, keys, errors);
         if (errors.Count == start) {
@@ -270,7 +265,7 @@ public sealed class ImportExcelCommandHandler(
                 Number = number,
                 ProductId = productId,
                 Quantity = quantity,
-                Status = status,
+                Status = ProductionOrderStatuses.Planned,
                 CreatedAt = now,
                 UpdatedAt = now
             });
