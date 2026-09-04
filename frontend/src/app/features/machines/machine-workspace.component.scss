@@ -1,29 +1,29 @@
 .status {
   display: inline-flex;
   border-radius: 999px;
-  background: #edf4f1;
+  background: var(--color-surface-subtle);
   padding: 5px 9px;
-  color: #466057;
+  color: var(--color-muted);
   font-size: 0.72rem;
   font-weight: 750;
 }
 
 .status[data-status='available'] {
-  background: #e7f7ef;
-  color: #137353;
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 .status[data-status='running'] {
-  background: #e8f1ff;
-  color: #235f9c;
+  background: var(--color-ai-soft);
+  color: var(--color-ai);
 }
 
 .status[data-status='maintenance'] {
-  background: #fff4db;
-  color: #8a5a00;
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
 }
 
 .status[data-status='offline'] {
-  background: #f1f2f2;
-  color: #68716e;
+  background: var(--color-surface-subtle);
+  color: var(--color-subtle);
 }

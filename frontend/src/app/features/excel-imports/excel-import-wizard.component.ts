@@ -18,6 +18,17 @@ export class ExcelImportWizardComponent {
 
   constructor(protected readonly store: ExcelImportStore) {}
 
+  protected entityLabel(): string {
+    const labels: Record<ExcelImportEntityType, string> = {
+      machine: 'máy móc',
+      material: 'nguyên liệu',
+      inventory: 'tồn kho',
+      product: 'sản phẩm',
+      production_order: 'lệnh sản xuất',
+    };
+    return labels[this.entityType()];
+  }
+
   protected chooseFile(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];

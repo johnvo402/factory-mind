@@ -5,7 +5,7 @@
       <form (submit)="search($event)" class="search-form">
         <input type="search" [formControl]="searchControl" maxlength="200" aria-label="Tìm lệnh sản xuất" placeholder="Tìm theo số lệnh, sản phẩm hoặc trạng thái">
         @if (store.search()) { <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button> }
-        <button type="submit" class="secondary">Tìm kiếm</button>
+        <button type="submit" class="secondary"><app-ui-icon name="search" [size]="17" /> Tìm kiếm</button>
       </form>
       <button type="button" class="primary" [disabled]="store.products().length === 0" (click)="startCreate()"><app-ui-icon name="plus" /> Thêm lệnh</button>
     </div>
@@ -36,11 +36,16 @@
               <td><span class="order-status" [class.in_progress]="order.status === 'in_progress'" [class.completed]="order.status === 'completed'" [class.cancelled]="order.status === 'cancelled'">{{ statusLabel(order.status) }}</span></td>
               <td class="actions">
                 @if (confirmDeleteId() === order.id) {
-                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(order.id)">Xác nhận</button>
+                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(order.id)"><app-ui-icon name="trash-2" [size]="16" /> Xác nhận</button>
                   <button type="button" class="ghost" (click)="confirmDeleteId.set(null)">Hủy</button>
                 } @else {
-                  <button type="button" class="ghost" [attr.aria-label]="'Sửa ' + order.number" (click)="startEdit(order)">Sửa</button>
-                  <button type="button" class="ghost danger-text" [attr.aria-label]="'Xóa ' + order.number" (click)="requestDelete(order.id)">Xóa</button>
+                  <details class="row-actions">
+                    <summary [attr.aria-label]="'Thao tác với ' + order.number"><app-ui-icon name="more-horizontal" /></summary>
+                    <div class="row-menu">
+                      <button type="button" class="ghost" (click)="startEdit(order)"><app-ui-icon name="pencil" [size]="16" /> Sửa</button>
+                      <button type="button" class="ghost danger-text" (click)="requestDelete(order.id)"><app-ui-icon name="trash-2" [size]="16" /> Xóa</button>
+                    </div>
+                  </details>
                 }
               </td>
             </tr>
@@ -54,7 +59,7 @@
     <div class="editor-backdrop" (click)="cancelEdit()">
       <section class="editor" appDialogFocus (dialogDismissed)="cancelEdit()" role="dialog" aria-modal="true" aria-labelledby="order-editor-title" (click)="$event.stopPropagation()">
         <header>
-          <div><span class="eyebrow">PRODUCTION ORDER</span><h2 id="order-editor-title">{{ editingId() ? 'Cập nhật lệnh sản xuất' : 'Thêm lệnh sản xuất mới' }}</h2></div>
+          <div><span class="eyebrow">LỆNH SẢN XUẤT</span><h2 id="order-editor-title">{{ editingId() ? 'Cập nhật lệnh sản xuất' : 'Thêm lệnh sản xuất mới' }}</h2></div>
           <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()"><app-ui-icon name="x" /></button>
         </header>
         <form [formGroup]="orderForm" (ngSubmit)="save()">

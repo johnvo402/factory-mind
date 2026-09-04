@@ -1,18 +1,19 @@
 <div class="backdrop" (click)="closed.emit()">
   <section class="wizard" appDialogFocus (dialogDismissed)="closed.emit()" role="dialog" aria-modal="true" aria-label="Nhập dữ liệu từ Excel" (click)="$event.stopPropagation()">
     <header>
-      <div><span>EXCEL IMPORT</span><h2>Import {{ entityType() }}</h2></div>
+      <div><span>NHẬP DỮ LIỆU</span><h2>Nhập {{ entityLabel() }} từ Excel</h2></div>
       <button type="button" class="close" aria-label="Đóng" (click)="closed.emit()"><app-ui-icon name="x" /></button>
     </header>
 
     <label class="file-picker">
-      <strong>1. Chọn file .xlsx</strong>
+      <app-ui-icon name="upload" [size]="24" />
+      <strong><i>1</i> Chọn tệp .xlsx</strong>
       <input type="file" accept=".xlsx" (change)="chooseFile($event)">
-      <small>Tối đa 10 MB và 5.000 dòng.</small>
+      <small>Tối đa 10 MB và 5.000 dòng dữ liệu.</small>
     </label>
 
     @if (store.isLoading()) {
-      <p class="status">Đang xử lý workbook...</p>
+      <p class="status">Đang đọc tệp Excel...</p>
     }
     @if (store.error()) {
       <p class="status error">{{ store.error() }}</p>
@@ -20,7 +21,7 @@
 
     @if (store.preview(); as preview) {
       <section class="mapping">
-        <h3>2. Xác nhận ánh xạ cột</h3>
+        <h3><i>2</i> Xác nhận ánh xạ cột</h3>
         <div class="mapping-grid">
           @for (field of preview.requiredFields; track field) {
             <label>
@@ -37,7 +38,7 @@
       </section>
 
       <section class="preview">
-        <h3>3. Xem trước {{ preview.totalRows }} dòng</h3>
+        <h3><i>3</i> Xem trước {{ preview.totalRows }} dòng</h3>
         <div class="table-wrap">
           <table>
             <thead><tr>@for (header of preview.headers; track header) { <th>{{ header }}</th> }</tr></thead>
@@ -66,7 +67,7 @@
       <footer>
         <button type="button" class="secondary" (click)="closed.emit()">Đóng</button>
         <button type="button" class="primary" [disabled]="store.isLoading() || !store.hasCompleteMapping()" (click)="runImport()">
-          Import {{ preview.totalRows }} dòng
+          Nhập {{ preview.totalRows }} dòng
         </button>
       </footer>
     }

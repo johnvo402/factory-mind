@@ -1,24 +1,24 @@
 .order-status {
   display: inline-flex;
   border-radius: 999px;
-  background: #edf3f1;
+  background: var(--color-surface-subtle);
   padding: 5px 9px;
-  color: #51625c;
+  color: var(--color-muted);
   font-size: 0.72rem;
   font-weight: 800;
 }
 
 .order-status.in_progress {
-  background: #fff2cf;
-  color: #825d00;
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
 }
 
 .order-status.completed {
-  background: #e3f5ec;
-  color: #176a52;
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 .order-status.cancelled {
-  background: #fde8e5;
-  color: #a6382f;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }

@@ -1,107 +1,112 @@
-:host {
-  min-width: 0;
-  display: block;
-  color: #20302a;
-}
+:host { min-width: 0; display: block; color: var(--color-text); }
 
 .data-panel {
   min-height: 100vh;
-  background: #f7f9f8;
+  background: var(--color-background);
 }
 
 .data-header {
+  min-height: 136px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 20px;
-  border-bottom: 1px solid #dfe7e4;
-  background: #fff;
-  padding: 28px clamp(24px, 5vw, 72px) 24px;
+  justify-content: space-between;
+  gap: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+  background:
+    radial-gradient(circle at 86% 0, color-mix(in srgb, var(--color-primary-soft) 70%, transparent), transparent 24rem),
+    var(--color-surface);
+  padding: var(--space-6) var(--content-gutter);
 }
 
 .import-button {
+  min-height: 44px;
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   border: 0;
-  border-radius: 9px;
-  background: #16725f;
-  padding: 10px 14px;
-  color: #fff;
-  cursor: pointer;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  padding: 10px 15px;
+  color: var(--color-primary-foreground);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 750;
+  box-shadow: var(--shadow-sm);
+  transition: background var(--motion-fast), transform var(--motion-fast);
 }
 
+.import-button:hover { transform: translateY(-1px); background: var(--color-primary-hover); }
+
 .import-message {
-  margin: 12px clamp(24px, 5vw, 72px) 0;
-  border: 1px solid #b8decf;
-  border-radius: 9px;
-  background: #eaf8f1;
-  padding: 10px 12px;
-  color: #16725f;
-  font-size: 0.78rem;
+  margin: var(--space-3) var(--content-gutter) 0;
+  border: 1px solid color-mix(in srgb, var(--color-success) 24%, var(--color-border));
+  border-radius: var(--radius-sm);
+  background: var(--color-success-soft);
+  padding: 10px var(--space-3);
+  color: var(--color-success);
+  font-size: 0.82rem;
 }
 
 .eyebrow {
-  color: #178069;
-  font-size: 0.66rem;
+  color: var(--color-primary);
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.13em;
 }
 
 h1,
-p {
-  margin: 0;
-}
+p { margin: 0; }
 
 .data-header h1 {
-  margin-top: 5px;
-  color: #17251f;
-  font-size: 1.75rem;
+  margin-top: 4px;
+  color: var(--color-foreground);
+  font-size: clamp(1.65rem, 3vw, 2.05rem);
+  letter-spacing: -0.025em;
 }
 
-.data-header p {
-  margin-top: 7px;
-  color: #6a7873;
-  font-size: 0.84rem;
-}
+.data-header p { margin-top: var(--space-2); color: var(--color-muted); font-size: 0.9rem; }
 
 .tabs {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   display: flex;
-  gap: 6px;
+  gap: var(--space-1);
   overflow-x: auto;
-  border-bottom: 1px solid #dfe7e4;
-  background: #fff;
-  padding: 0 clamp(24px, 5vw, 72px);
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  padding: 0 var(--content-gutter);
+  scrollbar-width: none;
+  backdrop-filter: blur(12px);
 }
 
+.tabs::-webkit-scrollbar { display: none; }
+
 .tabs a {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 14px 12px 12px;
-  color: #798681;
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.78rem;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  padding: 0 var(--space-3);
+  color: var(--color-muted);
+  font-size: 0.82rem;
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
+  transition: color var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast);
 }
 
-.tabs a.active {
-  border-bottom: 2px solid #178069;
-  color: #176c59;
-}
+.tabs a:hover { background: var(--color-surface-subtle); color: var(--color-foreground); }
+.tabs a.active { border-bottom-color: var(--color-primary); color: var(--color-primary); }
 
 @media (max-width: 700px) {
-  .data-panel {
-    min-height: calc(100vh - 59px);
-  }
-
-  .data-header,
-  .tabs {
-    padding-right: 16px;
-    padding-left: 16px;
-  }
+  .data-panel { min-height: calc(100dvh - var(--mobile-topbar-height)); }
+  .data-header { min-height: 128px; align-items: flex-end; padding: var(--space-5) var(--space-4); }
+  .data-header p { display: none; }
+  .import-button { min-width: 44px; padding: 10px; }
+  .import-button app-ui-icon { margin: auto; }
+  .import-button { font-size: 0; }
+  .tabs { top: 0; padding: 0 var(--space-2); }
+  .import-message { margin-right: var(--space-4); margin-left: var(--space-4); }
 }
