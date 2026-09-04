@@ -32,9 +32,9 @@ Không quá 2 lần click để đến bất kỳ chức năng nào.
 
 ---
 
-### 4. Desktop First
+### 4. Adaptive
 
-MVP chỉ tối ưu Desktop.
+Desktop và laptop là trải nghiệm chính. Mobile vẫn phải điều hướng được, đọc được và thao tác được với các luồng cốt lõi.
 
 ---
 
@@ -79,6 +79,8 @@ Những thứ đó nằm trong Data.
 MVP chỉ có **8 màn hình**.
 
 ## Login
+
+Login dùng một form rõ ràng, không điền sẵn mật khẩu ngoài môi trường Development. Input có label, trạng thái focus, validation và nút hiện/ẩn mật khẩu.
 
 ---
 
@@ -253,7 +255,37 @@ Main Content
 +--------------------------------------+
 ```
 
-Sidebar cố định.
+Sidebar cố định trên desktop. Ở màn hình nhỏ, sidebar trở thành top bar và navigation chính chuyển xuống bottom navigation tối đa 4 mục. Không được ẩn đường dẫn tới một workspace mà không cung cấp cách điều hướng thay thế.
+
+Mỗi workspace có URL riêng để reload, deep link và browser Back hoạt động:
+
+```text
+/chat
+/knowledge
+/data/machines
+/data/materials
+/data/inventories
+/data/products
+/data/production-orders
+/settings
+```
+
+Nội dung desktop dùng container nhất quán; Chat giới hạn chiều rộng đọc, các màn hình dữ liệu tận dụng chiều rộng còn lại cho table.
+
+---
+
+# 5.1 Visual System
+
+FactoryMind dùng hướng **Industrial AI Cockpit**: tối giản, tin cậy, ưu tiên khả năng đọc và dữ liệu vận hành.
+
+* Màu nền, surface, text, border và trạng thái phải đi qua semantic CSS variables.
+* Emerald là màu thương hiệu và primary action; blue chỉ dùng cho AI evidence/citation.
+* Spacing theo nhịp 4/8px; radius chỉ dùng các mức 8/12/16px.
+* Body 16px, table/compact UI 14px, metadata không nhỏ hơn 12px.
+* Icon là SVG từ một visual language thống nhất, không dùng emoji hoặc ký tự font làm structural icon.
+* Control tương tác cao tối thiểu 40px trên desktop và 44px trên mobile.
+* Mọi control có `:focus-visible`; motion tôn trọng `prefers-reduced-motion`.
+* Dialog/sheet phải trap focus, đóng bằng Escape và trả focus về trigger.
 
 ---
 
@@ -355,12 +387,16 @@ Không tìm thấy dữ liệu.
 
 # 9. Responsive
 
-MVP chỉ hỗ trợ:
+MVP ưu tiên Desktop/Laptop nhưng hỗ trợ đầy đủ navigation và luồng đọc/ghi cơ bản trên Tablet/Mobile.
 
-* Desktop.
-* Laptop.
+Các breakpoint kiểm thử bắt buộc:
 
-Tablet và Mobile chỉ hiển thị cơ bản.
+* 375px: điện thoại nhỏ.
+* 768px: tablet.
+* 1024px: laptop nhỏ.
+* 1440px: desktop.
+
+Table có thể cuộn ngang trong vùng riêng; page không được tạo horizontal scroll. Fixed composer và bottom navigation phải chừa đúng content inset.
 
 ---
 
@@ -368,13 +404,13 @@ Tablet và Mobile chỉ hiển thị cơ bản.
 
 * Angular 20
 
-* Angular Material
-
-* Tailwind
-
 * Signals
 
 * RxJS
+
+* Angular Router
+
+* SCSS + semantic CSS variables
 
 Đây là toàn bộ stack.
 
