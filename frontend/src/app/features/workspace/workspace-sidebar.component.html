@@ -1,13 +1,11 @@
 <aside class="sidebar">
-  <div class="brand"><span>FM</span><strong>FactoryMind</strong></div>
+  <a class="brand" routerLink="/chat" aria-label="FactoryMind - Chat">
+    <span><app-ui-icon name="factory" [size]="19" /></span>
+    <strong>FactoryMind</strong>
+  </a>
 
-  <button
-    class="new-chat"
-    type="button"
-    [disabled]="store.isStreaming()"
-    (click)="startNewConversation()"
-  >
-    <span aria-hidden="true">＋</span> Cuộc trò chuyện mới
+  <button class="new-chat" type="button" [disabled]="store.isStreaming()" (click)="startNewConversation()">
+    <app-ui-icon name="plus" [size]="18" /> <span>Cuộc trò chuyện mới</span>
   </button>
 
   @if (activeView() === 'chat') {
@@ -17,68 +15,51 @@
         <p>Chưa có cuộc trò chuyện.</p>
       }
       @for (conversation of store.conversations(); track conversation.id) {
-        <button
-          type="button"
-          class="conversation"
-          [class.active]="store.selectedConversationId() === conversation.id"
-          [disabled]="store.isStreaming()"
-          (click)="selectConversation(conversation.id)"
-          [title]="conversation.title"
-        >
-          <span aria-hidden="true">◌</span>
+        <button type="button" class="conversation" [class.active]="store.selectedConversationId() === conversation.id" [disabled]="store.isStreaming()" (click)="selectConversation(conversation.id)" [title]="conversation.title">
+          <app-ui-icon name="message-square" [size]="16" />
           <span>{{ conversation.title }}</span>
         </button>
       }
     </section>
   } @else if (activeView() === 'data') {
     <section class="data-context">
-      <span class="section-label">Business Data</span>
-      <strong>Quản lý dữ liệu nhà máy</strong>
+      <span class="section-label">Dữ liệu vận hành</span>
+      <strong>Quản lý nhà máy</strong>
       <p>Dữ liệu có cấu trúc phục vụ vận hành và AI.</p>
     </section>
   } @else if (activeView() === 'knowledge') {
     <section class="data-context">
-      <span class="section-label">Knowledge</span>
-      <strong>Tài liệu và semantic search</strong>
-      <p>PDF đã xử lý là nguồn citation cho câu trả lời AI.</p>
+      <span class="section-label">Kho tri thức</span>
+      <strong>Tài liệu và tìm kiếm</strong>
+      <p>PDF đã xử lý là nguồn trích dẫn cho câu trả lời AI.</p>
     </section>
   } @else {
     <section class="data-context">
-      <span class="section-label">Settings</span>
-      <strong>Quản trị tenant</strong>
-      <p>Company, users và cấu hình Gemini an toàn.</p>
+      <span class="section-label">Cài đặt</span>
+      <strong>Quản trị hệ thống</strong>
+      <p>Công ty, người dùng và cấu hình Gemini.</p>
     </section>
   }
 
-  <nav aria-label="Điều hướng chính">
-    <button
-      type="button"
-      [class.active]="activeView() === 'chat'"
-      (click)="viewRequested.emit('chat')"
-    ><span aria-hidden="true">◈</span> Chat</button>
-    <button
-      type="button"
-      [class.active]="activeView() === 'knowledge'"
-      (click)="viewRequested.emit('knowledge')"
-    ><span aria-hidden="true">▤</span> Knowledge</button>
+  <nav class="primary-nav" aria-label="Điều hướng chính">
+    <a routerLink="/chat" [class.active]="activeView() === 'chat'" [attr.aria-current]="activeView() === 'chat' ? 'page' : null"><app-ui-icon name="message-square" [size]="19" /><span>Chat</span></a>
+    <a routerLink="/knowledge" [class.active]="activeView() === 'knowledge'" [attr.aria-current]="activeView() === 'knowledge' ? 'page' : null"><app-ui-icon name="book-open" [size]="19" /><span>Tri thức</span></a>
     @if (userRole() === 'Admin' || userRole() === 'Manager') {
-      <button
-        type="button"
-        [class.active]="activeView() === 'data'"
-        (click)="viewRequested.emit('data')"
-      ><span aria-hidden="true">▦</span> Data</button>
+      <a routerLink="/data/machines" [class.active]="activeView() === 'data'" [attr.aria-current]="activeView() === 'data' ? 'page' : null"><app-ui-icon name="database" [size]="19" /><span>Dữ liệu</span></a>
     }
     @if (userRole() === 'Admin') {
-      <button
-        type="button"
-        [class.active]="activeView() === 'settings'"
-        (click)="viewRequested.emit('settings')"
-      ><span aria-hidden="true">⚙</span> Settings</button>
+      <a routerLink="/settings" [class.active]="activeView() === 'settings'" [attr.aria-current]="activeView() === 'settings' ? 'page' : null"><app-ui-icon name="settings" [size]="19" /><span>Cài đặt</span></a>
     }
   </nav>
 
-  <button class="profile" type="button" (click)="logoutRequested.emit()">
-    <span class="profile-avatar">{{ userName().slice(0, 1) }}</span>
-    <span><strong>{{ userName() }}</strong><small>Đăng xuất</small></span>
-  </button>
+  <details class="account">
+    <summary aria-label="Mở menu tài khoản">
+      <span class="profile-avatar">{{ userName().slice(0, 1) }}</span>
+      <span class="profile-copy"><strong>{{ userName() }}</strong><small>{{ userRole() }}</small></span>
+    </summary>
+    <div class="account-menu">
+      <div><app-ui-icon name="user" [size]="18" /><span><strong>{{ userName() }}</strong><small>{{ userRole() }}</small></span></div>
+      <button type="button" (click)="logoutRequested.emit()"><app-ui-icon name="log-out" [size]="18" /> Đăng xuất</button>
+    </div>
+  </details>
 </aside>

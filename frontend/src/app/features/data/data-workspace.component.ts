@@ -1,4 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ExcelImportWizardComponent } from '../excel-imports/excel-import-wizard.component';
 import { ExcelImportEntityType } from '../excel-imports/excel-import.models';
 import { InventoryStore } from '../inventories/inventory.store';
@@ -13,6 +15,7 @@ import { ProductionOrderWorkspaceComponent } from '../production-orders/producti
 import { ProductionOrderStore } from '../production-orders/production-order.store';
 
 type DataView = 'machines' | 'materials' | 'inventories' | 'products' | 'production-orders';
+const DATA_VIEWS: readonly DataView[] = ['machines', 'materials', 'inventories', 'products', 'production-orders'];
 
 @Component({
   selector: 'app-data-workspace',
@@ -23,23 +26,31 @@ type DataView = 'machines' | 'materials' | 'inventories' | 'products' | 'product
     ProductWorkspaceComponent,
     ProductionOrderWorkspaceComponent,
     ExcelImportWizardComponent,
+    RouterLink,
   ],
   templateUrl: './data-workspace.component.html',
   styleUrl: './data-workspace.component.scss',
 })
 export class DataWorkspaceComponent {
+  private readonly route = inject(ActivatedRoute);
   private readonly machines = inject(MachineStore);
   private readonly materials = inject(MaterialStore);
   private readonly inventories = inject(InventoryStore);
   private readonly products = inject(ProductStore);
   private readonly orders = inject(ProductionOrderStore);
-  protected readonly activeView = signal<DataView>('machines');
+  private readonly routeParams = toSignal(this.route.paramMap, { initialValue: this.route.snapshot.paramMap });
+  protected readonly activeView = computed<DataView>(() => {
+    const view = this.routeParams().get('view') as DataView | null;
+    return view && DATA_VIEWS.includes(view) ? view : 'machines';
+  });
   protected readonly importOpen = signal(false);
   protected readonly importMessage = signal('');
 
-  protected selectView(view: DataView): void {
-    this.activeView.set(view);
-    this.importMessage.set('');
+  constructor() {
+    effect(() => {
+      this.activeView();
+      this.importMessage.set('');
+    });
   }
 
   protected importEntityType(): ExcelImportEntityType {

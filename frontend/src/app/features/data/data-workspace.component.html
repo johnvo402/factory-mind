@@ -12,12 +12,12 @@
     <p class="import-message">{{ importMessage() }}</p>
   }
 
-  <nav class="tabs" aria-label="Nhóm dữ liệu">
-    <button type="button" [class.active]="activeView() === 'machines'" (click)="selectView('machines')">Machine</button>
-    <button type="button" [class.active]="activeView() === 'materials'" (click)="selectView('materials')">Material</button>
-    <button type="button" [class.active]="activeView() === 'inventories'" (click)="selectView('inventories')">Inventory</button>
-    <button type="button" [class.active]="activeView() === 'products'" (click)="selectView('products')">Product</button>
-    <button type="button" [class.active]="activeView() === 'production-orders'" (click)="selectView('production-orders')">Production Order</button>
+  <nav class="tabs" aria-label="Nhóm dữ liệu" role="tablist">
+    <a routerLink="/data/machines" role="tab" [class.active]="activeView() === 'machines'" [attr.aria-selected]="activeView() === 'machines'">Máy móc</a>
+    <a routerLink="/data/materials" role="tab" [class.active]="activeView() === 'materials'" [attr.aria-selected]="activeView() === 'materials'">Nguyên liệu</a>
+    <a routerLink="/data/inventories" role="tab" [class.active]="activeView() === 'inventories'" [attr.aria-selected]="activeView() === 'inventories'">Tồn kho</a>
+    <a routerLink="/data/products" role="tab" [class.active]="activeView() === 'products'" [attr.aria-selected]="activeView() === 'products'">Sản phẩm</a>
+    <a routerLink="/data/production-orders" role="tab" [class.active]="activeView() === 'production-orders'" [attr.aria-selected]="activeView() === 'production-orders'">Lệnh sản xuất</a>
   </nav>
 
   @switch (activeView()) {

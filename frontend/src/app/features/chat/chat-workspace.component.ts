@@ -1,15 +1,16 @@
 import {
   Component,
+  computed,
   effect,
   ElementRef,
   inject,
-  input,
   OnDestroy,
   OnInit,
   viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DashboardSummaryComponent } from '../dashboard/dashboard-summary.component';
+import { AuthService } from '../../core/auth/auth.service';
 import { ChatMessageComponent } from './chat-message.component';
 import { ChatStore } from './chat.store';
 
@@ -21,9 +22,10 @@ import { ChatStore } from './chat.store';
 })
 export class ChatWorkspaceComponent implements OnInit, OnDestroy {
   protected readonly store = inject(ChatStore);
+  private readonly auth = inject(AuthService);
   private readonly messageViewport =
     viewChild<ElementRef<HTMLDivElement>>('messageViewport');
-  readonly userName = input.required<string>();
+  protected readonly userName = computed(() => this.auth.user()?.name ?? 'bạn');
   protected readonly composer = new FormControl('', {
     nonNullable: true,
     validators: [Validators.required, Validators.maxLength(8_000)],
