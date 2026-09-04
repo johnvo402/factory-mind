@@ -1,8 +1,8 @@
 <div class="backdrop" (click)="closed.emit()">
-  <section class="wizard" role="dialog" aria-modal="true" aria-label="Import Excel" (click)="$event.stopPropagation()">
+  <section class="wizard" appDialogFocus (dialogDismissed)="closed.emit()" role="dialog" aria-modal="true" aria-label="Nhập dữ liệu từ Excel" (click)="$event.stopPropagation()">
     <header>
       <div><span>EXCEL IMPORT</span><h2>Import {{ entityType() }}</h2></div>
-      <button type="button" class="close" (click)="closed.emit()">×</button>
+      <button type="button" class="close" aria-label="Đóng" (click)="closed.emit()"><app-ui-icon name="x" /></button>
     </header>
 
     <label class="file-picker">

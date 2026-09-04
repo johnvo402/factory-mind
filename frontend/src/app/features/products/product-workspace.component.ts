@@ -1,12 +1,14 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
+import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { Product, ProductInput } from './product.models';
 import { ProductStore } from './product.store';
 
 @Component({
   selector: 'app-product-workspace',
-  imports: [DatePipe, ReactiveFormsModule],
+  imports: [DatePipe, ReactiveFormsModule, DialogFocusDirective, UiIconComponent],
   templateUrl: './product-workspace.component.html',
   styleUrl: '../data/entity-workspace.scss',
 })

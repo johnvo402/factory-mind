@@ -1,12 +1,14 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
+import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { Material, MaterialInput } from './material.models';
 import { MaterialStore } from './material.store';
 
 @Component({
   selector: 'app-material-workspace',
-  imports: [DatePipe, ReactiveFormsModule],
+  imports: [DatePipe, ReactiveFormsModule, DialogFocusDirective, UiIconComponent],
   templateUrl: './material-workspace.component.html',
   styleUrl: '../data/entity-workspace.scss',
 })

@@ -1,12 +1,14 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
+import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { Inventory, InventoryInput } from './inventory.models';
 import { InventoryStore } from './inventory.store';
 
 @Component({
   selector: 'app-inventory-workspace',
-  imports: [DecimalPipe, ReactiveFormsModule],
+  imports: [DecimalPipe, ReactiveFormsModule, DialogFocusDirective, UiIconComponent],
   templateUrl: './inventory-workspace.component.html',
   styleUrl: '../data/entity-workspace.scss',
 })

@@ -1,9 +1,12 @@
 import { Component, input, output } from '@angular/core';
+import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
+import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { ExcelImportEntityType } from './excel-import.models';
 import { ExcelImportStore } from './excel-import.store';
 
 @Component({
   selector: 'app-excel-import-wizard',
+  imports: [DialogFocusDirective, UiIconComponent],
   providers: [ExcelImportStore],
   templateUrl: './excel-import-wizard.component.html',
   styleUrl: './excel-import-wizard.component.scss',

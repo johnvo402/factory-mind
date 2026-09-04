@@ -18,7 +18,7 @@
           }
           <button type="submit" class="secondary">Tìm kiếm</button>
         </form>
-        <button type="button" class="primary" (click)="startCreate()">＋ Thêm máy</button>
+        <button type="button" class="primary" (click)="startCreate()"><app-ui-icon name="plus" /> Thêm máy</button>
       </div>
     </section>
 
@@ -64,13 +64,13 @@
     }
   @if (editorOpen()) {
     <div class="editor-backdrop" (click)="cancelEdit()">
-      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="machine-editor-title" (click)="$event.stopPropagation()">
+      <section class="editor" appDialogFocus (dialogDismissed)="cancelEdit()" role="dialog" aria-modal="true" aria-labelledby="machine-editor-title" (click)="$event.stopPropagation()">
         <header>
           <div>
             <span class="eyebrow">MACHINE</span>
             <h2 id="machine-editor-title">{{ editingId() ? 'Cập nhật máy' : 'Thêm máy mới' }}</h2>
           </div>
-          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">×</button>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()"><app-ui-icon name="x" /></button>
         </header>
 
         <form [formGroup]="machineForm" (ngSubmit)="save()">

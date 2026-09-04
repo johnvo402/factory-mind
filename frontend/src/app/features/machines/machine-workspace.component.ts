@@ -1,12 +1,14 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
+import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { Machine, MachineInput, MachineStatus } from './machine.models';
 import { MachineStore } from './machine.store';
 
 @Component({
   selector: 'app-machine-workspace',
-  imports: [DatePipe, ReactiveFormsModule],
+  imports: [DatePipe, ReactiveFormsModule, DialogFocusDirective, UiIconComponent],
   templateUrl: './machine-workspace.component.html',
   styleUrls: ['../data/entity-workspace.scss', './machine-workspace.component.scss'],
 })

@@ -7,7 +7,7 @@
         @if (store.search()) { <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button> }
         <button type="submit" class="secondary">Tìm kiếm</button>
       </form>
-      <button type="button" class="primary" [disabled]="store.materials().length === 0" (click)="startCreate()">＋ Thêm tồn kho</button>
+      <button type="button" class="primary" [disabled]="store.materials().length === 0" (click)="startCreate()"><app-ui-icon name="plus" /> Thêm tồn kho</button>
     </div>
   </section>
 
@@ -52,10 +52,10 @@
 
   @if (editorOpen()) {
     <div class="editor-backdrop" (click)="cancelEdit()">
-      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="inventory-editor-title" (click)="$event.stopPropagation()">
+      <section class="editor" appDialogFocus (dialogDismissed)="cancelEdit()" role="dialog" aria-modal="true" aria-labelledby="inventory-editor-title" (click)="$event.stopPropagation()">
         <header>
           <div><span class="eyebrow">INVENTORY</span><h2 id="inventory-editor-title">{{ editingId() ? 'Cập nhật tồn kho' : 'Thêm tồn kho mới' }}</h2></div>
-          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">×</button>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()"><app-ui-icon name="x" /></button>
         </header>
         <form [formGroup]="inventoryForm" (ngSubmit)="save()">
           <label>Nguyên liệu
