@@ -1,10 +1,11 @@
 import { Component, input } from '@angular/core';
+import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { ChatMessage } from './chat.models';
 import { MarkdownPipe } from './markdown.pipe';
 
 @Component({
   selector: 'app-chat-message',
-  imports: [MarkdownPipe],
+  imports: [MarkdownPipe, UiIconComponent],
   templateUrl: './chat-message.component.html',
   styleUrl: './chat-message.component.scss',
 })
@@ -13,7 +14,7 @@ export class ChatMessageComponent {
   readonly streaming = input(false);
 
   protected scoreLabel(score: number): string {
-    return `${Math.round(score * 100)}% match`;
+    return `Độ khớp ${Math.round(score * 100)}%`;
   }
 
   protected entityTypeLabel(entityType: string): string {

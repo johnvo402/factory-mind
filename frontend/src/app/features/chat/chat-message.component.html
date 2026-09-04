@@ -1,6 +1,6 @@
 <article class="message" [class.user-message]="message().role === 'user'">
   <div class="avatar" aria-hidden="true">
-    {{ message().role === 'user' ? 'You' : 'FM' }}
+    <app-ui-icon [name]="message().role === 'user' ? 'user' : 'sparkles'" [size]="18" />
   </div>
   <div class="message-body">
     <span class="message-author">
