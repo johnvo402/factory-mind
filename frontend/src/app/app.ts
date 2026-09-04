@@ -1,13 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, isDevMode, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ProblemDetails } from './core/api/api.models';
 import { AuthService } from './core/auth/auth.service';
 import { WorkspaceComponent } from './features/workspace/workspace.component';
+import { UiIconComponent } from './shared/ui/ui-icon.component';
 
 @Component({
   selector: 'app-root',
-  imports: [ReactiveFormsModule, WorkspaceComponent],
+  imports: [ReactiveFormsModule, UiIconComponent, WorkspaceComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -19,12 +20,14 @@ export class App {
   protected readonly userRole = computed(() => this.auth.user()?.role ?? '');
   protected readonly loading = signal(false);
   protected readonly error = signal('');
+  protected readonly passwordVisible = signal(false);
+  protected readonly isDevelopment = isDevMode();
   protected readonly loginForm = new FormGroup({
-    email: new FormControl('admin@factorymind.local', {
+    email: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.email],
     }),
-    password: new FormControl('Demo@123', {
+    password: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required],
     }),
