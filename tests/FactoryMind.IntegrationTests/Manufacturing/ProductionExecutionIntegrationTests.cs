@@ -22,8 +22,8 @@ namespace FactoryMind.IntegrationTests.Manufacturing;
 [Collection(IntegrationTestCollection.Name)]
 public sealed class ProductionExecutionIntegrationTests(PostgreSqlFixture fixture)
     : IntegrationTestBase(fixture) {
-    private const string ProductionExecutionMigration =
-        "20260830071334_AddProductionExecutionLifecycle";
+    private const string FinishedGoodsMigration =
+        "20260830081645_AddFinishedGoodsInventoryAndProductionCompletion";
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
     [Fact]
@@ -293,7 +293,7 @@ public sealed class ProductionExecutionIntegrationTests(PostgreSqlFixture fixtur
     }
 
     [Fact]
-    public async Task Lifecycle_commands_freeze_non_Planned_orders_and_expose_no_Complete_endpoint() {
+    public async Task Lifecycle_commands_allow_only_InProgress_to_complete_and_freeze_Completed_orders() {
         await LoginAsync(Client, TestData.CompanyAAdminEmail);
         var product = await CreateProductAsync(Client, "P-LIFECYCLE", "Lifecycle Product");
         var noBomOrder = await CreateProductionOrderAsync(Client, "PO-NO-BOM", product.Id, 1m);
@@ -309,6 +309,11 @@ public sealed class ProductionExecutionIntegrationTests(PostgreSqlFixture fixtur
         await ActivateBomAsync(Client, product.Id, bom.Id);
 
         var editable = await CreateProductionOrderAsync(Client, "PO-EDIT", product.Id, 1m);
+        using (var completePlanned = await Client.PostAsJsonAsync(
+                   CompleteRoute(editable.Id),
+                   new CompleteProductionOrderRequest(warehouse.Id))) {
+            Assert.Equal(HttpStatusCode.Conflict, completePlanned.StatusCode);
+        }
         using (var update = await Client.PutAsJsonAsync(OrderRoute(editable.Id), new {
             number = "PO-EDITED",
             productId = product.Id,
@@ -337,6 +342,11 @@ public sealed class ProductionExecutionIntegrationTests(PostgreSqlFixture fixtur
 
         var releasedOrder = await CreateProductionOrderAsync(Client, "PO-CANCEL-RELEASED", product.Id, 1m);
         await ReleaseAsync(Client, releasedOrder.Id);
+        using (var completeReleased = await Client.PostAsJsonAsync(
+                   CompleteRoute(releasedOrder.Id),
+                   new CompleteProductionOrderRequest(warehouse.Id))) {
+            Assert.Equal(HttpStatusCode.Conflict, completeReleased.StatusCode);
+        }
         using (var secondRelease = await Client.PostAsync(ReleaseRoute(releasedOrder.Id), null)) {
             Assert.Equal(HttpStatusCode.Conflict, secondRelease.StatusCode);
         }
@@ -356,11 +366,31 @@ public sealed class ProductionExecutionIntegrationTests(PostgreSqlFixture fixtur
         await StartAsync(Client, startedOrder.Id, [
             new ProductionMaterialAllocationRequest(material.Id, warehouse.Id, 1m)
         ]);
-        using (var cancelStarted = await Client.PostAsync(CancelRoute(startedOrder.Id), null)) {
-            Assert.Equal(HttpStatusCode.Conflict, cancelStarted.StatusCode);
+        var completed = await CompleteAsync(Client, startedOrder.Id, warehouse.Id);
+        Assert.Equal(ProductionOrderStatuses.Completed, completed.Status);
+        Assert.NotNull(completed.CompletedAt);
+        using (var secondComplete = await Client.PostAsJsonAsync(
+                   CompleteRoute(startedOrder.Id),
+                   new CompleteProductionOrderRequest(warehouse.Id))) {
+            Assert.Equal(HttpStatusCode.Conflict, secondComplete.StatusCode);
         }
-        using (var complete = await Client.PostAsync(OrderRoute(startedOrder.Id) + "/complete", null)) {
-            Assert.Equal(HttpStatusCode.NotFound, complete.StatusCode);
+        using (var startCompleted = await Client.PostAsJsonAsync(
+                   StartRoute(startedOrder.Id),
+                   new StartProductionOrderRequest([
+                       new ProductionMaterialAllocationRequest(material.Id, warehouse.Id, 1m)
+                   ]))) {
+            Assert.Equal(HttpStatusCode.Conflict, startCompleted.StatusCode);
+        }
+        using (var cancelCompleted = await Client.PostAsync(CancelRoute(startedOrder.Id), null)) {
+            Assert.Equal(HttpStatusCode.Conflict, cancelCompleted.StatusCode);
+        }
+        using (var updateCompleted = await Client.PutAsJsonAsync(
+                   OrderRoute(startedOrder.Id),
+                   new ProductionOrderRequest("PO-CANNOT-EDIT", product.Id, 2m))) {
+            Assert.Equal(HttpStatusCode.Conflict, updateCompleted.StatusCode);
+        }
+        using (var deleteCompleted = await Client.DeleteAsync(OrderRoute(startedOrder.Id))) {
+            Assert.Equal(HttpStatusCode.Conflict, deleteCompleted.StatusCode);
         }
     }
 
@@ -369,10 +399,11 @@ public sealed class ProductionExecutionIntegrationTests(PostgreSqlFixture fixtur
         using var scope = ApiFactory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
 
+        var allMigrations = dbContext.Database.GetMigrations();
         var appliedMigrations = await dbContext.Database.GetAppliedMigrationsAsync();
 
-        Assert.Contains(ProductionExecutionMigration, appliedMigrations);
-        Assert.Equal(ProductionExecutionMigration, appliedMigrations.Last());
+        Assert.Contains(FinishedGoodsMigration, appliedMigrations);
+        Assert.Equal(allMigrations, appliedMigrations);
     }
 
     private static string ProductsRoute => ApiRoutes.Products.Group + ApiRoutes.Products.Root;
@@ -397,6 +428,10 @@ public sealed class ProductionExecutionIntegrationTests(PostgreSqlFixture fixtur
 
     private static string StartRoute(Guid orderId) => ApiRoutes.ProductionOrders.Group +
         ApiRoutes.ProductionOrders.Start.Replace(
+            "{productionOrderId:guid}", orderId.ToString(), StringComparison.Ordinal);
+
+    private static string CompleteRoute(Guid orderId) => ApiRoutes.ProductionOrders.Group +
+        ApiRoutes.ProductionOrders.Complete.Replace(
             "{productionOrderId:guid}", orderId.ToString(), StringComparison.Ordinal);
 
     private static string CancelRoute(Guid orderId) => ApiRoutes.ProductionOrders.Group +
@@ -507,6 +542,17 @@ public sealed class ProductionExecutionIntegrationTests(PostgreSqlFixture fixtur
         using var response = await client.PostAsJsonAsync(
             StartRoute(orderId),
             new StartProductionOrderRequest(allocations));
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ApiResponse<ProductionOrderResponse>>())!.Data!;
+    }
+
+    private static async Task<ProductionOrderResponse> CompleteAsync(
+        HttpClient client,
+        Guid orderId,
+        Guid warehouseId) {
+        using var response = await client.PostAsJsonAsync(
+            CompleteRoute(orderId),
+            new CompleteProductionOrderRequest(warehouseId));
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<ApiResponse<ProductionOrderResponse>>())!.Data!;
     }

@@ -13,6 +13,8 @@ public sealed class ProductionExecutionMigrationIntegrationTests(PostgreSqlFixtu
     : IntegrationTestBase(fixture) {
     private const string BomMigration = "20260828142309_AddVersionedBomAndMaterialRequirements";
     private const string ExecutionMigration = "20260830071334_AddProductionExecutionLifecycle";
+    private const string FinishedGoodsMigration =
+        "20260830081645_AddFinishedGoodsInventoryAndProductionCompletion";
 
     [Fact]
     public async Task Migration_preserves_legacy_order_and_inventory_then_accepts_six_decimal_stock() {
@@ -60,6 +62,7 @@ public sealed class ProductionExecutionMigrationIntegrationTests(PostgreSqlFixtu
                 """);
 
             await migrator.MigrateAsync(ExecutionMigration);
+            await migrator.MigrateAsync(FinishedGoodsMigration);
             dbContext.ChangeTracker.Clear();
 
             var order = await dbContext.ProductionOrders.SingleAsync();
@@ -67,6 +70,7 @@ public sealed class ProductionExecutionMigrationIntegrationTests(PostgreSqlFixtu
             Assert.Null(order.BillOfMaterialId);
             Assert.Null(order.ReleasedAt);
             Assert.Null(order.StartedAt);
+            Assert.Null(order.CompletedAt);
             Assert.Null(order.CancelledAt);
             Assert.Equal(42.125m, (await dbContext.InventoryBalances.SingleAsync()).Quantity);
             Assert.Equal(42.125m, (await dbContext.InventoryTransactions.SingleAsync()).Quantity);
