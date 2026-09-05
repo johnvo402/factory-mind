@@ -62,6 +62,7 @@ public sealed class ProductionCompletionCommandHandlerTests {
                 ProductId = Product.Id,
                 Product = Product,
                 BillOfMaterialId = Guid.NewGuid(),
+                RoutingId = Guid.NewGuid(),
                 Quantity = 10m,
                 Status = orderStatus,
                 StartedAt = DateTime.UtcNow
@@ -121,6 +122,25 @@ public sealed class ProductionCompletionCommandHandlerTests {
             Guid productionOrderId,
             Guid companyId,
             DateTime cancelledAt,
+            CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<ProductionOrderOperation>> GetOperationsAsync(
+            Guid productionOrderId,
+            Guid companyId,
+            CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<ProductionOperationExecutionResult> TryStartOperationAsync(
+            Guid productionOrderId,
+            Guid operationId,
+            Guid companyId,
+            DateTime startedAt,
+            CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<ProductionOperationExecutionResult> TryCompleteOperationAsync(
+            Guid productionOrderId,
+            Guid operationId,
+            Guid companyId,
+            DateTime completedAt,
             CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 

@@ -11,6 +11,8 @@ public sealed class ProductionOrder {
     public Product? Product { get; set; }
     public Guid? BillOfMaterialId { get; set; }
     public BillOfMaterial? BillOfMaterial { get; set; }
+    public Guid? RoutingId { get; set; }
+    public Routing? Routing { get; set; }
     public decimal Quantity { get; set; }
     public string Status { get; set; } = ProductionOrderStatuses.Planned;
     public DateTime? ReleasedAt { get; set; }
@@ -19,6 +21,7 @@ public sealed class ProductionOrder {
     public DateTime? CancelledAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public ICollection<ProductionOrderOperation> Operations { get; set; } = [];
 }
 
 public static class ProductionOrderStatuses {

@@ -102,6 +102,29 @@ public static class ProductionOrderEndpoints {
                     cancellationToken)).ToHttpResult();
             });
 
+        group.MapGet(ApiRoutes.ProductionOrders.Operations, async (
+            Guid productionOrderId,
+            ISender sender,
+            CancellationToken cancellationToken) => (await sender.Send(
+                new GetProductionOrderOperationsQuery(productionOrderId),
+                cancellationToken)).ToHttpResult());
+
+        group.MapPost(ApiRoutes.ProductionOrders.StartOperation, async (
+            Guid productionOrderId,
+            Guid operationId,
+            ISender sender,
+            CancellationToken cancellationToken) => (await sender.Send(
+                new StartProductionOrderOperationCommand(productionOrderId, operationId),
+                cancellationToken)).ToHttpResult());
+
+        group.MapPost(ApiRoutes.ProductionOrders.CompleteOperation, async (
+            Guid productionOrderId,
+            Guid operationId,
+            ISender sender,
+            CancellationToken cancellationToken) => (await sender.Send(
+                new CompleteProductionOrderOperationCommand(productionOrderId, operationId),
+                cancellationToken)).ToHttpResult());
+
         group.MapDelete(ApiRoutes.ProductionOrders.ById, async (
             Guid productionOrderId,
             ISender sender,

@@ -1,18 +1,19 @@
-import { DecimalPipe } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
 import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import {
   ProductionOrder,
   ProductionOrderInput,
+  ProductionOrderOperation,
   ProductionOrderStatus,
 } from './production-order.models';
 import { ProductionOrderStore } from './production-order.store';
 
 @Component({
   selector: 'app-production-order-workspace',
-  imports: [DecimalPipe, ReactiveFormsModule, DialogFocusDirective, UiIconComponent],
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, DialogFocusDirective, UiIconComponent],
   templateUrl: './production-order-workspace.component.html',
   styleUrls: ['../data/entity-workspace.scss', './production-order-workspace.component.scss'],
 })
@@ -23,6 +24,10 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
   protected readonly confirmDeleteId = signal<string | null>(null);
   protected readonly requirementsOpen = signal(false);
   protected readonly requirementOrder = signal<ProductionOrder | null>(null);
+  protected readonly executionOrderId = signal<string | null>(null);
+  protected readonly executionOrder = computed(() =>
+    this.store.orders().find(order => order.id === this.executionOrderId()) ?? null,
+  );
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly orderForm = new FormGroup({
     number: new FormControl('', {
@@ -33,10 +38,6 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
     quantity: new FormControl(1, {
       nonNullable: true,
       validators: [Validators.required, Validators.min(0.001)],
-    }),
-    status: new FormControl<ProductionOrderStatus>('planned', {
-      nonNullable: true,
-      validators: [Validators.required],
     }),
   });
 
@@ -61,7 +62,6 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
       number: '',
       productId: this.store.products()[0]?.id ?? '',
       quantity: 1,
-      status: 'planned',
     });
     this.editorOpen.set(true);
   }
@@ -73,7 +73,6 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
       number: order.number,
       productId: order.productId,
       quantity: order.quantity,
-      status: order.status,
     });
     this.editorOpen.set(true);
   }
@@ -108,6 +107,7 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
   protected statusLabel(status: ProductionOrderStatus): string {
     const labels: Record<ProductionOrderStatus, string> = {
       planned: 'Đã lên kế hoạch',
+      released: 'Đã phát hành',
       in_progress: 'Đang sản xuất',
       completed: 'Hoàn thành',
       cancelled: 'Đã hủy',
@@ -125,5 +125,22 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
     this.requirementsOpen.set(false);
     this.requirementOrder.set(null);
     this.store.clearRequirements();
+  }
+
+  protected openExecution(order: ProductionOrder): void { this.executionOrderId.set(order.id); }
+  protected closeExecution(): void { this.executionOrderId.set(null); }
+  protected canStartOperation(order: ProductionOrder, operation: ProductionOrderOperation): boolean {
+    return order.status === 'in_progress' && operation.status === 'pending' &&
+      !order.operations.some(item => item.status === 'in_progress') &&
+      order.operations.find(item => item.status !== 'completed')?.id === operation.id;
+  }
+  protected async startOperation(order: ProductionOrder, operation: ProductionOrderOperation): Promise<void> {
+    await this.store.startOperation(order.id, operation.id);
+  }
+  protected async completeOperation(order: ProductionOrder, operation: ProductionOrderOperation): Promise<void> {
+    await this.store.completeOperation(order.id, operation.id);
+  }
+  protected operationStatusLabel(status: ProductionOrderOperation['status']): string {
+    return { pending: 'Chờ thực hiện', in_progress: 'Đang thực hiện', completed: 'Hoàn thành' }[status];
   }
 }

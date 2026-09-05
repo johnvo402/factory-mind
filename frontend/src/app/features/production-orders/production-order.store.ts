@@ -98,6 +98,14 @@ export class ProductionOrderStore {
     }
   }
 
+  async startOperation(orderId: string, operationId: string): Promise<boolean> {
+    return this.transitionOperation(() => this.api.startOperation(orderId, operationId));
+  }
+
+  async completeOperation(orderId: string, operationId: string): Promise<boolean> {
+    return this.transitionOperation(() => this.api.completeOperation(orderId, operationId));
+  }
+
   clearError(): void {
     this.errorState.set('');
   }
@@ -120,5 +128,20 @@ export class ProductionOrderStore {
     this.requirementState.set(null);
     this.requirementErrorState.set('');
     this.requirementLoadingState.set(false);
+  }
+
+  private async transitionOperation(request: () => ReturnType<ProductionOrderApiService['startOperation']>): Promise<boolean> {
+    this.savingState.set(true);
+    this.errorState.set('');
+    try {
+      await firstValueFrom(request());
+      await this.load();
+      return true;
+    } catch (error: unknown) {
+      this.errorState.set(businessDataErrorMessage(error));
+      return false;
+    } finally {
+      this.savingState.set(false);
+    }
   }
 }

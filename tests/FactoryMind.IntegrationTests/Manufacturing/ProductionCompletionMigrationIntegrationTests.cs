@@ -101,6 +101,7 @@ public sealed class ProductionCompletionMigrationIntegrationTests(PostgreSqlFixt
                 """);
 
             await migrator.MigrateAsync(FinishedGoodsMigration);
+            await migrator.MigrateAsync();
             dbContext.ChangeTracker.Clear();
 
             var order = await dbContext.ProductionOrders.SingleAsync(candidate => candidate.Id == orderId);

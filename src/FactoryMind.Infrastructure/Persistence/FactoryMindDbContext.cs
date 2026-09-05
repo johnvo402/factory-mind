@@ -7,6 +7,8 @@ using FactoryMind.Application.Features.Products;
 using FactoryMind.Application.Features.ProductionOrders;
 using FactoryMind.Application.Features.ProductInventories;
 using FactoryMind.Application.Features.Warehouses;
+using FactoryMind.Application.Features.WorkCenters;
+using FactoryMind.Application.Features.Routings;
 using FactoryMind.Domain.Chat;
 using FactoryMind.Domain.Identity;
 using FactoryMind.Domain.Knowledge;
@@ -33,12 +35,16 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
     public DbSet<Product> Products => Set<Product>();
     public DbSet<BillOfMaterial> BillOfMaterials => Set<BillOfMaterial>();
     public DbSet<BomItem> BomItems => Set<BomItem>();
+    public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
+    public DbSet<Routing> Routings => Set<Routing>();
+    public DbSet<RoutingOperation> RoutingOperations => Set<RoutingOperation>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
     public DbSet<InventoryBalance> InventoryBalances => Set<InventoryBalance>();
     public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
     public DbSet<ProductInventoryBalance> ProductInventoryBalances => Set<ProductInventoryBalance>();
     public DbSet<ProductInventoryTransaction> ProductInventoryTransactions => Set<ProductInventoryTransaction>();
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
+    public DbSet<ProductionOrderOperation> ProductionOrderOperations => Set<ProductionOrderOperation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         modelBuilder.HasPostgresExtension("vector");
@@ -239,6 +245,72 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<WorkCenter>(entity => {
+            entity.ToTable("work_centers");
+            entity.HasIndex(workCenter => new { workCenter.CompanyId, workCenter.Code }).IsUnique();
+            entity.HasIndex(workCenter => new { workCenter.CompanyId, workCenter.Name });
+            entity.Property(workCenter => workCenter.Code)
+                .HasMaxLength(WorkCenterConstraints.MaximumCodeLength)
+                .IsRequired();
+            entity.Property(workCenter => workCenter.Name)
+                .HasMaxLength(WorkCenterConstraints.MaximumNameLength)
+                .IsRequired();
+            entity.Property(workCenter => workCenter.Description)
+                .HasMaxLength(WorkCenterConstraints.MaximumDescriptionLength);
+            entity.HasOne(workCenter => workCenter.Company)
+                .WithMany(company => company.WorkCenters)
+                .HasForeignKey(workCenter => workCenter.CompanyId);
+        });
+
+        modelBuilder.Entity<Routing>(entity => {
+            entity.ToTable("routings", table => {
+                table.HasCheckConstraint("CK_routings_Revision_positive", "\"Revision\" > 0");
+                table.HasCheckConstraint(
+                    "CK_routings_Status_valid", "\"Status\" IN ('draft', 'active', 'archived')");
+            });
+            entity.HasIndex(routing => new { routing.CompanyId, routing.ProductId, routing.Revision }).IsUnique();
+            entity.HasIndex(routing => routing.Status);
+            entity.HasIndex(routing => new { routing.CompanyId, routing.ProductId })
+                .IsUnique()
+                .HasFilter("\"Status\" = 'active'");
+            entity.Property(routing => routing.Status)
+                .HasMaxLength(RoutingConstraints.MaximumStatusLength)
+                .IsRequired();
+            entity.HasOne(routing => routing.Company)
+                .WithMany(company => company.Routings)
+                .HasForeignKey(routing => routing.CompanyId);
+            entity.HasOne(routing => routing.Product)
+                .WithMany()
+                .HasForeignKey(routing => routing.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(routing => routing.Operations)
+                .WithOne(operation => operation.Routing)
+                .HasForeignKey(operation => operation.RoutingId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RoutingOperation>(entity => {
+            entity.ToTable("routing_operations", table => {
+                table.HasCheckConstraint("CK_routing_operations_Sequence_positive", "\"Sequence\" > 0");
+                table.HasCheckConstraint(
+                    "CK_routing_operations_SetupTimeMinutes_nonnegative", "\"SetupTimeMinutes\" >= 0");
+                table.HasCheckConstraint(
+                    "CK_routing_operations_RunTimeMinutes_nonnegative", "\"RunTimeMinutes\" >= 0");
+            });
+            entity.HasIndex(operation => new { operation.RoutingId, operation.Sequence }).IsUnique();
+            entity.HasIndex(operation => operation.RoutingId);
+            entity.HasIndex(operation => operation.WorkCenterId);
+            entity.Property(operation => operation.Name)
+                .HasMaxLength(RoutingConstraints.MaximumOperationNameLength)
+                .IsRequired();
+            entity.Property(operation => operation.Description)
+                .HasMaxLength(RoutingConstraints.MaximumOperationDescriptionLength);
+            entity.HasOne(operation => operation.WorkCenter)
+                .WithMany()
+                .HasForeignKey(operation => operation.WorkCenterId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<Warehouse>(entity => {
             entity.ToTable("warehouses");
             entity.HasIndex(warehouse => new { warehouse.CompanyId, warehouse.Code }).IsUnique();
@@ -410,6 +482,69 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
             entity.HasOne(order => order.BillOfMaterial)
                 .WithMany()
                 .HasForeignKey(order => order.BillOfMaterialId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(order => order.Routing)
+                .WithMany()
+                .HasForeignKey(order => order.RoutingId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(order => order.Operations)
+                .WithOne(operation => operation.ProductionOrder)
+                .HasForeignKey(operation => operation.ProductionOrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductionOrderOperation>(entity => {
+            entity.ToTable("production_order_operations", table => {
+                table.HasCheckConstraint(
+                    "CK_production_order_operations_Sequence_positive", "\"Sequence\" > 0");
+                table.HasCheckConstraint(
+                    "CK_production_order_operations_SetupTimeMinutes_nonnegative",
+                    "\"SetupTimeMinutes\" >= 0");
+                table.HasCheckConstraint(
+                    "CK_production_order_operations_RunTimeMinutes_nonnegative",
+                    "\"RunTimeMinutes\" >= 0");
+                table.HasCheckConstraint(
+                    "CK_production_order_operations_Status_valid",
+                    "\"Status\" IN ('pending', 'in_progress', 'completed')");
+            });
+            entity.HasIndex(operation => new { operation.ProductionOrderId, operation.Sequence }).IsUnique();
+            entity.HasIndex(
+                operation => operation.ProductionOrderId,
+                "IX_production_order_operations_ProductionOrderId");
+            entity.HasIndex(operation => operation.RoutingOperationId);
+            entity.HasIndex(operation => operation.WorkCenterId);
+            entity.HasIndex(operation => new { operation.ProductionOrderId, operation.Status });
+            entity.HasIndex(
+                    operation => operation.ProductionOrderId,
+                    "IX_production_order_operations_one_in_progress")
+                .IsUnique()
+                .HasFilter("\"Status\" = 'in_progress'");
+            entity.HasIndex(operation => operation.Status);
+            entity.Property(operation => operation.Name)
+                .HasMaxLength(RoutingConstraints.MaximumOperationNameLength)
+                .IsRequired();
+            entity.Property(operation => operation.WorkCenterCode)
+                .HasMaxLength(WorkCenterConstraints.MaximumCodeLength)
+                .IsRequired();
+            entity.Property(operation => operation.WorkCenterName)
+                .HasMaxLength(WorkCenterConstraints.MaximumNameLength)
+                .IsRequired();
+            entity.Property(operation => operation.Description)
+                .HasMaxLength(RoutingConstraints.MaximumOperationDescriptionLength);
+            entity.Property(operation => operation.Status)
+                .HasMaxLength(ProductionOrderConstraints.MaximumStatusLength)
+                .IsRequired();
+            entity.HasOne(operation => operation.Company)
+                .WithMany(company => company.ProductionOrderOperations)
+                .HasForeignKey(operation => operation.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(operation => operation.RoutingOperation)
+                .WithMany()
+                .HasForeignKey(operation => operation.RoutingOperationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(operation => operation.WorkCenter)
+                .WithMany()
+                .HasForeignKey(operation => operation.WorkCenterId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

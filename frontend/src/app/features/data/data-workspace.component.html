@@ -14,6 +14,7 @@
 
   <nav class="tabs" aria-label="Nhóm dữ liệu" role="tablist">
     <a routerLink="/data/machines" role="tab" [class.active]="activeView() === 'machines'" [attr.aria-selected]="activeView() === 'machines'">Máy móc</a>
+    <a routerLink="/data/work-centers" role="tab" [class.active]="activeView() === 'work-centers'" [attr.aria-selected]="activeView() === 'work-centers'">Trung tâm làm việc</a>
     <a routerLink="/data/materials" role="tab" [class.active]="activeView() === 'materials'" [attr.aria-selected]="activeView() === 'materials'">Nguyên liệu</a>
     <a routerLink="/data/inventories" role="tab" [class.active]="activeView() === 'inventories'" [attr.aria-selected]="activeView() === 'inventories'">Tồn kho</a>
     <a routerLink="/data/products" role="tab" [class.active]="activeView() === 'products'" [attr.aria-selected]="activeView() === 'products'">Sản phẩm</a>
@@ -22,6 +23,7 @@
 
   @switch (activeView()) {
     @case ('materials') { <app-material-workspace /> }
+    @case ('work-centers') { <app-work-center-workspace /> }
     @case ('inventories') { <app-inventory-workspace /> }
     @case ('products') { <app-product-workspace /> }
     @case ('production-orders') { <app-production-order-workspace /> }

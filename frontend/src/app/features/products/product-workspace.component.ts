@@ -13,10 +13,11 @@ import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
 import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { Product, ProductInput } from './product.models';
 import { ProductStore } from './product.store';
+import { ProductRoutingPanelComponent } from '../routings/product-routing-panel.component';
 
 @Component({
   selector: 'app-product-workspace',
-  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, DialogFocusDirective, UiIconComponent],
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, DialogFocusDirective, UiIconComponent, ProductRoutingPanelComponent],
   templateUrl: './product-workspace.component.html',
   styleUrls: ['../data/entity-workspace.scss', './product-workspace.component.scss'],
 })
@@ -29,6 +30,7 @@ export class ProductWorkspaceComponent implements OnInit {
   protected readonly bomPanelOpen = signal(false);
   protected readonly bomEditorOpen = signal(false);
   protected readonly selectedProduct = signal<Product | null>(null);
+  protected readonly routingProduct = signal<Product | null>(null);
   protected readonly selectedBomId = signal<string | null>(null);
   protected readonly editingBomId = signal<string | null>(null);
   protected readonly allMaterialsUsed = signal(false);

@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiResponse } from '../../core/api/api.models';
 import { API_ROUTES } from '../../core/api/api.routes';
-import { ProductionOrder, ProductionOrderInput } from './production-order.models';
+import { ProductionOrder, ProductionOrderInput, ProductionOrderOperation } from './production-order.models';
 
 @Injectable({ providedIn: 'root' })
 export class ProductionOrderApiService {
@@ -31,6 +31,18 @@ export class ProductionOrderApiService {
   deleteProductionOrder(productionOrderId: string): Observable<ApiResponse<object>> {
     return this.http.delete<ApiResponse<object>>(
       API_ROUTES.productionOrders.byId(productionOrderId),
+    );
+  }
+
+  startOperation(productionOrderId: string, operationId: string): Observable<ApiResponse<ProductionOrderOperation>> {
+    return this.http.post<ApiResponse<ProductionOrderOperation>>(
+      API_ROUTES.productionOrders.startOperation(productionOrderId, operationId), null,
+    );
+  }
+
+  completeOperation(productionOrderId: string, operationId: string): Observable<ApiResponse<ProductionOrderOperation>> {
+    return this.http.post<ApiResponse<ProductionOrderOperation>>(
+      API_ROUTES.productionOrders.completeOperation(productionOrderId, operationId), null,
     );
   }
 }

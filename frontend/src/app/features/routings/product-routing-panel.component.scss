@@ -1,0 +1,16 @@
+.routing-backdrop { position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: flex-end; background: rgb(12 25 20 / 45%); }
+.routing-panel { width: min(960px, 96vw); height: 100dvh; overflow-y: auto; background: var(--color-surface); padding: 24px; }
+.routing-panel > header, .section-heading, .editor-heading, footer { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.routing-panel > header p { color: var(--color-muted); }
+.routing-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; margin-top: 24px; }
+aside { display: grid; align-content: start; gap: 8px; }
+.new-routing { margin-bottom: 8px; }
+.revision { display: grid; gap: 4px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); padding: 12px; text-align: left; }
+.revision.selected { border-color: var(--color-primary); }
+.revision strong { color: var(--color-muted); font-size: 0.75rem; }.revision strong.active { color: var(--color-success); }
+.operation-editor { display: grid; gap: 12px; margin-top: 20px; }
+fieldset { display: grid; grid-template-columns: 90px 1fr 1fr 120px 120px auto; gap: 12px; align-items: end; border: 1px solid var(--color-border); border-radius: 12px; padding: 14px; }
+fieldset label { display: grid; gap: 6px; }.description { grid-column: 2 / 6; }
+.operation-list { display: grid; gap: 10px; margin-top: 20px; }.operation-list article { display: grid; grid-template-columns: 42px 1fr auto; gap: 12px; align-items: center; border: 1px solid var(--color-border); border-radius: 10px; padding: 14px; }.operation-list article div { display: grid; gap: 4px; }.operation-list span, .operation-list small, .empty-copy { color: var(--color-muted); }
+footer { justify-content: flex-end; margin-top: 20px; }
+@media (max-width: 760px) { .routing-layout { grid-template-columns: 1fr; } aside { grid-template-columns: repeat(2, minmax(0, 1fr)); } .new-routing { grid-column: 1 / -1; } fieldset { grid-template-columns: 1fr 1fr; } .description { grid-column: 1 / -1; } .operation-list article { grid-template-columns: 36px 1fr; }.operation-list small { grid-column: 2; } }

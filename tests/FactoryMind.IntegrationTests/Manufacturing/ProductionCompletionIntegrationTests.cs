@@ -10,7 +10,9 @@ using FactoryMind.Application.Features.Materials;
 using FactoryMind.Application.Features.ProductInventories;
 using FactoryMind.Application.Features.Products;
 using FactoryMind.Application.Features.ProductionOrders;
+using FactoryMind.Application.Features.Routings;
 using FactoryMind.Application.Features.Warehouses;
+using FactoryMind.Application.Features.WorkCenters;
 using FactoryMind.Domain.Manufacturing;
 using FactoryMind.Infrastructure.Persistence;
 using FactoryMind.IntegrationTests.Infrastructure;
@@ -322,6 +324,16 @@ public sealed class ProductionCompletionIntegrationTests(PostgreSqlFixture fixtu
         ApiRoutes.ProductionOrders.Complete.Replace(
             "{productionOrderId:guid}", orderId.ToString(), StringComparison.Ordinal);
 
+    private static string StartOperationRoute(Guid orderId, Guid operationId) =>
+        ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.StartOperation
+            .Replace("{productionOrderId:guid}", orderId.ToString(), StringComparison.Ordinal)
+            .Replace("{operationId:guid}", operationId.ToString(), StringComparison.Ordinal);
+
+    private static string CompleteOperationRoute(Guid orderId, Guid operationId) =>
+        ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.CompleteOperation
+            .Replace("{productionOrderId:guid}", orderId.ToString(), StringComparison.Ordinal)
+            .Replace("{operationId:guid}", operationId.ToString(), StringComparison.Ordinal);
+
     private static async Task<CompletionScenario> CreateScenarioAsync(
         HttpClient client,
         string suffix,
@@ -346,12 +358,21 @@ public sealed class ProductionCompletionIntegrationTests(PostgreSqlFixture fixtu
         decimal quantity) {
         var order = await CreateProductionOrderAsync(client, number, scenario.Product.Id, quantity);
         await ReleaseAsync(client, order.Id);
-        return await StartAsync(client, order.Id, [
+        var started = await StartAsync(client, order.Id, [
             new ProductionMaterialAllocationRequest(
                 scenario.Material.Id,
                 scenario.RawWarehouse.Id,
                 quantity * scenario.ComponentQuantity)
         ]);
+        foreach (var operation in started.Operations.OrderBy(operation => operation.Sequence)) {
+            using var startResponse = await client.PostAsync(
+                StartOperationRoute(order.Id, operation.Id), null);
+            startResponse.EnsureSuccessStatusCode();
+            using var completeResponse = await client.PostAsync(
+                CompleteOperationRoute(order.Id, operation.Id), null);
+            completeResponse.EnsureSuccessStatusCode();
+        }
+        return started;
     }
 
     private static async Task<ProductResponse> CreateProductAsync(
@@ -416,6 +437,33 @@ public sealed class ProductionCompletionIntegrationTests(PostgreSqlFixture fixtu
     private static async Task ActivateBomAsync(HttpClient client, Guid productId, Guid bomId) {
         using var response = await client.PostAsync(ActivateBomRoute(productId, bomId), null);
         response.EnsureSuccessStatusCode();
+        await EnsureActiveRoutingAsync(client, productId);
+    }
+
+    private static async Task EnsureActiveRoutingAsync(HttpClient client, Guid productId) {
+        var routingsRoute = ApiRoutes.Products.Group + ApiRoutes.Products.Routings.Replace(
+            "{productId:guid}", productId.ToString(), StringComparison.Ordinal);
+        var existing = await client.GetFromJsonAsync<ApiResponse<IReadOnlyList<RoutingResponse>>>(routingsRoute);
+        if (existing?.Data?.Any(routing => routing.Status == RoutingStatuses.Active) == true) {
+            return;
+        }
+
+        using var workCenterResponse = await client.PostAsJsonAsync(
+            ApiRoutes.WorkCenters.Group,
+            new WorkCenterCreateRequest($"WC-{productId:N}", "Default Work Center", null));
+        workCenterResponse.EnsureSuccessStatusCode();
+        var workCenter = (await workCenterResponse.Content
+            .ReadFromJsonAsync<ApiResponse<WorkCenterResponse>>())!.Data!;
+        using var createResponse = await client.PostAsJsonAsync(routingsRoute, new RoutingRequest([
+            new RoutingOperationRequest(10, "Manufacture", workCenter.Id, 0, 1, null)
+        ]));
+        createResponse.EnsureSuccessStatusCode();
+        var routing = (await createResponse.Content.ReadFromJsonAsync<ApiResponse<RoutingResponse>>())!.Data!;
+        var activateRoute = ApiRoutes.Products.Group + ApiRoutes.Products.ActivateRouting
+            .Replace("{productId:guid}", productId.ToString(), StringComparison.Ordinal)
+            .Replace("{routingId:guid}", routing.Id.ToString(), StringComparison.Ordinal);
+        using var activateResponse = await client.PostAsync(activateRoute, null);
+        activateResponse.EnsureSuccessStatusCode();
     }
 
     private static async Task<ProductionOrderResponse> CreateProductionOrderAsync(

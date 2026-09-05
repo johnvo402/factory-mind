@@ -14,9 +14,10 @@ import { ProductStore } from '../products/product.store';
 import { ProductionOrderWorkspaceComponent } from '../production-orders/production-order-workspace.component';
 import { ProductionOrderStore } from '../production-orders/production-order.store';
 import { UiIconComponent } from '../../shared/ui/ui-icon.component';
+import { WorkCenterWorkspaceComponent } from '../work-centers/work-center-workspace.component';
 
-type DataView = 'machines' | 'materials' | 'inventories' | 'products' | 'production-orders';
-const DATA_VIEWS: readonly DataView[] = ['machines', 'materials', 'inventories', 'products', 'production-orders'];
+type DataView = 'machines' | 'work-centers' | 'materials' | 'inventories' | 'products' | 'production-orders';
+const DATA_VIEWS: readonly DataView[] = ['machines', 'work-centers', 'materials', 'inventories', 'products', 'production-orders'];
 
 @Component({
   selector: 'app-data-workspace',
@@ -29,6 +30,7 @@ const DATA_VIEWS: readonly DataView[] = ['machines', 'materials', 'inventories',
     ExcelImportWizardComponent,
     RouterLink,
     UiIconComponent,
+    WorkCenterWorkspaceComponent,
   ],
   templateUrl: './data-workspace.component.html',
   styleUrl: './data-workspace.component.scss',
