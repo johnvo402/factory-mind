@@ -10,9 +10,9 @@
         @if (store.search()) {
           <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button>
         }
-        <button type="submit" class="secondary">Tìm kiếm</button>
+        <button type="submit" class="secondary"><app-ui-icon name="search" [size]="17" /> Tìm kiếm</button>
       </form>
-      <button type="button" class="primary" (click)="startCreate()">＋ Thêm nguyên liệu</button>
+      <button type="button" class="primary" (click)="startCreate()"><app-ui-icon name="plus" /> Thêm nguyên liệu</button>
     </div>
   </section>
 
@@ -41,11 +41,16 @@
               <td>{{ material.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
               <td class="actions">
                 @if (confirmDeleteId() === material.id) {
-                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(material.id)">Xác nhận</button>
+                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(material.id)"><app-ui-icon name="trash-2" [size]="16" /> Xác nhận</button>
                   <button type="button" class="ghost" (click)="confirmDeleteId.set(null)">Hủy</button>
                 } @else {
-                  <button type="button" class="ghost" [attr.aria-label]="'Sửa ' + material.code" (click)="startEdit(material)">Sửa</button>
-                  <button type="button" class="ghost danger-text" [attr.aria-label]="'Xóa ' + material.code" (click)="requestDelete(material.id)">Xóa</button>
+                  <details class="row-actions">
+                    <summary [attr.aria-label]="'Thao tác với ' + material.code"><app-ui-icon name="more-horizontal" /></summary>
+                    <div class="row-menu">
+                      <button type="button" class="ghost" (click)="startEdit(material)"><app-ui-icon name="pencil" [size]="16" /> Sửa</button>
+                      <button type="button" class="ghost danger-text" (click)="requestDelete(material.id)"><app-ui-icon name="trash-2" [size]="16" /> Xóa</button>
+                    </div>
+                  </details>
                 }
               </td>
             </tr>
@@ -57,10 +62,10 @@
 
   @if (editorOpen()) {
     <div class="editor-backdrop" (click)="cancelEdit()">
-      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="material-editor-title" (click)="$event.stopPropagation()">
+      <section class="editor" appDialogFocus (dialogDismissed)="cancelEdit()" role="dialog" aria-modal="true" aria-labelledby="material-editor-title" (click)="$event.stopPropagation()">
         <header>
-          <div><span class="eyebrow">MATERIAL</span><h2 id="material-editor-title">{{ editingId() ? 'Cập nhật nguyên liệu' : 'Thêm nguyên liệu mới' }}</h2></div>
-          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">×</button>
+          <div><span class="eyebrow">NGUYÊN LIỆU</span><h2 id="material-editor-title">{{ editingId() ? 'Cập nhật nguyên liệu' : 'Thêm nguyên liệu mới' }}</h2></div>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()"><app-ui-icon name="x" /></button>
         </header>
         <form [formGroup]="materialForm" (ngSubmit)="save()">
           <label>Mã nguyên liệu

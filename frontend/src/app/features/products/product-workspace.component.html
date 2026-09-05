@@ -5,9 +5,9 @@
       <form (submit)="search($event)" class="search-form">
         <input type="search" [formControl]="searchControl" maxlength="200" aria-label="Tìm sản phẩm" placeholder="Tìm theo mã hoặc tên sản phẩm">
         @if (store.search()) { <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button> }
-        <button type="submit" class="secondary">Tìm kiếm</button>
+        <button type="submit" class="secondary"><app-ui-icon name="search" [size]="17" /> Tìm kiếm</button>
       </form>
-      <button type="button" class="primary" (click)="startCreate()">＋ Thêm sản phẩm</button>
+      <button type="button" class="primary" (click)="startCreate()"><app-ui-icon name="plus" /> Thêm sản phẩm</button>
     </div>
   </section>
 
@@ -31,12 +31,17 @@
               <td><strong>{{ product.code }}</strong></td><td>{{ product.name }}</td><td>{{ product.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
               <td class="actions">
                 @if (confirmDeleteId() === product.id) {
-                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(product.id)">Xác nhận</button>
+                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(product.id)"><app-ui-icon name="trash-2" [size]="16" /> Xác nhận</button>
                   <button type="button" class="ghost" (click)="confirmDeleteId.set(null)">Hủy</button>
                 } @else {
-                  <button type="button" class="ghost" [attr.aria-label]="'Quản lý BOM của ' + product.code" (click)="openBoms(product)">BOM &amp; vật tư</button>
-                  <button type="button" class="ghost" [attr.aria-label]="'Sửa ' + product.code" (click)="startEdit(product)">Sửa</button>
-                  <button type="button" class="ghost danger-text" [attr.aria-label]="'Xóa ' + product.code" (click)="requestDelete(product.id)">Xóa</button>
+                  <details class="row-actions">
+                    <summary [attr.aria-label]="'Thao tác với ' + product.code"><app-ui-icon name="more-horizontal" /></summary>
+                    <div class="row-menu">
+                      <button type="button" class="ghost" (click)="openBoms(product)">BOM &amp; vật tư</button>
+                      <button type="button" class="ghost" (click)="startEdit(product)"><app-ui-icon name="pencil" [size]="16" /> Sửa</button>
+                      <button type="button" class="ghost danger-text" (click)="requestDelete(product.id)"><app-ui-icon name="trash-2" [size]="16" /> Xóa</button>
+                    </div>
+                  </details>
                 }
               </td>
             </tr>
@@ -48,10 +53,10 @@
 
   @if (editorOpen()) {
     <div class="editor-backdrop" (click)="cancelEdit()">
-      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="product-editor-title" (click)="$event.stopPropagation()">
+      <section class="editor" appDialogFocus (dialogDismissed)="cancelEdit()" role="dialog" aria-modal="true" aria-labelledby="product-editor-title" (click)="$event.stopPropagation()">
         <header>
-          <div><span class="eyebrow">PRODUCT</span><h2 id="product-editor-title">{{ editingId() ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới' }}</h2></div>
-          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">×</button>
+          <div><span class="eyebrow">SẢN PHẨM</span><h2 id="product-editor-title">{{ editingId() ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới' }}</h2></div>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()"><app-ui-icon name="x" /></button>
         </header>
         <form [formGroup]="productForm" (ngSubmit)="save()">
           <label>Mã sản phẩm
@@ -73,14 +78,14 @@
 
   @if (bomPanelOpen() && selectedProduct(); as product) {
     <div class="editor-backdrop" (click)="closeBoms()">
-      <section class="editor bom-panel" role="dialog" aria-modal="true" aria-labelledby="bom-panel-title" (click)="$event.stopPropagation()">
+      <section class="editor bom-panel" appDialogFocus (dialogDismissed)="closeBoms()" role="dialog" aria-modal="true" aria-labelledby="bom-panel-title" (click)="$event.stopPropagation()">
         <header>
           <div>
-            <span class="eyebrow">BILL OF MATERIALS</span>
+            <span class="eyebrow">ĐỊNH MỨC VẬT TƯ</span>
             <h2 id="bom-panel-title">{{ product.code }} — {{ product.name }}</h2>
             <p>Quản lý revision và kiểm tra mức đủ vật tư hiện tại.</p>
           </div>
-          <button type="button" class="close" aria-label="Đóng quản lý BOM" (click)="closeBoms()">×</button>
+          <button type="button" class="close" aria-label="Đóng quản lý BOM" (click)="closeBoms()"><app-ui-icon name="x" /></button>
         </header>
 
         @if (bomStore.error()) {
@@ -228,7 +233,7 @@
 
               <section class="bom-section requirement-section" aria-labelledby="requirement-title">
                 <div class="section-heading">
-                  <div><span class="eyebrow">PLANNING PREVIEW</span><h3 id="requirement-title">Kiểm tra vật tư</h3><p>Dùng active BOM và tổng tồn hiện tại trên tất cả kho.</p></div>
+                  <div><span class="eyebrow">DỰ BÁO NHU CẦU</span><h3 id="requirement-title">Kiểm tra vật tư</h3><p>Dùng BOM đang hoạt động và tổng tồn hiện tại trên tất cả kho.</p></div>
                 </div>
                 <form class="requirement-form" (ngSubmit)="calculateRequirements()">
                   <label>Số lượng cần sản xuất

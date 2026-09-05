@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { SettingsStore } from './settings.store';
 import { UserSettings } from './settings.models';
 
@@ -6,6 +7,7 @@ type SettingsTab = 'company' | 'users' | 'ai';
 
 @Component({
   selector: 'app-settings-workspace',
+  imports: [UiIconComponent],
   templateUrl: './settings-workspace.component.html',
   styleUrl: './settings-workspace.component.scss',
 })
@@ -13,6 +15,10 @@ export class SettingsWorkspaceComponent implements OnInit {
   protected readonly store = inject(SettingsStore);
   protected readonly activeTab = signal<SettingsTab>('company');
   protected readonly companyName = signal('');
+  private readonly savedCompanyName = signal('');
+  protected readonly companyDirty = computed(
+    () => this.companyName().trim() !== this.savedCompanyName(),
+  );
   protected readonly selectedUserId = signal<string | null>(null);
   protected readonly userName = signal('');
   protected readonly userEmail = signal('');
@@ -23,6 +29,7 @@ export class SettingsWorkspaceComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     await this.store.load();
     this.companyName.set(this.store.company()?.name ?? '');
+    this.savedCompanyName.set(this.store.company()?.name ?? '');
   }
 
   protected setTab(tab: SettingsTab): void {
@@ -31,7 +38,10 @@ export class SettingsWorkspaceComponent implements OnInit {
 
   protected async saveCompany(): Promise<void> {
     if (this.companyName().trim()) {
-      await this.store.updateCompany(this.companyName());
+      const saved = await this.store.updateCompany(this.companyName());
+      if (saved) {
+        this.savedCompanyName.set(this.companyName().trim());
+      }
     }
   }
 
@@ -75,5 +85,9 @@ export class SettingsWorkspaceComponent implements OnInit {
 
   protected changeRole(event: Event): void {
     this.userRole.set((event.target as HTMLSelectElement).value as UserSettings['role']);
+  }
+
+  protected roleLabel(role: UserSettings['role']): string {
+    return { Admin: 'Quản trị viên', Manager: 'Quản lý', User: 'Nhân viên' }[role];
   }
 }

@@ -10,22 +10,22 @@
     <article>
       <span>Đơn đang chạy</span>
       <strong>{{ summary.activeOrders }}</strong>
-      <small>planned + in progress</small>
+      <small>Kế hoạch và đang sản xuất</small>
     </article>
     <article>
       <span>Tồn kho</span>
       <strong>{{ summary.inventoryBalances }}</strong>
-      <small>dòng số dư</small>
+      <small>Dòng số dư hiện có</small>
     </article>
     <article>
       <span>Máy sẵn sàng</span>
       <strong>{{ summary.availableMachines }}/{{ summary.totalMachines }}</strong>
-      <small>available / total</small>
+      <small>Sẵn sàng / tổng số</small>
     </article>
     <article [class.has-alerts]="summary.alerts > 0">
       <span>Cảnh báo</span>
       <strong>{{ summary.alerts }}</strong>
-      <small>máy và tài liệu cần xử lý</small>
+      <small>Máy và tài liệu cần xử lý</small>
     </article>
   }
 </section>

@@ -9,12 +9,14 @@ import {
 } from '@angular/forms';
 import { Bom, BomInput, BomItem, BomStatus } from '../boms/bom.models';
 import { BomStore } from '../boms/bom.store';
+import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
+import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { Product, ProductInput } from './product.models';
 import { ProductStore } from './product.store';
 
 @Component({
   selector: 'app-product-workspace',
-  imports: [DatePipe, DecimalPipe, ReactiveFormsModule],
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, DialogFocusDirective, UiIconComponent],
   templateUrl: './product-workspace.component.html',
   styleUrls: ['../data/entity-workspace.scss', './product-workspace.component.scss'],
 })

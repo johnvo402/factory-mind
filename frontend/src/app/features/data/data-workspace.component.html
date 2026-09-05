@@ -1,23 +1,23 @@
 <section class="data-panel">
   <header class="data-header">
     <div>
-      <span class="eyebrow">BUSINESS DATA</span>
+      <span class="eyebrow">DỮ LIỆU NGHIỆP VỤ</span>
       <h1>Dữ liệu nhà máy</h1>
-      <p>Quản lý dữ liệu có cấu trúc dùng cho vận hành và Hybrid RAG.</p>
+      <p>Nguồn dữ liệu chuẩn cho vận hành và câu trả lời của FactoryMind AI.</p>
     </div>
-    <button type="button" class="import-button" (click)="importOpen.set(true)">Import Excel</button>
+    <button type="button" class="import-button" (click)="importOpen.set(true)"><app-ui-icon name="upload" [size]="18" /> Nhập từ Excel</button>
   </header>
 
   @if (importMessage()) {
-    <p class="import-message">{{ importMessage() }}</p>
+    <p class="import-message" role="status">{{ importMessage() }}</p>
   }
 
-  <nav class="tabs" aria-label="Nhóm dữ liệu">
-    <button type="button" [class.active]="activeView() === 'machines'" (click)="selectView('machines')">Machine</button>
-    <button type="button" [class.active]="activeView() === 'materials'" (click)="selectView('materials')">Material</button>
-    <button type="button" [class.active]="activeView() === 'inventories'" (click)="selectView('inventories')">Inventory</button>
-    <button type="button" [class.active]="activeView() === 'products'" (click)="selectView('products')">Product</button>
-    <button type="button" [class.active]="activeView() === 'production-orders'" (click)="selectView('production-orders')">Production Order</button>
+  <nav class="tabs" aria-label="Nhóm dữ liệu" role="tablist">
+    <a routerLink="/data/machines" role="tab" [class.active]="activeView() === 'machines'" [attr.aria-selected]="activeView() === 'machines'">Máy móc</a>
+    <a routerLink="/data/materials" role="tab" [class.active]="activeView() === 'materials'" [attr.aria-selected]="activeView() === 'materials'">Nguyên liệu</a>
+    <a routerLink="/data/inventories" role="tab" [class.active]="activeView() === 'inventories'" [attr.aria-selected]="activeView() === 'inventories'">Tồn kho</a>
+    <a routerLink="/data/products" role="tab" [class.active]="activeView() === 'products'" [attr.aria-selected]="activeView() === 'products'">Sản phẩm</a>
+    <a routerLink="/data/production-orders" role="tab" [class.active]="activeView() === 'production-orders'" [attr.aria-selected]="activeView() === 'production-orders'">Lệnh sản xuất</a>
   </nav>
 
   @switch (activeView()) {

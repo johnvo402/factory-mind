@@ -8,11 +8,11 @@
       <form (submit)="search($event)" class="search-form">
         <input type="search" [formControl]="searchControl" maxlength="200" aria-label="Tìm tồn kho" placeholder="Tìm nguyên liệu, mã kho hoặc tên kho">
         @if (store.search()) { <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button> }
-        <button type="submit" class="secondary">Tìm kiếm</button>
+        <button type="submit" class="secondary"><app-ui-icon name="search" [size]="17" /> Tìm kiếm</button>
       </form>
       <button type="button" class="secondary" (click)="openWarehouseEditor()">Quản lý kho</button>
       <button type="button" class="secondary" (click)="showHistory()">Lịch sử kho</button>
-      <button type="button" class="primary" [disabled]="activeWarehouses().length === 0 || store.materials().length === 0" (click)="startOperation('receive')">＋ Nhập kho</button>
+      <button type="button" class="primary" [disabled]="activeWarehouses().length === 0 || store.materials().length === 0" (click)="startOperation('receive')"><app-ui-icon name="plus" /> Nhập kho</button>
     </div>
   </section>
 
@@ -38,9 +38,14 @@
               <td><strong>{{ inventory.quantity | number: '1.0-3' }}</strong> {{ inventory.unit }}</td>
               <td>{{ inventory.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
               <td class="actions">
-                <button type="button" class="ghost" (click)="startOperation('issue', inventory)">Xuất</button>
-                <button type="button" class="ghost" (click)="startOperation('adjust', inventory)">Điều chỉnh</button>
-                <button type="button" class="ghost" [disabled]="activeWarehouses().length < 2" (click)="startOperation('transfer', inventory)">Chuyển</button>
+                <details class="row-actions">
+                  <summary [attr.aria-label]="'Thao tác với tồn kho ' + inventory.materialCode"><app-ui-icon name="more-horizontal" /></summary>
+                  <div class="row-menu">
+                    <button type="button" class="ghost" (click)="startOperation('issue', inventory)">Xuất kho</button>
+                    <button type="button" class="ghost" (click)="startOperation('adjust', inventory)">Điều chỉnh</button>
+                    <button type="button" class="ghost" [disabled]="activeWarehouses().length < 2" (click)="startOperation('transfer', inventory)">Chuyển kho</button>
+                  </div>
+                </details>
               </td>
             </tr>
           }
@@ -51,8 +56,8 @@
 
   @if (operation()) {
     <div class="editor-backdrop" (click)="cancelOperation()">
-      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="inventory-operation-title" (click)="$event.stopPropagation()">
-        <header><div><span class="eyebrow">INVENTORY LEDGER</span><h2 id="inventory-operation-title">{{ operationTitle() }}</h2></div><button type="button" class="close" aria-label="Đóng" (click)="cancelOperation()">×</button></header>
+      <section class="editor" appDialogFocus (dialogDismissed)="cancelOperation()" role="dialog" aria-modal="true" aria-labelledby="inventory-operation-title" (click)="$event.stopPropagation()">
+        <header><div><span class="eyebrow">SỔ KHO</span><h2 id="inventory-operation-title">{{ operationTitle() }}</h2></div><button type="button" class="close" aria-label="Đóng" (click)="cancelOperation()"><app-ui-icon name="x" /></button></header>
         <form [formGroup]="operationForm" (ngSubmit)="submitOperation()">
           <label>{{ operation() === 'transfer' ? 'Kho nguồn' : 'Kho' }}
             <select formControlName="sourceWarehouseId">
@@ -97,8 +102,8 @@
 
   @if (historyOpen()) {
     <div class="editor-backdrop" (click)="historyOpen.set(false)">
-      <section class="editor editor-wide" role="dialog" aria-modal="true" aria-labelledby="inventory-history-title" (click)="$event.stopPropagation()">
-        <header><div><span class="eyebrow">IMMUTABLE LEDGER</span><h2 id="inventory-history-title">Lịch sử giao dịch kho</h2><p>{{ store.transactionCount() }} giao dịch</p></div><button type="button" class="close" aria-label="Đóng" (click)="historyOpen.set(false)">×</button></header>
+      <section class="editor editor-wide" appDialogFocus (dialogDismissed)="historyOpen.set(false)" role="dialog" aria-modal="true" aria-labelledby="inventory-history-title" (click)="$event.stopPropagation()">
+        <header><div><span class="eyebrow">SỔ GIAO DỊCH</span><h2 id="inventory-history-title">Lịch sử giao dịch kho</h2><p>{{ store.transactionCount() }} giao dịch</p></div><button type="button" class="close" aria-label="Đóng" (click)="historyOpen.set(false)"><app-ui-icon name="x" /></button></header>
         @if (store.transactions().length === 0) { <div class="state empty"><strong>Chưa có giao dịch.</strong></div> } @else {
           <div class="table-wrap history-table"><table><thead><tr><th>Thời gian</th><th>Nguyên liệu</th><th>Kho</th><th>Thao tác</th><th>Thay đổi</th><th>Tham chiếu / Ghi chú</th></tr></thead><tbody>
             @for (transaction of store.transactions(); track transaction.id) {
@@ -112,14 +117,14 @@
 
   @if (warehouseEditorOpen()) {
     <div class="editor-backdrop" (click)="warehouseEditorOpen.set(false)">
-      <section class="editor editor-wide" role="dialog" aria-modal="true" aria-labelledby="warehouse-editor-title" (click)="$event.stopPropagation()">
-        <header><div><span class="eyebrow">WAREHOUSES</span><h2 id="warehouse-editor-title">Quản lý kho</h2></div><button type="button" class="close" aria-label="Đóng" (click)="warehouseEditorOpen.set(false)">×</button></header>
+      <section class="editor editor-wide" appDialogFocus (dialogDismissed)="warehouseEditorOpen.set(false)" role="dialog" aria-modal="true" aria-labelledby="warehouse-editor-title" (click)="$event.stopPropagation()">
+        <header><div><span class="eyebrow">KHO HÀNG</span><h2 id="warehouse-editor-title">Quản lý kho</h2></div><button type="button" class="close" aria-label="Đóng" (click)="warehouseEditorOpen.set(false)"><app-ui-icon name="x" /></button></header>
         <div class="warehouse-layout">
           <div class="warehouse-list">
             @for (warehouse of store.warehouses(); track warehouse.id) {
               <button type="button" class="warehouse-card" [class.inactive]="!warehouse.isActive" (click)="editWarehouse(warehouse)"><strong>{{ warehouse.code }}</strong><span>{{ warehouse.name }}</span><small>{{ warehouse.isActive ? 'Đang hoạt động' : 'Đã ngừng hoạt động' }}</small></button>
             }
-            <button type="button" class="secondary" (click)="newWarehouse()">＋ Kho mới</button>
+            <button type="button" class="secondary" (click)="newWarehouse()"><app-ui-icon name="plus" [size]="17" /> Kho mới</button>
           </div>
           <form [formGroup]="warehouseForm" (ngSubmit)="saveWarehouse()">
             <label>Mã kho<input type="text" formControlName="code" maxlength="50" placeholder="WH-RAW"></label>

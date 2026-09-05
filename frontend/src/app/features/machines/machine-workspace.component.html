@@ -16,9 +16,9 @@
           @if (store.search()) {
             <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button>
           }
-          <button type="submit" class="secondary">Tìm kiếm</button>
+          <button type="submit" class="secondary"><app-ui-icon name="search" [size]="17" /> Tìm kiếm</button>
         </form>
-        <button type="button" class="primary" (click)="startCreate()">＋ Thêm máy</button>
+        <button type="button" class="primary" (click)="startCreate()"><app-ui-icon name="plus" /> Thêm máy</button>
       </div>
     </section>
 
@@ -49,11 +49,16 @@
                 <td>{{ machine.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
                 <td class="actions">
                   @if (confirmDeleteId() === machine.id) {
-                    <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(machine.id)">Xác nhận</button>
+                    <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(machine.id)"><app-ui-icon name="trash-2" [size]="16" /> Xác nhận</button>
                     <button type="button" class="ghost" (click)="cancelDelete()">Hủy</button>
                   } @else {
-                    <button type="button" class="ghost" [attr.aria-label]="'Sửa ' + machine.code" (click)="startEdit(machine)">Sửa</button>
-                    <button type="button" class="ghost danger-text" [attr.aria-label]="'Xóa ' + machine.code" (click)="requestDelete(machine.id)">Xóa</button>
+                    <details class="row-actions">
+                      <summary [attr.aria-label]="'Thao tác với ' + machine.code"><app-ui-icon name="more-horizontal" /></summary>
+                      <div class="row-menu">
+                        <button type="button" class="ghost" (click)="startEdit(machine)"><app-ui-icon name="pencil" [size]="16" /> Sửa</button>
+                        <button type="button" class="ghost danger-text" (click)="requestDelete(machine.id)"><app-ui-icon name="trash-2" [size]="16" /> Xóa</button>
+                      </div>
+                    </details>
                   }
                 </td>
               </tr>
@@ -64,13 +69,13 @@
     }
   @if (editorOpen()) {
     <div class="editor-backdrop" (click)="cancelEdit()">
-      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="machine-editor-title" (click)="$event.stopPropagation()">
+      <section class="editor" appDialogFocus (dialogDismissed)="cancelEdit()" role="dialog" aria-modal="true" aria-labelledby="machine-editor-title" (click)="$event.stopPropagation()">
         <header>
           <div>
-            <span class="eyebrow">MACHINE</span>
+            <span class="eyebrow">MÁY MÓC</span>
             <h2 id="machine-editor-title">{{ editingId() ? 'Cập nhật máy' : 'Thêm máy mới' }}</h2>
           </div>
-          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">×</button>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()"><app-ui-icon name="x" /></button>
         </header>
 
         <form [formGroup]="machineForm" (ngSubmit)="save()">

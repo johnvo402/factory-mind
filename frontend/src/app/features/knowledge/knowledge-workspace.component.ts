@@ -1,10 +1,12 @@
-import { DecimalPipe } from '@angular/common';
+import { PercentPipe } from '@angular/common';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { UiIconComponent } from '../../shared/ui/ui-icon.component';
+import { KnowledgeDocument } from './knowledge.models';
 import { KnowledgeStore } from './knowledge.store';
 
 @Component({
   selector: 'app-knowledge-workspace',
-  imports: [DecimalPipe],
+  imports: [PercentPipe, UiIconComponent],
   templateUrl: './knowledge-workspace.component.html',
   styleUrl: './knowledge-workspace.component.scss',
 })
@@ -53,5 +55,15 @@ export class KnowledgeWorkspaceComponent implements OnInit, OnDestroy {
     return bytes < 1024 * 1024
       ? `${Math.ceil(bytes / 1024)} KB`
       : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  protected statusLabel(status: KnowledgeDocument['status']): string {
+    const labels: Record<KnowledgeDocument['status'], string> = {
+      uploaded: 'Đã tải lên',
+      processing: 'Đang xử lý',
+      ready: 'Sẵn sàng',
+      failed: 'Xử lý lỗi',
+    };
+    return labels[status];
   }
 }

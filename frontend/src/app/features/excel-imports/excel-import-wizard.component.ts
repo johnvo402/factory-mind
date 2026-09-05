@@ -1,9 +1,12 @@
 import { Component, input, output } from '@angular/core';
+import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
+import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { ExcelImportEntityType } from './excel-import.models';
 import { ExcelImportStore } from './excel-import.store';
 
 @Component({
   selector: 'app-excel-import-wizard',
+  imports: [DialogFocusDirective, UiIconComponent],
   providers: [ExcelImportStore],
   templateUrl: './excel-import-wizard.component.html',
   styleUrl: './excel-import-wizard.component.scss',
@@ -14,6 +17,17 @@ export class ExcelImportWizardComponent {
   readonly imported = output<number>();
 
   constructor(protected readonly store: ExcelImportStore) {}
+
+  protected entityLabel(): string {
+    const labels: Record<ExcelImportEntityType, string> = {
+      machine: 'máy móc',
+      material: 'nguyên liệu',
+      inventory: 'tồn kho',
+      product: 'sản phẩm',
+      production_order: 'lệnh sản xuất',
+    };
+    return labels[this.entityType()];
+  }
 
   protected chooseFile(event: Event): void {
     const input = event.target as HTMLInputElement;

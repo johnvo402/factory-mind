@@ -308,7 +308,7 @@ Implementation status: Admin-only Company/Users settings and safe read-only Gemi
 
 Done.
 
-Implementation status: Knowledge upload/search/status UI, role-aware navigation, retryable errors, loading/empty states, and production bundle budgets are implemented.
+Implementation status: the Industrial AI Cockpit redesign is implemented with semantic tokens, route-backed navigation, responsive mobile navigation, accessible dialogs, consistent SVG icons, and refined Login/Chat/Data/Knowledge/Settings workspaces.
 
 ---
 

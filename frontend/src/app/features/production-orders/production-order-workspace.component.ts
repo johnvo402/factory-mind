@@ -1,6 +1,8 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
+import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import {
   ProductionOrder,
   ProductionOrderInput,
@@ -10,7 +12,7 @@ import { ProductionOrderStore } from './production-order.store';
 
 @Component({
   selector: 'app-production-order-workspace',
-  imports: [DecimalPipe, ReactiveFormsModule],
+  imports: [DecimalPipe, ReactiveFormsModule, DialogFocusDirective, UiIconComponent],
   templateUrl: './production-order-workspace.component.html',
   styleUrls: ['../data/entity-workspace.scss', './production-order-workspace.component.scss'],
 })
