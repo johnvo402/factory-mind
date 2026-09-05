@@ -1,14 +1,14 @@
 <section class="settings-panel">
   <header>
-    <span>ADMIN SETTINGS</span>
+    <span>QUẢN TRỊ HỆ THỐNG</span>
     <h1>Cài đặt FactoryMind</h1>
-    <p>Quản lý tenant, thành viên và trạng thái kết nối Gemini.</p>
+    <p>Quản lý doanh nghiệp, thành viên và cấu hình trợ lý AI.</p>
   </header>
 
-  <nav aria-label="Nhóm cài đặt">
-    <button type="button" [class.active]="activeTab() === 'company'" (click)="setTab('company')">Company</button>
-    <button type="button" [class.active]="activeTab() === 'users'" (click)="setTab('users')">Users</button>
-    <button type="button" [class.active]="activeTab() === 'ai'" (click)="setTab('ai')">AI</button>
+  <nav aria-label="Nhóm cài đặt" role="tablist">
+    <button type="button" role="tab" [attr.aria-selected]="activeTab() === 'company'" [class.active]="activeTab() === 'company'" (click)="setTab('company')">Doanh nghiệp</button>
+    <button type="button" role="tab" [attr.aria-selected]="activeTab() === 'users'" [class.active]="activeTab() === 'users'" (click)="setTab('users')">Thành viên</button>
+    <button type="button" role="tab" [attr.aria-selected]="activeTab() === 'ai'" [class.active]="activeTab() === 'ai'" (click)="setTab('ai')">Trợ lý AI</button>
   </nav>
 
   <main>
@@ -22,25 +22,25 @@
       @case ('users') {
         <section class="users-layout">
           <article class="card users-list">
-            <div class="card-heading"><h2>Thành viên</h2><button type="button" (click)="newUser()">Thêm user</button></div>
+            <div class="card-heading"><div><h2>Thành viên</h2><p>{{ store.users().length }} tài khoản</p></div><button type="button" (click)="newUser()"><app-ui-icon name="plus" [size]="16" /> Thêm người dùng</button></div>
             @for (user of store.users(); track user.id) {
               <button type="button" class="user-row" [class.selected]="selectedUserId() === user.id" (click)="selectUser(user)">
                 <span><strong>{{ user.name }}</strong><small>{{ user.email }}</small></span>
-                <span><small>{{ user.role }}</small><i [class.inactive]="!user.isActive"></i></span>
+                <span><small>{{ roleLabel(user.role) }}</small><i [class.inactive]="!user.isActive"></i></span>
               </button>
             }
           </article>
 
           <article class="card editor">
-            <h2>{{ selectedUserId() ? 'Sửa người dùng' : 'Người dùng mới' }}</h2>
+            <div class="editor-heading"><span class="icon-box"><app-ui-icon name="user" /></span><div><h2>{{ selectedUserId() ? 'Chỉnh sửa người dùng' : 'Người dùng mới' }}</h2><p>Thiết lập thông tin và quyền truy cập.</p></div></div>
             <label>Tên<input [value]="userName()" (input)="userName.set($any($event.target).value)" maxlength="200"></label>
             <label>Email<input type="email" [value]="userEmail()" (input)="userEmail.set($any($event.target).value)" maxlength="320"></label>
             @if (!selectedUserId()) {
               <label>Mật khẩu<input type="password" [value]="userPassword()" (input)="userPassword.set($any($event.target).value)" minlength="8"></label>
             }
-            <label>Role
+            <label>Vai trò
               <select [value]="userRole()" (change)="changeRole($event)">
-                <option value="Admin">Admin</option><option value="Manager">Manager</option><option value="User">User</option>
+                <option value="Admin">Quản trị viên</option><option value="Manager">Quản lý</option><option value="User">Nhân viên</option>
               </select>
             </label>
             @if (selectedUserId()) {
@@ -53,21 +53,24 @@
       @case ('ai') {
         @if (store.ai(); as ai) {
           <article class="card ai-card">
-            <div><span>Provider</span><strong>{{ ai.provider }}</strong></div>
-            <div><span>Chat model</span><strong>{{ ai.chatModel }}</strong></div>
-            <div><span>Embedding</span><strong>{{ ai.embeddingModel }} · {{ ai.embeddingDimensions }}d</strong></div>
-            <div><span>Output limit</span><strong>{{ ai.maximumOutputTokens }} tokens</strong></div>
-            <div><span>API key</span><strong [class.ready]="ai.apiKeyConfigured">{{ ai.apiKeyConfigured ? 'Configured' : 'Missing' }}</strong></div>
-            <p>API key chỉ tồn tại trong secret của backend và không bao giờ được gửi tới trình duyệt.</p>
-            <button type="button" class="primary" [disabled]="store.isLoading()" (click)="store.reindex()">Re-index tài liệu cho Gemini</button>
+            <div class="ai-heading"><span class="icon-box"><app-ui-icon name="sparkles" /></span><div><h2>Cấu hình trợ lý AI</h2><p>Thông tin kết nối chỉ đọc từ máy chủ.</p></div></div>
+            <div class="ai-grid">
+              <div><span>Nhà cung cấp</span><strong>{{ ai.provider }}</strong></div>
+              <div><span>Mô hình hội thoại</span><strong>{{ ai.chatModel }}</strong></div>
+              <div><span>Mô hình embedding</span><strong>{{ ai.embeddingModel }} · {{ ai.embeddingDimensions }} chiều</strong></div>
+              <div><span>Giới hạn đầu ra</span><strong>{{ ai.maximumOutputTokens }} token</strong></div>
+              <div><span>Khóa API</span><strong [class.ready]="ai.apiKeyConfigured">{{ ai.apiKeyConfigured ? 'Đã cấu hình' : 'Chưa cấu hình' }}</strong></div>
+            </div>
+            <p class="security-note">Khóa API chỉ tồn tại trong secret của máy chủ và không bao giờ được gửi tới trình duyệt.</p>
+            <button type="button" class="primary" [disabled]="store.isLoading()" (click)="store.reindex()"><app-ui-icon name="refresh-cw" [size]="17" /> Lập chỉ mục lại tài liệu</button>
           </article>
         }
       }
       @default {
         <article class="card company-card">
-          <h2>Thông tin công ty</h2>
-          <label>Tên công ty<input [value]="companyName()" (input)="companyName.set($any($event.target).value)" maxlength="200"></label>
-          <button type="button" class="primary" [disabled]="store.isLoading() || !companyName().trim()" (click)="saveCompany()">Lưu thay đổi</button>
+          <div class="editor-heading"><span class="icon-box"><app-ui-icon name="factory" /></span><div><h2>Thông tin doanh nghiệp</h2><p>Tên hiển thị dùng xuyên suốt không gian làm việc.</p></div></div>
+          <label>Tên doanh nghiệp<input [value]="companyName()" (input)="companyName.set($any($event.target).value)" maxlength="200"></label>
+          <div class="save-row"><span>{{ companyDirty() ? 'Có thay đổi chưa lưu' : 'Thông tin đã được lưu' }}</span><button type="button" class="primary" [disabled]="store.isLoading() || !companyName().trim() || !companyDirty()" (click)="saveCompany()">Lưu thay đổi</button></div>
         </article>
       }
     }
