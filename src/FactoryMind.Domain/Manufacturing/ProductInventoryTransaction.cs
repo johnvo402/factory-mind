@@ -30,7 +30,7 @@ public static class ProductInventoryTransactionTypeExtensions {
     public static decimal ToSignedQuantity(
         this ProductInventoryTransactionType type,
         decimal quantity) => type switch {
-        ProductInventoryTransactionType.ProductionOutput => quantity,
-        _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown product inventory transaction type.")
-    };
+            ProductInventoryTransactionType.ProductionOutput => quantity,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown product inventory transaction type.")
+        };
 }

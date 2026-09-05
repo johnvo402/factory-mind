@@ -3,14 +3,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace FactoryMind.Infrastructure.Persistence.Migrations
-{
+namespace FactoryMind.Infrastructure.Persistence.Migrations {
     /// <inheritdoc />
-    public partial class AddFinishedGoodsInventoryAndProductionCompletion : Migration
-    {
+    public partial class AddFinishedGoodsInventoryAndProductionCompletion : Migration {
         /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
+        protected override void Up(MigrationBuilder migrationBuilder) {
             migrationBuilder.AddColumn<DateTime>(
                 name: "CompletedAt",
                 table: "production_orders",
@@ -19,8 +16,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "product_inventory_balances",
-                columns: table => new
-                {
+                columns: table => new {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
                     WarehouseId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -28,8 +24,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     Quantity = table.Column<decimal>(type: "numeric(18,3)", precision: 18, scale: 3, nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_product_inventory_balances", x => x.Id);
                     table.CheckConstraint("CK_product_inventory_balances_Quantity_nonnegative", "\"Quantity\" >= 0");
                     table.ForeignKey(
@@ -54,8 +49,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "product_inventory_transactions",
-                columns: table => new
-                {
+                columns: table => new {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
                     WarehouseId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -68,8 +62,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_product_inventory_transactions", x => x.Id);
                     table.CheckConstraint("CK_product_inventory_transactions_Quantity_positive", "\"Quantity\" > 0");
                     table.ForeignKey(
@@ -151,8 +144,7 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
         }
 
         /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
+        protected override void Down(MigrationBuilder migrationBuilder) {
             migrationBuilder.DropTable(
                 name: "product_inventory_balances");
 

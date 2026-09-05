@@ -1,4 +1,5 @@
 .tools
+/.tmp-dotnet-tools/
 .env
 .env.*
 !.env.example
