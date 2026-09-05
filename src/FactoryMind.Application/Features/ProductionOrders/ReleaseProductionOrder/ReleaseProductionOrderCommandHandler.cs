@@ -1,5 +1,6 @@
 using FactoryMind.Application.Common.Identity;
 using FactoryMind.Application.Features.Boms;
+using FactoryMind.Application.Features.Routings;
 using FactoryMind.Domain.Manufacturing;
 using FactoryMind.Shared.Contracts;
 using Mediator;
@@ -34,6 +35,8 @@ public sealed class ReleaseProductionOrderCommandHandler(
                 ProductionOrderResponse.From(outcome.Order!)),
             ProductionExecutionStatus.ActiveBomNotFound =>
                 Result<ProductionOrderResponse>.Failure(BomErrors.ActiveNotFound),
+            ProductionExecutionStatus.ActiveRoutingNotFound =>
+                Result<ProductionOrderResponse>.Failure(RoutingErrors.ActiveNotFound),
             _ => Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.InvalidTransition)
         };
     }

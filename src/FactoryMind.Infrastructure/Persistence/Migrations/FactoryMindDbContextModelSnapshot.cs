@@ -807,6 +807,9 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("ReleasedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("RoutingId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("StartedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -824,12 +827,209 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ProductId");
 
+                    b.HasIndex("RoutingId");
+
                     b.HasIndex("CompanyId", "Number")
                         .IsUnique();
 
                     b.HasIndex("CompanyId", "Status", "UpdatedAt");
 
                     b.ToTable("production_orders", (string)null);
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.ProductionOrderOperation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("ProductionOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("RoutingOperationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("RunTimeMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SetupTimeMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("WorkCenterCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("WorkCenterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("WorkCenterName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("RoutingOperationId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("WorkCenterId");
+
+                    b.HasIndex("ProductionOrderId", "Sequence")
+                        .IsUnique();
+
+                    b.HasIndex("ProductionOrderId", "Status");
+
+                    b.HasIndex(new[] { "ProductionOrderId" }, "IX_production_order_operations_ProductionOrderId");
+
+                    b.HasIndex(new[] { "ProductionOrderId" }, "IX_production_order_operations_one_in_progress")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'in_progress'");
+
+                    b.ToTable("production_order_operations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_production_order_operations_RunTimeMinutes_nonnegative", "\"RunTimeMinutes\" >= 0");
+
+                            t.HasCheckConstraint("CK_production_order_operations_Sequence_positive", "\"Sequence\" > 0");
+
+                            t.HasCheckConstraint("CK_production_order_operations_SetupTimeMinutes_nonnegative", "\"SetupTimeMinutes\" >= 0");
+
+                            t.HasCheckConstraint("CK_production_order_operations_Status_valid", "\"Status\" IN ('pending', 'in_progress', 'completed')");
+                        });
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.Routing", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("CompanyId", "ProductId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'active'");
+
+                    b.HasIndex("CompanyId", "ProductId", "Revision")
+                        .IsUnique();
+
+                    b.ToTable("routings", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_routings_Revision_positive", "\"Revision\" > 0");
+
+                            t.HasCheckConstraint("CK_routings_Status_valid", "\"Status\" IN ('draft', 'active', 'archived')");
+                        });
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.RoutingOperation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("RoutingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("RunTimeMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SetupTimeMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorkCenterId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoutingId");
+
+                    b.HasIndex("WorkCenterId");
+
+                    b.HasIndex("RoutingId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("routing_operations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_routing_operations_RunTimeMinutes_nonnegative", "\"RunTimeMinutes\" >= 0");
+
+                            t.HasCheckConstraint("CK_routing_operations_Sequence_positive", "\"Sequence\" > 0");
+
+                            t.HasCheckConstraint("CK_routing_operations_SetupTimeMinutes_nonnegative", "\"SetupTimeMinutes\" >= 0");
+                        });
                 });
 
             modelBuilder.Entity("FactoryMind.Domain.Manufacturing.Warehouse", b =>
@@ -872,6 +1072,48 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     b.HasIndex("CompanyId", "Name");
 
                     b.ToTable("warehouses", (string)null);
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.WorkCenter", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique();
+
+                    b.HasIndex("CompanyId", "Name");
+
+                    b.ToTable("work_centers", (string)null);
                 });
 
             modelBuilder.Entity("FactoryMind.Infrastructure.Persistence.Knowledge.DocumentEmbeddingRecord", b =>
@@ -1227,17 +1469,107 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("FactoryMind.Domain.Manufacturing.Routing", "Routing")
+                        .WithMany()
+                        .HasForeignKey("RoutingId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("BillOfMaterial");
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Routing");
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.ProductionOrderOperation", b =>
+                {
+                    b.HasOne("FactoryMind.Domain.Identity.Company", "Company")
+                        .WithMany("ProductionOrderOperations")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.ProductionOrder", "ProductionOrder")
+                        .WithMany("Operations")
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.RoutingOperation", "RoutingOperation")
+                        .WithMany()
+                        .HasForeignKey("RoutingOperationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.WorkCenter", "WorkCenter")
+                        .WithMany()
+                        .HasForeignKey("WorkCenterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("ProductionOrder");
+
+                    b.Navigation("RoutingOperation");
+
+                    b.Navigation("WorkCenter");
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.Routing", b =>
+                {
+                    b.HasOne("FactoryMind.Domain.Identity.Company", "Company")
+                        .WithMany("Routings")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Company");
 
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.RoutingOperation", b =>
+                {
+                    b.HasOne("FactoryMind.Domain.Manufacturing.Routing", "Routing")
+                        .WithMany("Operations")
+                        .HasForeignKey("RoutingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.WorkCenter", "WorkCenter")
+                        .WithMany()
+                        .HasForeignKey("WorkCenterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Routing");
+
+                    b.Navigation("WorkCenter");
+                });
+
             modelBuilder.Entity("FactoryMind.Domain.Manufacturing.Warehouse", b =>
                 {
                     b.HasOne("FactoryMind.Domain.Identity.Company", "Company")
                         .WithMany("Warehouses")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.WorkCenter", b =>
+                {
+                    b.HasOne("FactoryMind.Domain.Identity.Company", "Company")
+                        .WithMany("WorkCenters")
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1286,13 +1618,19 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
 
                     b.Navigation("ProductInventoryTransactions");
 
+                    b.Navigation("ProductionOrderOperations");
+
                     b.Navigation("ProductionOrders");
 
                     b.Navigation("Products");
 
+                    b.Navigation("Routings");
+
                     b.Navigation("Users");
 
                     b.Navigation("Warehouses");
+
+                    b.Navigation("WorkCenters");
                 });
 
             modelBuilder.Entity("FactoryMind.Domain.Identity.User", b =>
@@ -1316,6 +1654,16 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("FactoryMind.Domain.Manufacturing.BillOfMaterial", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.ProductionOrder", b =>
+                {
+                    b.Navigation("Operations");
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.Routing", b =>
+                {
+                    b.Navigation("Operations");
                 });
 #pragma warning restore 612, 618
         }

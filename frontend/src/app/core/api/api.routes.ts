@@ -54,6 +54,11 @@ export const API_ROUTES = {
       `${API_BASE}/products/${productId}/boms/${bomId}/archive`,
     materialRequirements: (productId: string) =>
       `${API_BASE}/products/${productId}/material-requirements`,
+    routings: (productId: string) => `${API_BASE}/products/${productId}/routings`,
+    routingById: (productId: string, routingId: string) =>
+      `${API_BASE}/products/${productId}/routings/${routingId}`,
+    activateRouting: (productId: string, routingId: string) =>
+      `${API_BASE}/products/${productId}/routings/${routingId}/activate`,
   },
   inventories: {
     root: `${API_BASE}/inventories`,
@@ -67,10 +72,21 @@ export const API_ROUTES = {
     root: `${API_BASE}/warehouses`,
     byId: (warehouseId: string) => `${API_BASE}/warehouses/${warehouseId}`,
   },
+  workCenters: {
+    root: `${API_BASE}/work-centers`,
+    byId: (workCenterId: string) => `${API_BASE}/work-centers/${workCenterId}`,
+    deactivate: (workCenterId: string) => `${API_BASE}/work-centers/${workCenterId}/deactivate`,
+  },
   productionOrders: {
     root: `${API_BASE}/production-orders`,
     byId: (productionOrderId: string) => `${API_BASE}/production-orders/${productionOrderId}`,
     materialRequirements: (productionOrderId: string) =>
       `${API_BASE}/production-orders/${productionOrderId}/material-requirements`,
+    operations: (productionOrderId: string) =>
+      `${API_BASE}/production-orders/${productionOrderId}/operations`,
+    startOperation: (productionOrderId: string, operationId: string) =>
+      `${API_BASE}/production-orders/${productionOrderId}/operations/${operationId}/start`,
+    completeOperation: (productionOrderId: string, operationId: string) =>
+      `${API_BASE}/production-orders/${productionOrderId}/operations/${operationId}/complete`,
   },
 } as const;

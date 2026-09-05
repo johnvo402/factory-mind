@@ -13,6 +13,8 @@ public sealed class EfProductionOrderRepository(FactoryMindDbContext dbContext) 
             .AsNoTracking()
             .Include(order => order.Product)
             .Include(order => order.BillOfMaterial)
+            .Include(order => order.Routing)
+            .Include(order => order.Operations)
             .Where(order => order.CompanyId == companyId);
         if (search is not null) {
             var pattern = $"%{search}%";
@@ -33,6 +35,8 @@ public sealed class EfProductionOrderRepository(FactoryMindDbContext dbContext) 
         CancellationToken cancellationToken) => dbContext.ProductionOrders
         .Include(order => order.Product)
         .Include(order => order.BillOfMaterial)
+        .Include(order => order.Routing)
+        .Include(order => order.Operations)
         .SingleOrDefaultAsync(
             order => order.Id == productionOrderId && order.CompanyId == companyId,
             cancellationToken);

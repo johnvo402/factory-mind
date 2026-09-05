@@ -32,6 +32,9 @@ public sealed class StartProductionOrderCommandHandler(
         if (order.BillOfMaterial is null) {
             return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.LockedBomRequired);
         }
+        if (order.RoutingId is null) {
+            return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.LockedRoutingRequired);
+        }
         if (command.Allocations.Count == 0) {
             return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.AllocationsRequired);
         }

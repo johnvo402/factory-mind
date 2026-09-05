@@ -38,6 +38,7 @@
                     <summary [attr.aria-label]="'Thao tác với ' + product.code"><app-ui-icon name="more-horizontal" /></summary>
                     <div class="row-menu">
                       <button type="button" class="ghost" (click)="openBoms(product)">BOM &amp; vật tư</button>
+                      <button type="button" class="ghost" (click)="routingProduct.set(product)">Routing &amp; công đoạn</button>
                       <button type="button" class="ghost" (click)="startEdit(product)"><app-ui-icon name="pencil" [size]="16" /> Sửa</button>
                       <button type="button" class="ghost danger-text" (click)="requestDelete(product.id)"><app-ui-icon name="trash-2" [size]="16" /> Xóa</button>
                     </div>
@@ -271,3 +272,7 @@
     </div>
   }
 </section>
+
+@if (routingProduct(); as product) {
+  <app-product-routing-panel [product]="product" (closed)="routingProduct.set(null)" />
+}

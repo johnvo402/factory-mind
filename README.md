@@ -78,8 +78,9 @@ Ngoài phạm vi hiện tại:
 | Materials | Quản lý nguyên liệu và đơn vị tính | Manager/Admin |
 | Products | Quản lý danh mục sản phẩm | Manager/Admin |
 | Bill of Materials | Quản lý BOM theo revision và xem trước nhu cầu/thiếu hụt nguyên liệu mà không thay đổi tồn kho | Manager/Admin |
+| Work Centers & Routing | Quản lý nơi thực hiện, Routing theo revision và chuỗi công đoạn tuần tự cho từng Product | Manager/Admin |
 | Inventory | Warehouse master data, immutable raw-material and finished-goods ledgers, current balances và receive/issue/adjust/transfer | Manager/Admin |
-| Production Orders | Quản lý order number, Product, quantity, lifecycle và atomic finished-goods completion | Manager/Admin |
+| Production Orders | Release khóa BOM + Routing, tạo operation snapshot bất biến, thực thi tuần tự và hoàn thành thành phẩm atomically | Manager/Admin |
 | Excel Import | Preview header/rows, gợi ý mapping, validate toàn file và import transaction | Manager/Admin |
 | Dashboard | Active orders, inventory balances, available/total machines và alerts | Mọi user đã đăng nhập |
 | Settings | Company, tenant users, roles và AI metadata không lộ key | Admin |
@@ -263,6 +264,8 @@ erDiagram
     COMPANY ||--o{ INVENTORY_TRANSACTION : owns
     COMPANY ||--o{ PRODUCTION_ORDER : owns
     COMPANY ||--o{ BILL_OF_MATERIAL : owns
+    COMPANY ||--o{ WORK_CENTER : owns
+    COMPANY ||--o{ ROUTING : owns
     WAREHOUSE ||--o{ INVENTORY_BALANCE : stores
     WAREHOUSE ||--o{ INVENTORY_TRANSACTION : records
     MATERIAL ||--o{ INVENTORY_BALANCE : balances
@@ -271,6 +274,11 @@ erDiagram
     PRODUCT ||--o{ BILL_OF_MATERIAL : defines
     BILL_OF_MATERIAL ||--o{ PRODUCTION_ORDER : locked_by
     BILL_OF_MATERIAL ||--o{ BOM_ITEM : contains
+    PRODUCT ||--o{ ROUTING : defines
+    ROUTING ||--o{ PRODUCTION_ORDER : locked_by
+    ROUTING ||--o{ ROUTING_OPERATION : contains
+    WORK_CENTER ||--o{ ROUTING_OPERATION : performs_at
+    PRODUCTION_ORDER ||--o{ PRODUCTION_ORDER_OPERATION : snapshots
     MATERIAL ||--o{ BOM_ITEM : component
     USER ||--o{ CONVERSATION : starts
     CONVERSATION ||--o{ MESSAGE : contains
@@ -286,7 +294,9 @@ Một số invariant quan trọng:
 - Business code/number là duy nhất trong từng Company, không phải global.
 - Inventory balance duy nhất theo `CompanyId + WarehouseId + MaterialId`; mọi thay đổi balance phải có transaction giải thích.
 - Production Order phải tham chiếu Product thuộc cùng Company.
-- Production Order mới luôn bắt đầu ở Planned. Release khóa đúng BOM revision; Start chỉ chạy từ Released và tiêu thụ toàn bộ phân bổ vật tư trong một PostgreSQL transaction.
+- Production Order mới luôn bắt đầu ở Planned. Release khóa đúng BOM và Routing revision, đồng thời snapshot toàn bộ operation; Start chỉ chạy từ Released và tiêu thụ toàn bộ phân bổ vật tư trong một PostgreSQL transaction.
+- BOM trả lời vật tư nào cần dùng; Routing trả lời công đoạn nào phải thực hiện theo thứ tự; Work Center trả lời công đoạn diễn ra ở đâu; ProductionOrderOperation giữ snapshot thực thi không phụ thuộc cấu hình Routing thay đổi về sau.
+- Operation chỉ chuyển `pending -> in_progress -> completed`, theo đúng Sequence và tối đa một operation InProgress trên mỗi Production Order. Order chỉ Complete khi mọi operation snapshot đã Completed.
 - BOM revision và mọi Material component phải thuộc cùng Company; mỗi Product chỉ có tối đa một revision Active.
 - Material requirement là phép tính preview chỉ đọc: Planned dùng active BOM, còn Released/InProgress dùng BOM đã khóa. Release không giữ chỗ tồn kho.
 - `ProductionConsume` giữ quantity dương trong ledger, signed quantity âm, và tham chiếu Production Order; mọi balance decrement, ledger insert và chuyển trạng thái InProgress cùng commit hoặc cùng rollback.
@@ -517,15 +527,18 @@ Tất cả business endpoints dùng prefix `/api` và tenant được lấy từ
 | `/api/products` | `GET`, `POST`, `PUT`, `DELETE` | Product CRUD | Manager/Admin |
 | `/api/products/{productId}/boms` | `GET`, `POST`, `PUT` và lifecycle actions | BOM revisions và component list | Manager/Admin |
 | `/api/products/{productId}/material-requirements` | `GET` | Preview vật tư theo số lượng và active BOM | Manager/Admin |
+| `/api/products/{productId}/routings` | `GET`, `POST`, `PUT` và activate | Routing revisions và operation editor | Manager/Admin |
+| `/api/work-centers` | `GET`, `POST`, `PUT` và deactivate | Tenant-scoped Work Center master data | Manager/Admin |
 | `/api/warehouses` | `GET`, `POST`, `PUT`, `DELETE` | Warehouse CRUD; DELETE deactivates | Manager/Admin |
 | `/api/inventories` | `GET` | Current tenant-scoped balances | Manager/Admin |
 | `/api/inventories/transactions` | `GET` | Filtered, paged inventory ledger history | Manager/Admin |
 | `/api/inventories/receive`, `/issue`, `/adjust`, `/transfer` | `POST` | Atomic stock operations | Manager/Admin |
 | `/api/product-inventories`, `/transactions` | `GET` | Finished-goods balances và immutable ProductionOutput history | Manager/Admin |
 | `/api/production-orders` | `GET`, `POST`, `PUT`, `DELETE` | Planned Production Order planning data | Manager/Admin |
-| `/api/production-orders/{id}/release`, `/cancel` | `POST` | Explicit lifecycle; Release locks active BOM | Manager/Admin |
+| `/api/production-orders/{id}/release`, `/cancel` | `POST` | Explicit lifecycle; Release locks active BOM + Routing and snapshots operations | Manager/Admin |
 | `/api/production-orders/{id}/start` | `POST` | Validate allocations and atomically consume raw materials | Manager/Admin |
-| `/api/production-orders/{id}/complete` | `POST` | Complete InProgress order và atomically receive finished goods | Manager/Admin |
+| `/api/production-orders/{id}/operations/{operationId}/start`, `/complete` | `POST` | Sequential, concurrency-safe operation execution | Manager/Admin |
+| `/api/production-orders/{id}/complete` | `POST` | Require all operations Completed, then atomically receive finished goods | Manager/Admin |
 | `/api/production-orders/{id}/material-requirements` | `GET` | Planned uses active BOM; execution uses locked BOM | Manager/Admin |
 | `/api/settings/company` | `GET`, `PUT` | Company settings | Admin |
 | `/api/settings/users` | `GET`, `POST`, `PUT` | Tenant user management | Admin |

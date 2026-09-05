@@ -70,6 +70,9 @@ public static class ApiRoutes {
         public const string ActivateBom = BomById + "/activate";
         public const string ArchiveBom = BomById + "/archive";
         public const string MaterialRequirements = ById + "/material-requirements";
+        public const string Routings = ById + "/routings";
+        public const string RoutingById = Routings + "/{routingId:guid}";
+        public const string ActivateRouting = RoutingById + "/activate";
     }
 
     public static class Inventories {
@@ -94,6 +97,13 @@ public static class ApiRoutes {
         public const string ById = "/{warehouseId:guid}";
     }
 
+    public static class WorkCenters {
+        public const string Group = Base + "/work-centers";
+        public const string Root = "";
+        public const string ById = "/{workCenterId:guid}";
+        public const string Deactivate = ById + "/deactivate";
+    }
+
     public static class ProductionOrders {
         public const string Group = Base + "/production-orders";
         public const string Root = "";
@@ -103,5 +113,9 @@ public static class ApiRoutes {
         public const string Complete = ById + "/complete";
         public const string Cancel = ById + "/cancel";
         public const string MaterialRequirements = ById + "/material-requirements";
+        public const string Operations = ById + "/operations";
+        public const string OperationById = Operations + "/{operationId:guid}";
+        public const string StartOperation = OperationById + "/start";
+        public const string CompleteOperation = OperationById + "/complete";
     }
 }

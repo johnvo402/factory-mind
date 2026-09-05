@@ -13,6 +13,8 @@
   color: var(--color-warning);
 }
 
+.order-status.released { background: var(--color-ai-soft); color: var(--color-ai); }
+
 .order-status.completed {
   background: var(--color-success-soft);
   color: var(--color-success);
@@ -123,3 +125,12 @@
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
+
+.execution-panel { width: min(860px, 96vw); height: 100dvh; overflow-y: auto; }
+.execution-list { display: grid; gap: 12px; margin-top: 24px; }
+.execution-operation { display: grid; grid-template-columns: 48px minmax(0, 1fr) 180px auto; gap: 16px; align-items: center; border: 1px solid var(--color-border); border-radius: 12px; padding: 16px; }
+.execution-operation.running { border-color: var(--color-warning); }.execution-operation.done { border-color: var(--color-success); }
+.operation-sequence { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--color-surface-subtle); font-weight: 800; font-variant-numeric: tabular-nums; }
+.operation-copy, .operation-timing { display: grid; gap: 4px; }.operation-copy span, .operation-copy small, .operation-timing small, .execution-note { color: var(--color-muted); }.operation-timing > span { font-weight: 800; }
+.operation-actions { display: flex; gap: 8px; }.execution-note { margin-top: 16px; }
+@media (max-width: 760px) { .execution-operation { grid-template-columns: 40px 1fr; }.operation-timing, .operation-actions { grid-column: 2; } }

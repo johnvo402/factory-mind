@@ -1,0 +1,3 @@
+.work-center-status { display: inline-flex; border-radius: 999px; background: var(--color-success-soft); padding: 5px 9px; color: var(--color-success); font-size: 0.72rem; font-weight: 800; }
+.work-center-status.inactive { background: var(--color-surface-subtle); color: var(--color-muted); }
+textarea { resize: vertical; }

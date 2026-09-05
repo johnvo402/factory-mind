@@ -20,6 +20,9 @@ public sealed record ProductionOrderResponse(
     string Status,
     Guid? BillOfMaterialId,
     int? BomRevision,
+    Guid? RoutingId,
+    int? RoutingRevision,
+    IReadOnlyList<ProductionOrderOperationResponse> Operations,
     DateTime? ReleasedAt,
     DateTime? StartedAt,
     DateTime? CompletedAt,
@@ -36,12 +39,50 @@ public sealed record ProductionOrderResponse(
         order.Status,
         order.BillOfMaterialId,
         order.BillOfMaterial?.Revision,
+        order.RoutingId,
+        order.Routing?.Revision,
+        order.Operations.OrderBy(operation => operation.Sequence)
+            .Select(ProductionOrderOperationResponse.From).ToList(),
         order.ReleasedAt,
         order.StartedAt,
         order.CompletedAt,
         order.CancelledAt,
         order.CreatedAt,
         order.UpdatedAt);
+}
+
+public sealed record ProductionOrderOperationResponse(
+    Guid Id,
+    Guid ProductionOrderId,
+    Guid? RoutingOperationId,
+    int Sequence,
+    string Name,
+    Guid WorkCenterId,
+    string WorkCenterCode,
+    string WorkCenterName,
+    int SetupTimeMinutes,
+    int RunTimeMinutes,
+    string? Description,
+    string Status,
+    DateTime? StartedAt,
+    DateTime? CompletedAt,
+    DateTime CreatedAt) {
+    public static ProductionOrderOperationResponse From(ProductionOrderOperation operation) => new(
+        operation.Id,
+        operation.ProductionOrderId,
+        operation.RoutingOperationId,
+        operation.Sequence,
+        operation.Name,
+        operation.WorkCenterId,
+        operation.WorkCenterCode,
+        operation.WorkCenterName,
+        operation.SetupTimeMinutes,
+        operation.RunTimeMinutes,
+        operation.Description,
+        operation.Status,
+        operation.StartedAt,
+        operation.CompletedAt,
+        operation.CreatedAt);
 }
 
 public interface IProductionOrderRepository {
@@ -87,11 +128,17 @@ public enum ProductionExecutionStatus {
     Success,
     StateConflict,
     ActiveBomNotFound,
+    ActiveRoutingNotFound,
+    OperationsIncomplete,
     InsufficientStock,
     WarehouseUnavailable,
     MaterialUnavailable,
     ProductUnavailable
 }
+
+public sealed record ProductionOperationExecutionResult(
+    ProductionExecutionStatus Status,
+    ProductionOrderOperation? Operation);
 
 public interface IProductionExecutionRepository {
     Task<ProductionOrder?> GetAsync(
@@ -122,6 +169,25 @@ public interface IProductionExecutionRepository {
         Guid productionOrderId,
         Guid companyId,
         ProductInventoryTransaction outputTransaction,
+        DateTime completedAt,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<ProductionOrderOperation>> GetOperationsAsync(
+        Guid productionOrderId,
+        Guid companyId,
+        CancellationToken cancellationToken);
+
+    Task<ProductionOperationExecutionResult> TryStartOperationAsync(
+        Guid productionOrderId,
+        Guid operationId,
+        Guid companyId,
+        DateTime startedAt,
+        CancellationToken cancellationToken);
+
+    Task<ProductionOperationExecutionResult> TryCompleteOperationAsync(
+        Guid productionOrderId,
+        Guid operationId,
+        Guid companyId,
         DateTime completedAt,
         CancellationToken cancellationToken);
 }
@@ -155,6 +221,26 @@ public static class ProductionOrderErrors {
     public static readonly Error LockedBomRequired = new(
         "production_orders.locked_bom_required",
         "The production order does not have a locked bill of materials revision.",
+        409);
+
+    public static readonly Error LockedRoutingRequired = new(
+        "production_orders.locked_routing_required",
+        "The production order does not have a locked routing revision.",
+        409);
+
+    public static readonly Error OperationNotFound = new(
+        "production_orders.operation_not_found",
+        "Production order operation was not found.",
+        404);
+
+    public static readonly Error OperationInvalidTransition = new(
+        "production_orders.operation_invalid_transition",
+        "The production order operation is not in a valid state for this operation.",
+        409);
+
+    public static readonly Error OperationsIncomplete = new(
+        "production_orders.operations_incomplete",
+        "All production order operations must be completed before the production order can complete.",
         409);
 
     public static readonly Error AllocationsRequired = new(

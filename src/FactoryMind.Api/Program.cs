@@ -32,8 +32,10 @@ app.MapMaterialEndpoints();
 app.MapProductEndpoints();
 app.MapProductInventoryEndpoints();
 app.MapProductionOrderEndpoints();
+app.MapRoutingEndpoints();
 app.MapSettingsEndpoints();
 app.MapWarehouseEndpoints();
+app.MapWorkCenterEndpoints();
 app.MapGet(ApiRoutes.Health, () => Results.Ok(new { success = true, message = "FactoryMind API is running." }));
 app.Run();
 

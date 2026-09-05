@@ -1,0 +1,22 @@
+<section class="content">
+  <section class="toolbar">
+    <div><h2>Trung tâm làm việc</h2><p>{{ workCenters().length }} trung tâm trong kết quả hiện tại</p></div>
+    <div class="toolbar-actions">
+      <form class="search-form" (ngSubmit)="load()"><input type="search" [formControl]="searchControl" maxlength="200" aria-label="Tìm trung tâm làm việc" placeholder="Tìm theo mã hoặc tên"><button type="submit" class="secondary"><app-ui-icon name="search" [size]="17" /> Tìm kiếm</button></form>
+      <button type="button" class="primary" (click)="openCreate()"><app-ui-icon name="plus" /> Thêm trung tâm</button>
+    </div>
+  </section>
+  @if (error()) { <div class="error" role="alert">{{ error() }}</div> }
+  @if (loading()) { <div class="state" role="status">Đang tải trung tâm làm việc...</div> }
+  @else if (workCenters().length === 0) { <div class="state empty"><strong>Chưa có trung tâm làm việc.</strong><span>Tạo nơi thực hiện cho các công đoạn trong Routing.</span></div> }
+  @else {
+    <div class="table-wrap"><table><thead><tr><th>Mã</th><th>Tên</th><th>Mô tả</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+      @for (workCenter of workCenters(); track workCenter.id) {
+        <tr><td><strong>{{ workCenter.code }}</strong></td><td>{{ workCenter.name }}</td><td>{{ workCenter.description || '—' }}</td><td><span class="work-center-status" [class.inactive]="!workCenter.isActive">{{ workCenter.isActive ? 'Đang hoạt động' : 'Ngừng hoạt động' }}</span></td><td class="actions"><button type="button" class="ghost" (click)="openEdit(workCenter)"><app-ui-icon name="pencil" [size]="16" /> Sửa</button>@if (workCenter.isActive) { <button type="button" class="ghost danger-text" [disabled]="saving()" (click)="deactivate(workCenter)">Ngừng hoạt động</button> }</td></tr>
+      }
+    </tbody></table></div>
+  }
+  @if (editorOpen()) {
+    <div class="editor-backdrop" (click)="editorOpen.set(false)"><section class="editor" appDialogFocus (dialogDismissed)="editorOpen.set(false)" role="dialog" aria-modal="true" aria-labelledby="work-center-editor-title" (click)="$event.stopPropagation()"><header><div><span class="eyebrow">WORK CENTER</span><h2 id="work-center-editor-title">{{ editingId() ? 'Cập nhật trung tâm' : 'Thêm trung tâm mới' }}</h2></div><button type="button" class="close" aria-label="Đóng" (click)="editorOpen.set(false)"><app-ui-icon name="x" /></button></header><form [formGroup]="form" (ngSubmit)="save()"><label>Mã trung tâm <input formControlName="code" maxlength="50"> @if (form.controls.code.touched && form.controls.code.invalid) { <small>Mã là bắt buộc.</small> }</label><label>Tên trung tâm <input formControlName="name" maxlength="200"> @if (form.controls.name.touched && form.controls.name.invalid) { <small>Tên là bắt buộc.</small> }</label><label>Mô tả <textarea formControlName="description" maxlength="500" rows="4"></textarea></label><footer><button type="button" class="secondary" (click)="editorOpen.set(false)">Hủy</button><button type="submit" class="primary" [disabled]="saving()">{{ saving() ? 'Đang lưu...' : 'Lưu trung tâm' }}</button></footer></form></section></div>
+  }
+</section>

@@ -46,6 +46,9 @@ public sealed class EfProductRepository(FactoryMindDbContext dbContext) : IProdu
         await dbContext.BillOfMaterials.AnyAsync(
             bom => bom.ProductId == productId && bom.CompanyId == companyId,
             cancellationToken) ||
+        await dbContext.Routings.AnyAsync(
+            routing => routing.ProductId == productId && routing.CompanyId == companyId,
+            cancellationToken) ||
         await dbContext.ProductionOrders.AnyAsync(
             order => order.ProductId == productId && order.CompanyId == companyId,
             cancellationToken) ||

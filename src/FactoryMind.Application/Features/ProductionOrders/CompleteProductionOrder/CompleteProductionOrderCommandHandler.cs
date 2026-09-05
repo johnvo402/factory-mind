@@ -26,6 +26,7 @@ public sealed class CompleteProductionOrderCommandHandler(
         }
         if (order.Status != ProductionOrderStatuses.InProgress ||
             order.BillOfMaterialId is null ||
+            order.RoutingId is null ||
             order.StartedAt is null ||
             order.Quantity <= 0) {
             return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.InvalidTransition);
@@ -76,6 +77,8 @@ public sealed class CompleteProductionOrderCommandHandler(
                 Result<ProductionOrderResponse>.Failure(InventoryErrors.WarehouseNotFound),
             ProductionExecutionStatus.ProductUnavailable =>
                 Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.ProductNotFound),
+            ProductionExecutionStatus.OperationsIncomplete =>
+                Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.OperationsIncomplete),
             _ => Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.InvalidTransition)
         };
     }

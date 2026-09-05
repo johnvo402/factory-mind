@@ -33,7 +33,7 @@
               <td><strong>{{ order.number }}</strong></td>
               <td>{{ order.productCode }} — {{ order.productName }}</td>
               <td>{{ order.quantity | number: '1.0-3' }}</td>
-              <td><span class="order-status" [class.in_progress]="order.status === 'in_progress'" [class.completed]="order.status === 'completed'" [class.cancelled]="order.status === 'cancelled'">{{ statusLabel(order.status) }}</span></td>
+              <td><span class="order-status" [class.released]="order.status === 'released'" [class.in_progress]="order.status === 'in_progress'" [class.completed]="order.status === 'completed'" [class.cancelled]="order.status === 'cancelled'">{{ statusLabel(order.status) }}</span></td>
               <td class="actions">
                 @if (confirmDeleteId() === order.id) {
                   <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(order.id)"><app-ui-icon name="trash-2" [size]="16" /> Xác nhận</button>
@@ -43,8 +43,11 @@
                     <summary [attr.aria-label]="'Thao tác với ' + order.number"><app-ui-icon name="more-horizontal" /></summary>
                     <div class="row-menu">
                       <button type="button" class="ghost" (click)="checkMaterials(order)">Kiểm tra vật tư</button>
-                      <button type="button" class="ghost" (click)="startEdit(order)"><app-ui-icon name="pencil" [size]="16" /> Sửa</button>
-                      <button type="button" class="ghost danger-text" (click)="requestDelete(order.id)"><app-ui-icon name="trash-2" [size]="16" /> Xóa</button>
+                      @if (order.routingId) { <button type="button" class="ghost" (click)="openExecution(order)">Công đoạn thực thi</button> }
+                      @if (order.status === 'planned') {
+                        <button type="button" class="ghost" (click)="startEdit(order)"><app-ui-icon name="pencil" [size]="16" /> Sửa</button>
+                        <button type="button" class="ghost danger-text" (click)="requestDelete(order.id)"><app-ui-icon name="trash-2" [size]="16" /> Xóa</button>
+                      }
                     </div>
                   </details>
                 }
@@ -78,14 +81,6 @@
           <label>Số lượng
             <input type="number" formControlName="quantity" min="0.001" step="0.001" placeholder="Ví dụ: 500">
             @if (orderForm.controls.quantity.touched && orderForm.controls.quantity.invalid) { <small>Số lượng phải lớn hơn 0.</small> }
-          </label>
-          <label>Trạng thái
-            <select formControlName="status" aria-label="Trạng thái lệnh sản xuất">
-              <option value="planned">Đã lên kế hoạch</option>
-              <option value="in_progress">Đang sản xuất</option>
-              <option value="completed">Hoàn thành</option>
-              <option value="cancelled">Đã hủy</option>
-            </select>
           </label>
           <footer>
             <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button>
@@ -139,6 +134,27 @@
             </div>
           </div>
         }
+      </section>
+    </div>
+  }
+
+  @if (executionOrder(); as order) {
+    <div class="editor-backdrop" (click)="closeExecution()">
+      <section class="editor execution-panel" appDialogFocus (dialogDismissed)="closeExecution()" role="dialog" aria-modal="true" aria-labelledby="execution-title" (click)="$event.stopPropagation()">
+        <header><div><span class="eyebrow">ROUTING REVISION {{ order.routingRevision }}</span><h2 id="execution-title">{{ order.number }} · Công đoạn thực thi</h2><p>{{ order.productCode }} — {{ order.productName }}</p></div><button type="button" class="close" aria-label="Đóng công đoạn thực thi" (click)="closeExecution()"><app-ui-icon name="x" /></button></header>
+        @if (store.error()) { <div class="error" role="alert">{{ store.error() }}</div> }
+        <div class="execution-list">
+          @for (operation of order.operations; track operation.id) {
+            <article class="execution-operation" [class.running]="operation.status === 'in_progress'" [class.done]="operation.status === 'completed'">
+              <div class="operation-sequence">{{ operation.sequence }}</div>
+              <div class="operation-copy"><strong>{{ operation.name }}</strong><span>{{ operation.workCenterCode }} — {{ operation.workCenterName }}</span><small>Setup {{ operation.setupTimeMinutes }} phút · Run {{ operation.runTimeMinutes }} phút</small></div>
+              <div class="operation-timing"><span>{{ operationStatusLabel(operation.status) }}</span><small>Bắt đầu: {{ operation.startedAt ? (operation.startedAt | date: 'short') : '—' }}</small><small>Hoàn thành: {{ operation.completedAt ? (operation.completedAt | date: 'short') : '—' }}</small></div>
+              <div class="operation-actions">@if (canStartOperation(order, operation)) { <button type="button" class="primary" [disabled]="store.isSaving()" (click)="startOperation(order, operation)">Start Operation</button> } @if (order.status === 'in_progress' && operation.status === 'in_progress') { <button type="button" class="primary" [disabled]="store.isSaving()" (click)="completeOperation(order, operation)">Complete Operation</button> }</div>
+            </article>
+          }
+        </div>
+        @if (order.status === 'released') { <p class="execution-note">Khởi động Production Order và tiêu thụ vật tư trước khi thực hiện công đoạn.</p> }
+        @if (order.status === 'completed') { <p class="execution-note">Production Order đã hoàn thành; các công đoạn được khóa chỉ đọc.</p> }
       </section>
     </div>
   }

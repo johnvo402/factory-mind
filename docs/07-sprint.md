@@ -376,6 +376,21 @@ Implementation status: the lifecycle now runs Planned -> Released -> InProgress 
 
 ---
 
+## Routing and production operation execution increment
+
+* Tenant-owned Work Centers with deactivation and company-unique codes.
+* Draft, Active, and Archived Routing revisions per Product, with one Active revision.
+* Strictly sequential Routing Operations with Work Center, setup time, and run time.
+* Release atomically locks the exact Active BOM and Routing revisions and creates immutable ProductionOrderOperation snapshots.
+* Operations execute `Pending -> InProgress -> Completed` in Sequence with PostgreSQL-safe conditional transitions.
+* Production Order Complete is blocked until every required operation is Completed.
+* Existing orders keep nullable `RoutingId`; the migration does not invent historical routes or operations.
+* Machine assignment, capacity scheduling, parallel graphs, OEE, downtime, scrap, rework, and AI planning remain deferred.
+
+Implementation status: implemented as the execution bridge between Production Order Start and Complete, including HTTP/PostgreSQL integration tests and minimal Angular management/execution workspaces.
+
+---
+
 # MVP Checklist
 
 ## Authentication

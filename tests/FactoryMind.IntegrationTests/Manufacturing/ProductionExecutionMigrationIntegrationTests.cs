@@ -63,6 +63,7 @@ public sealed class ProductionExecutionMigrationIntegrationTests(PostgreSqlFixtu
 
             await migrator.MigrateAsync(ExecutionMigration);
             await migrator.MigrateAsync(FinishedGoodsMigration);
+            await migrator.MigrateAsync();
             dbContext.ChangeTracker.Clear();
 
             var order = await dbContext.ProductionOrders.SingleAsync();

@@ -15,10 +15,13 @@ public sealed class Company {
     public ICollection<Material> Materials { get; set; } = [];
     public ICollection<Product> Products { get; set; } = [];
     public ICollection<BillOfMaterial> BillOfMaterials { get; set; } = [];
+    public ICollection<WorkCenter> WorkCenters { get; set; } = [];
+    public ICollection<Routing> Routings { get; set; } = [];
     public ICollection<Warehouse> Warehouses { get; set; } = [];
     public ICollection<InventoryBalance> InventoryBalances { get; set; } = [];
     public ICollection<InventoryTransaction> InventoryTransactions { get; set; } = [];
     public ICollection<ProductInventoryBalance> ProductInventoryBalances { get; set; } = [];
     public ICollection<ProductInventoryTransaction> ProductInventoryTransactions { get; set; } = [];
     public ICollection<ProductionOrder> ProductionOrders { get; set; } = [];
+    public ICollection<ProductionOrderOperation> ProductionOrderOperations { get; set; } = [];
 }
