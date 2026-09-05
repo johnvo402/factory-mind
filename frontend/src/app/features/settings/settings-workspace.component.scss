@@ -137,8 +137,8 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .security-note { border-left: 3px solid var(--color-ai); background: var(--color-ai-soft); padding: var(--space-3); color: var(--color-muted); font-size: 0.82rem; line-height: 1.55; }
 
 @media (max-width: 900px) { .users-layout { grid-template-columns: 1fr; } }
-@media (max-width: 700px) {
-  .settings-panel { min-height: calc(100dvh - var(--mobile-topbar-height)); }
+@media (max-width: 720px) {
+  .settings-panel { min-height: calc(100dvh - var(--mobile-topbar-height) - var(--mobile-nav-height)); }
   main,
   header,
   nav { padding-right: var(--space-4); padding-left: var(--space-4); }

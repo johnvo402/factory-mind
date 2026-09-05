@@ -101,7 +101,7 @@ button { font: inherit; }
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
   border-radius: var(--radius-lg);
-  background: linear-gradient(145deg, var(--color-primary), #0a5c55);
+  background: linear-gradient(145deg, var(--color-primary), var(--color-primary-hover));
   box-shadow: 0 12px 30px color-mix(in srgb, var(--color-primary) 24%, transparent);
   color: var(--color-primary-foreground);
 }
@@ -303,8 +303,8 @@ textarea:disabled { cursor: not-allowed; opacity: 0.55; }
   .suggestions button { min-height: 92px; }
 }
 
-@media (max-width: 700px) {
-  .chat-panel { height: calc(100dvh - var(--mobile-topbar-height)); }
+@media (max-width: 720px) {
+  .chat-panel { height: calc(100dvh - var(--mobile-topbar-height) - var(--mobile-nav-height)); }
   .chat-header { min-height: 62px; }
   .chat-header,
   .messages,

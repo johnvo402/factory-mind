@@ -100,8 +100,8 @@ p { margin: 0; }
 .tabs a:hover { background: var(--color-surface-subtle); color: var(--color-foreground); }
 .tabs a.active { border-bottom-color: var(--color-primary); color: var(--color-primary); }
 
-@media (max-width: 700px) {
-  .data-panel { min-height: calc(100dvh - var(--mobile-topbar-height)); }
+@media (max-width: 720px) {
+  .data-panel { min-height: calc(100dvh - var(--mobile-topbar-height) - var(--mobile-nav-height)); }
   .data-header { min-height: 128px; align-items: flex-end; padding: var(--space-5) var(--space-4); }
   .data-header p { display: none; }
   .import-button { min-width: 44px; padding: 10px; }

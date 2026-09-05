@@ -143,7 +143,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
   from { opacity: 0; transform: translateY(12px) scale(0.99); }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 720px) {
   .backdrop { padding: 0; place-items: stretch; }
   .wizard { width: 100vw; min-height: 100dvh; max-height: 100dvh; border: 0; border-radius: 0; padding: var(--space-5); }
   .mapping-grid { grid-template-columns: 1fr; }

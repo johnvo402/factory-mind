@@ -7,7 +7,7 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  border-right: 1px solid #ffffff0f;
+  border-right: 1px solid var(--color-sidebar-border);
   background: var(--color-sidebar);
   padding: 22px 16px 16px;
   color: var(--color-sidebar-text);
@@ -28,9 +28,9 @@
   display: grid;
   place-items: center;
   border-radius: 10px;
-  background: #2aa889;
-  color: #fff;
-  box-shadow: 0 10px 24px #061a1540;
+  background: var(--color-sidebar-accent);
+  color: var(--color-primary-foreground);
+  box-shadow: var(--shadow-accent);
 }
 
 .brand strong { font-size: 1.03rem; letter-spacing: -.025em; }
@@ -43,18 +43,18 @@ button { font: inherit; }
   align-items: center;
   gap: 10px;
   margin-top: 28px;
-  border: 1px solid #8bc0af52;
+  border: 1px solid color-mix(in srgb, var(--color-sidebar-accent) 40%, transparent);
   border-radius: var(--radius-md);
   background: var(--color-sidebar-raised);
   padding: 10px 12px;
   color: var(--color-sidebar-text);
   font-size: .86rem;
   font-weight: 700;
-  box-shadow: 0 8px 24px #061a1524;
+  box-shadow: var(--shadow-sm);
   transition: border-color var(--motion-fast), background var(--motion-fast), transform var(--motion-fast);
 }
 
-.new-chat:hover:not(:disabled) { border-color: #8bc0af8c; background: #1b493e; transform: translateY(-1px); }
+.new-chat:hover:not(:disabled) { border-color: var(--color-sidebar-accent); background: var(--color-sidebar-hover); transform: translateY(-1px); }
 
 .history,
 .data-context {
@@ -69,7 +69,7 @@ button { font: inherit; }
 
 .section-label {
   padding: 0 10px 8px;
-  color: #92b1a7;
+  color: var(--color-sidebar-label);
   font-size: .72rem;
   font-weight: 750;
   letter-spacing: .09em;
@@ -102,7 +102,7 @@ button { font: inherit; }
 
 .conversation span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .conversation:hover,
-.conversation.active { background: #1b493e; color: #fff; }
+.conversation.active { background: var(--color-sidebar-hover); color: var(--color-primary-foreground); }
 
 .primary-nav {
   display: grid;
@@ -126,14 +126,14 @@ button { font: inherit; }
   transition: background var(--motion-fast), color var(--motion-fast);
 }
 
-.primary-nav a:hover { background: #ffffff0a; color: #fff; }
-.primary-nav a.active { background: #1b493e; color: #fff; }
-.primary-nav a.active::before { width: 3px; position: absolute; inset: 10px auto 10px 0; border-radius: 99px; background: #51c4a3; content: ''; }
+.primary-nav a:hover { background: color-mix(in srgb, white 4%, transparent); color: var(--color-primary-foreground); }
+.primary-nav a.active { background: var(--color-sidebar-hover); color: var(--color-primary-foreground); }
+.primary-nav a.active::before { width: 3px; position: absolute; inset: 10px auto 10px 0; border-radius: 99px; background: var(--color-sidebar-accent-bright); content: ''; }
 
-.account { position: relative; border-top: 1px solid #ffffff12; padding-top: 12px; }
+.account { position: relative; border-top: 1px solid var(--color-sidebar-border); padding-top: 12px; }
 .account summary { min-height: 48px; display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 10px; border-radius: var(--radius-sm); padding: 6px; list-style: none; }
 .account summary::-webkit-details-marker { display: none; }
-.account summary:hover { background: #ffffff0a; }
+.account summary:hover { background: color-mix(in srgb, white 4%, transparent); }
 
 .profile-avatar {
   width: 36px;
@@ -141,8 +141,8 @@ button { font: inherit; }
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #d7ece5;
-  color: #174d3f;
+  background: var(--color-sidebar-avatar-background);
+  color: var(--color-sidebar-avatar);
   font-weight: 800;
 }
 
@@ -191,7 +191,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
     align-items: center;
     position: relative;
     border-right: 0;
-    border-bottom: 1px solid #ffffff12;
+    border-bottom: 1px solid var(--color-sidebar-border);
     padding: 10px 16px;
   }
 
@@ -215,9 +215,9 @@ button:disabled { cursor: not-allowed; opacity: .45; }
     z-index: 30;
     margin: 0;
     border-top: 1px solid var(--color-border);
-    background: #ffffffee;
+    background: color-mix(in srgb, var(--color-surface) 94%, transparent);
     padding: 7px max(8px, env(safe-area-inset-right)) max(7px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
-    box-shadow: 0 -8px 30px #102a2512;
+    box-shadow: var(--shadow-md);
     backdrop-filter: blur(16px);
   }
 
