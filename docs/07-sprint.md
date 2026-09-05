@@ -368,9 +368,11 @@ Implementation status: implemented as the next focused manufacturing-domain slic
 * Release locks the exact active BOM revision without reserving stock.
 * Start requires explicit warehouse allocations and recalculates requirements on the server.
 * Whole-order raw-material consumption, ledger insertion, and state change are atomic and double-start safe.
-* No Complete command, finished-goods inventory, output transaction, reservation, or reversal yet.
+* Complete accepts an active destination Warehouse and atomically records Product balance and immutable ProductionOutput history.
+* Conditional state claims prevent duplicate output; PostgreSQL upsert preserves concurrent output to the same Product/Warehouse balance.
+* Partial completion, over/underproduction, reservation, and reversal remain out of scope.
 
-Implementation status: production execution stops safely at InProgress after raw-material consumption. Legacy Completed orders remain readable and existing rows keep nullable execution metadata.
+Implementation status: the lifecycle now runs Planned -> Released -> InProgress -> Completed. Raw-material consumption occurs only at Start, finished-goods output occurs only at Complete, and legacy Completed orders remain readable without fabricated historical output.
 
 ---
 

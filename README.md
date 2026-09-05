@@ -78,8 +78,8 @@ Ngoài phạm vi hiện tại:
 | Materials | Quản lý nguyên liệu và đơn vị tính | Manager/Admin |
 | Products | Quản lý danh mục sản phẩm | Manager/Admin |
 | Bill of Materials | Quản lý BOM theo revision và xem trước nhu cầu/thiếu hụt nguyên liệu mà không thay đổi tồn kho | Manager/Admin |
-| Inventory | Warehouse master data, immutable stock ledger, current balances và receive/issue/adjust/transfer | Manager/Admin |
-| Production Orders | Quản lý order number, Product, quantity và lifecycle status | Manager/Admin |
+| Inventory | Warehouse master data, immutable raw-material and finished-goods ledgers, current balances và receive/issue/adjust/transfer | Manager/Admin |
+| Production Orders | Quản lý order number, Product, quantity, lifecycle và atomic finished-goods completion | Manager/Admin |
 | Excel Import | Preview header/rows, gợi ý mapping, validate toàn file và import transaction | Manager/Admin |
 | Dashboard | Active orders, inventory balances, available/total machines và alerts | Mọi user đã đăng nhập |
 | Settings | Company, tenant users, roles và AI metadata không lộ key | Admin |
@@ -521,9 +521,11 @@ Tất cả business endpoints dùng prefix `/api` và tenant được lấy từ
 | `/api/inventories` | `GET` | Current tenant-scoped balances | Manager/Admin |
 | `/api/inventories/transactions` | `GET` | Filtered, paged inventory ledger history | Manager/Admin |
 | `/api/inventories/receive`, `/issue`, `/adjust`, `/transfer` | `POST` | Atomic stock operations | Manager/Admin |
+| `/api/product-inventories`, `/transactions` | `GET` | Finished-goods balances và immutable ProductionOutput history | Manager/Admin |
 | `/api/production-orders` | `GET`, `POST`, `PUT`, `DELETE` | Planned Production Order planning data | Manager/Admin |
 | `/api/production-orders/{id}/release`, `/cancel` | `POST` | Explicit lifecycle; Release locks active BOM | Manager/Admin |
 | `/api/production-orders/{id}/start` | `POST` | Validate allocations and atomically consume raw materials | Manager/Admin |
+| `/api/production-orders/{id}/complete` | `POST` | Complete InProgress order và atomically receive finished goods | Manager/Admin |
 | `/api/production-orders/{id}/material-requirements` | `GET` | Planned uses active BOM; execution uses locked BOM | Manager/Admin |
 | `/api/settings/company` | `GET`, `PUT` | Company settings | Admin |
 | `/api/settings/users` | `GET`, `POST`, `PUT` | Tenant user management | Admin |
