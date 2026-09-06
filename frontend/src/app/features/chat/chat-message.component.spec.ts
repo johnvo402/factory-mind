@@ -45,4 +45,30 @@ describe('ChatMessageComponent', () => {
     expect(element.querySelector('.evidence-card p')?.textContent).toContain('Trạng thái: Sẵn sàng');
     expect(element.querySelector('.evidence-card p')?.textContent).not.toContain('status=available');
   });
+
+  it('uses readable labels for manufacturing execution evidence', async () => {
+    await TestBed.configureTestingModule({
+      imports: [ChatMessageComponent],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(ChatMessageComponent);
+    fixture.componentRef.setInput('message', {
+      id: 'assistant-2',
+      role: 'assistant',
+      content: 'PO-001 đang ở Painting [B1].',
+      createdAt: '2026-09-06T00:00:00Z',
+      citations: [],
+      businessEvidence: [{
+        referenceNumber: 1,
+        entityId: 'operation-1',
+        entityType: 'production_operation',
+        title: 'PO-001 / 20 Painting',
+        detail: 'Status: in_progress.',
+      }],
+    } satisfies ChatMessage);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('.evidence-card header')?.textContent)
+      .toContain('Công đoạn sản xuất');
+  });
 });

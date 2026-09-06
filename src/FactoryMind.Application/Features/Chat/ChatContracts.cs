@@ -74,7 +74,11 @@ public enum BusinessDataScope {
     Inventory = 4,
     Products = 8,
     ProductionOrders = 16,
+    WorkCenters = 32,
+    Routings = 64,
+    ProductionOperations = 128,
     All = Machines | Materials | Inventory | Products | ProductionOrders
+        | WorkCenters | Routings | ProductionOperations
 }
 
 public sealed record IntentRoute(
@@ -103,6 +107,7 @@ public interface IKnowledgeContextBuilder {
 public interface IBusinessContextRepository {
     Task<IReadOnlyList<BusinessDataRecord>> RetrieveAsync(
         Guid companyId,
+        string question,
         BusinessDataScope scopes,
         string? machineStatus,
         string? productionOrderStatus,
@@ -113,6 +118,7 @@ public interface IBusinessContextRepository {
 public interface IBusinessContextBuilder {
     Task<BusinessContext> BuildAsync(
         Guid companyId,
+        string question,
         IntentRoute route,
         CancellationToken cancellationToken);
 }

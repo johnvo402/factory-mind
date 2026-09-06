@@ -1,4 +1,5 @@
 using FactoryMind.Shared.AI;
+using FactoryMind.Application.Common.Search;
 
 namespace FactoryMind.Application.Features.Knowledge;
 
@@ -10,8 +11,11 @@ public sealed class KnowledgeRetriever(
         string query,
         int limit,
         CancellationToken cancellationToken) {
+        var embeddingQuery = string.Join(' ', query.Split(
+            (char[]?)null,
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
         var embedding = await embeddingClient.CreateAsync(
-            [query.Trim()],
+            [embeddingQuery],
             EmbeddingPurpose.Query,
             cancellationToken);
         if (embedding.Vectors.Count != 1
@@ -19,11 +23,15 @@ public sealed class KnowledgeRetriever(
             throw new AiProviderException("AI service returned an invalid embedding response.");
         }
 
-        return await searchRepository.SearchAsync(
+        var normalizedQuery = SearchTextNormalizer.NormalizeLexical(query);
+        var candidates = await searchRepository.RetrieveCandidatesAsync(
             companyId,
             embedding.Model,
+            normalizedQuery,
             embedding.Vectors[0],
-            limit,
+            KnowledgeSearchConstraints.VectorCandidateLimit,
+            KnowledgeSearchConstraints.LexicalCandidateLimit,
             cancellationToken);
+        return HybridKnowledgeRanker.Rank(query, candidates, limit);
     }
 }

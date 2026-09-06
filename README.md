@@ -196,8 +196,11 @@ flowchart LR
     Embed --> Vector["PostgreSQL + pgvector"]
     Question["Câu hỏi người dùng"] --> Router["Intent router"]
     Router --> Vector
+    Router --> Lexical["PostgreSQL simple FTS"]
     Router --> Business["Tenant business data"]
-    Vector --> Context["RAG context builder"]
+    Vector --> Fusion["RRF + deterministic reranking"]
+    Lexical --> Fusion
+    Fusion --> Context["Bounded RAG context builder"]
     Business --> Context
     Context --> Gemini["Gemini chat"]
     Gemini --> SSE["SSE answer + citations"]
@@ -211,11 +214,23 @@ FactoryMind gọi trực tiếp native Gemini REST API, không dùng OpenAI-comp
 - Document chunks dùng `gemini-embedding-2` với task `RETRIEVAL_DOCUMENT`.
 - Câu hỏi tìm kiếm dùng cùng embedding model với task `RETRIEVAL_QUERY`.
 - Embedding được chuẩn hóa về 1.536 chiều và lưu trong PostgreSQL bằng pgvector.
-- Knowledge retrieval lấy tối đa 5 chunks gần nhất bằng cosine distance, giữ page number để tạo citation.
-- Business retrieval chỉ đọc các projection nhỏ từ bảng liên quan, không gửi toàn bộ database hoặc entity graph cho Gemini.
+- Knowledge retrieval lấy tối đa 20 vector candidates và 20 lexical candidates (`simple` PostgreSQL
+  FTS), hợp nhất bằng Reciprocal Rank Fusion `1 / (60 + rank)`, rồi rerank/dedupe deterministic để
+  chọn tối đa 8 nguồn trong context budget.
+- `Score` của search/citation là final retrieval relevance đã chuẩn hóa 0-1, không còn mang nghĩa
+  cosine similarity thuần túy.
+- Chunker không vượt page boundary, ưu tiên paragraph/sentence boundary, giữ overlap; re-index explicit
+  sẽ tạo lại chunks và embeddings bằng thuật toán mới.
+- Business retrieval xếp hạng theo câu hỏi: Code/Number chính xác trước Name/token match và fallback
+  có giới hạn. Evidence bao gồm Machines, Materials, Inventory, Products, Production Orders, Work
+  Centers, Routings và Production Operations.
+- Machine/Production Order evidence phản ánh Work Center, current/next operation, Machine assignment
+  và timestamps thực tế; không suy diễn lịch, trễ, bottleneck hoặc downtime khi dữ liệu không có.
 - Context được giới hạn kích thước; model được yêu cầu không bịa dữ liệu và phải nói không biết khi context không đủ.
 - Chỉ `[B#]` hoặc `[S#]` thực sự xuất hiện trong câu trả lời cuối mới được persist và trả về UI.
 - Khi đổi embedding model, Manager/Admin phải chạy explicit re-index để không trộn vector từ hai model space.
+- Bộ `FactoryMind.RagEval` chạy offline trong CI, đo Recall@5, MRR, Intent/Scope Accuracy và exact
+  entity/identifier hit rate, đồng thời so sánh vector-only với hybrid.
 
 SSE stream có các event semantic sau:
 

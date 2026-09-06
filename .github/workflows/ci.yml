@@ -63,6 +63,13 @@ jobs:
           --logger "trx;LogFileName=integration-tests.trx"
           --results-directory TestResults
 
+      - name: Run deterministic RAG evaluation
+        run: >-
+          dotnet run --project tests/FactoryMind.RagEval/FactoryMind.RagEval.csproj
+          --configuration Release
+          --no-build
+          --no-restore
+
       - name: Publish API artifact
         run: >-
           dotnet publish src/FactoryMind.Api/FactoryMind.Api.csproj

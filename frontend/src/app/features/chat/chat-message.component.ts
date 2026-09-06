@@ -22,8 +22,12 @@ export class ChatMessageComponent {
       machine: 'Máy',
       material: 'Nguyên liệu',
       inventory: 'Tồn kho',
+      product_inventory: 'Tồn kho thành phẩm',
       product: 'Sản phẩm',
       production_order: 'Lệnh sản xuất',
+      work_center: 'Work Center',
+      routing: 'Routing',
+      production_operation: 'Công đoạn sản xuất',
     };
     return labels[entityType] ?? entityType;
   }

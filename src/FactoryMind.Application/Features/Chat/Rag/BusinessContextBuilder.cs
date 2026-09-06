@@ -10,15 +10,17 @@ public sealed class BusinessContextBuilder(
 
     private const string Instructions =
         "Use the live company business data below as the source of truth. "
-        + "Cite every supported business claim with its label such as [B1]. "
+        + "Cite every supported business claim with the matching evidence label shown below. "
         + "Do not invent missing values.\n\n";
 
     public async Task<BusinessContext> BuildAsync(
         Guid companyId,
+        string question,
         IntentRoute route,
         CancellationToken cancellationToken) {
         var records = await repository.RetrieveAsync(
             companyId,
+            question,
             route.BusinessScopes,
             route.MachineStatus,
             route.ProductionOrderStatus,

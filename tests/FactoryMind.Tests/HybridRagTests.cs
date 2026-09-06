@@ -11,6 +11,14 @@ public sealed class HybridRagTests {
     [InlineData("Hướng dẫn SOP an toàn", ChatIntent.Knowledge, BusinessDataScope.None)]
     [InlineData("Theo SOP, máy nào đang bảo trì?", ChatIntent.Hybrid, BusinessDataScope.Machines)]
     [InlineData("Có nên nhận đơn hàng này?", ChatIntent.Hybrid, BusinessDataScope.ProductionOrders)]
+    [InlineData("PO-001 đang ở công đoạn nào?", ChatIntent.Business,
+        BusinessDataScope.ProductionOrders | BusinessDataScope.ProductionOperations)]
+    [InlineData("Máy CNC-02 đang chạy lệnh nào?", ChatIntent.Business,
+        BusinessDataScope.Machines | BusinessDataScope.ProductionOrders | BusinessDataScope.ProductionOperations)]
+    [InlineData("quy trinh an toan khi van hanh CNC la gi?", ChatIntent.Knowledge, BusinessDataScope.None)]
+    [InlineData("theo SOP nay thi PO-001 nen xu ly sao?", ChatIntent.Hybrid,
+        BusinessDataScope.ProductionOrders | BusinessDataScope.ProductionOperations)]
+    [InlineData("work center CNC đang hoạt động?", ChatIntent.Business, BusinessDataScope.WorkCenters)]
     public void Intent_router_classifies_supported_questions(
         string question,
         ChatIntent expectedIntent,
@@ -43,6 +51,7 @@ public sealed class HybridRagTests {
 
         var context = await builder.BuildAsync(
             companyId,
+            "MC-01 available",
             new IntentRoute(ChatIntent.Business, BusinessDataScope.Machines, "available"),
             CancellationToken.None);
 
@@ -50,6 +59,7 @@ public sealed class HybridRagTests {
         var evidence = Assert.Single(context.Evidence);
         Assert.Equal("status=available", evidence.Detail);
         Assert.Equal(companyId, repository.CompanyId);
+        Assert.Equal("MC-01 available", repository.Question);
         Assert.Equal(BusinessDataScope.Machines, repository.Scopes);
         Assert.Equal("available", repository.MachineStatus);
         Assert.Equal(BusinessContextBuilder.LimitPerScope, repository.LimitPerScope);
@@ -82,6 +92,7 @@ public sealed class HybridRagTests {
         Assert.Contains("Business context", context.Prompt);
         Assert.Empty(context.Sources);
         Assert.Single(context.BusinessEvidence);
+        Assert.Contains("read-only", context.Prompt);
     }
 
     [Fact]
@@ -136,6 +147,7 @@ public sealed class HybridRagTests {
 
         public Task<BusinessContext> BuildAsync(
             Guid companyId,
+            string question,
             IntentRoute route,
             CancellationToken cancellationToken) {
             BuildCount++;
@@ -153,18 +165,21 @@ public sealed class HybridRagTests {
     private sealed class FakeBusinessContextRepository(
         IReadOnlyList<BusinessDataRecord> records) : IBusinessContextRepository {
         public Guid? CompanyId { get; private set; }
+        public string? Question { get; private set; }
         public BusinessDataScope? Scopes { get; private set; }
         public string? MachineStatus { get; private set; }
         public int? LimitPerScope { get; private set; }
 
         public Task<IReadOnlyList<BusinessDataRecord>> RetrieveAsync(
             Guid companyId,
+            string question,
             BusinessDataScope scopes,
             string? machineStatus,
             string? productionOrderStatus,
             int limitPerScope,
             CancellationToken cancellationToken) {
             CompanyId = companyId;
+            Question = question;
             Scopes = scopes;
             MachineStatus = machineStatus;
             LimitPerScope = limitPerScope;

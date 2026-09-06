@@ -239,7 +239,25 @@ AI trả lời từ:
 * SQL
 * PDF
 
-Implementation status: Hybrid RAG routes `Business`, `Knowledge`, and `Hybrid` questions, merges bounded tenant-scoped context, and returns separately rendered SQL evidence and PDF sources.
+Implementation status: Hybrid RAG routes `Business`, `Knowledge`, and `Hybrid` questions, merges
+bounded tenant-scoped context, and returns separately rendered SQL evidence and PDF sources.
+
+### Step 7 - RAG quality upgrade
+
+Done.
+
+* Knowledge search combines 20 pgvector and 20 PostgreSQL `simple` FTS candidates.
+* Reciprocal Rank Fusion (`K = 60`), exact identifier/title/file boosts, and adjacent-chunk
+  deduplication deterministically select up to 8 final sources.
+* Chunking stays within each PDF page and prefers paragraph/sentence boundaries with overlap.
+* Citation/evidence numbering follows the final bounded context exactly.
+* Business scopes now include Work Centers, Routings, and Production Operations.
+* Business retrieval prioritizes exact Codes/Numbers and includes current manufacturing execution
+  evidence without inventing scheduling or downtime facts.
+* A 25-case offline RAG evaluation suite gates Recall@5, MRR, routing, scopes, and exact identifiers
+  and entities; Testcontainers covers real pgvector and indexed lexical retrieval.
+* Gemini remains generation/embedding only. Reranking is deterministic and all AI behavior remains
+  read-only.
 
 ---
 

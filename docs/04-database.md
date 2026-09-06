@@ -88,6 +88,11 @@ Document
 DocumentChunk
 ```
 
+`document_chunks` has an expression GIN index over
+`to_tsvector('simple', coalesce("Content", ''))`. The `simple` configuration preserves multilingual
+terms without assuming English stemming. Hybrid retrieval issues one bounded pgvector candidate
+query and one bounded lexical candidate query; both retain Company and Ready-document boundaries.
+
 ---
 
 ## AI
@@ -359,7 +364,10 @@ Embedding vector(1536)
 CreatedAt
 ```
 
-Each chunk has one current embedding in the MVP. Re-indexing atomically replaces the document's chunks and embeddings. Exact cosine search is used before introducing an approximate vector index.
+Each chunk has one current embedding in the MVP. Re-indexing atomically replaces the document's
+chunks and embeddings. Exact cosine search remains in use and is fused with indexed PostgreSQL
+full-text ranking through deterministic Reciprocal Rank Fusion. The migration adds only the lexical
+index: it does not rewrite chunks, regenerate vectors, or fabricate document content.
 
 ---
 

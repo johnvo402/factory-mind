@@ -1,5 +1,4 @@
-using System.Globalization;
-using System.Text;
+using FactoryMind.Application.Common.Search;
 using FactoryMind.Domain.Manufacturing;
 
 namespace FactoryMind.Application.Features.Chat.Rag;
@@ -29,13 +28,23 @@ public sealed class IntentRouter : IIntentRouter {
                 "san pham", "product", "bom", "dinh muc", "cau tao", "lam tu"
             ],
             [BusinessDataScope.ProductionOrders] = [
-                "lenh san xuat", "don hang", "production order", "order", "tien do"
+                "lenh san xuat", "don hang", "production order", "order", "tien do", "po"
+            ],
+            [BusinessDataScope.WorkCenters] = [
+                "work center", "workcenter", "trung tam gia cong", "station", "line"
+            ],
+            [BusinessDataScope.Routings] = [
+                "routing", "route", "quy trinh san xuat", "lo trinh"
+            ],
+            [BusinessDataScope.ProductionOperations] = [
+                "cong doan", "operation", "production operation", "current operation",
+                "next operation", "may dang lam lenh nao", "dang chay lenh nao"
             ]
         };
 
     public IntentRoute Route(string question) {
-        var normalized = Normalize(question);
-        var words = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+        var normalized = SearchTextNormalizer.Normalize(question);
+        var words = normalized.Split([' ', '-'], StringSplitOptions.RemoveEmptyEntries).ToHashSet();
         var hasKnowledgeIntent = KnowledgeKeywords.Any(keyword => ContainsKeyword(normalized, words, keyword));
         var hasDecisionIntent = DecisionKeywords.Any(keyword => ContainsKeyword(normalized, words, keyword));
         var machineStatus = DetectMachineStatus(normalized, words);
@@ -46,6 +55,25 @@ public sealed class IntentRouter : IIntentRouter {
             if (pair.Value.Any(keyword => ContainsKeyword(normalized, words, keyword))) {
                 scopes |= pair.Key;
             }
+        }
+
+        var identifiers = SearchTextNormalizer.Identifiers(question);
+        if (identifiers.Any(identifier => identifier.StartsWith("po-", StringComparison.Ordinal))) {
+            scopes |= BusinessDataScope.ProductionOrders | BusinessDataScope.ProductionOperations;
+        }
+
+        if (scopes.HasFlag(BusinessDataScope.Machines)
+            && ContainsAny(normalized, words, "dang chay", "dang lam", "lenh nao", "current")) {
+            scopes |= BusinessDataScope.ProductionOperations;
+        }
+
+        if (identifiers.Any(identifier => !identifier.StartsWith("po-", StringComparison.Ordinal))
+            && ContainsAny(normalized, words, "dang chay", "dang lam", "running", "current operation")) {
+            scopes |= BusinessDataScope.Machines;
+        }
+
+        if (scopes.HasFlag(BusinessDataScope.ProductionOperations)) {
+            scopes |= BusinessDataScope.ProductionOrders;
         }
 
         if ((hasKnowledgeIntent || hasDecisionIntent) && scopes != BusinessDataScope.None) {
@@ -109,22 +137,4 @@ public sealed class IntentRouter : IIntentRouter {
         IReadOnlySet<string> words,
         params string[] keywords) => keywords.Any(keyword => ContainsKeyword(text, words, keyword));
 
-    private static string Normalize(string value) {
-        var decomposed = value.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
-        var builder = new StringBuilder(decomposed.Length);
-
-        foreach (var character in decomposed) {
-            if (CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark) {
-                var normalizedCharacter = character == 'đ' ? 'd' : character;
-                builder.Append(char.IsLetterOrDigit(normalizedCharacter) || char.IsWhiteSpace(normalizedCharacter)
-                    ? normalizedCharacter
-                    : ' ');
-            }
-        }
-
-        return string.Join(' ', builder
-            .ToString()
-            .Normalize(NormalizationForm.FormC)
-            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-    }
 }

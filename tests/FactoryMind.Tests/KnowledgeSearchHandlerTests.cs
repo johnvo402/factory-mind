@@ -10,15 +10,19 @@ public sealed class KnowledgeSearchHandlerTests {
         var currentUser = new FakeCurrentUser();
         var embeddingClient = new FakeEmbeddingClient();
         var repository = new FakeKnowledgeSearchRepository();
-        var expected = new KnowledgeSearchResult(
+        var candidate = new KnowledgeSearchCandidate(
             Guid.NewGuid(),
             "Safety manual",
             "safety.pdf",
             Guid.NewGuid(),
+            0,
             3,
             "Stop the machine before maintenance.",
-            0.93);
-        repository.Results.Add(expected);
+            VectorRank: 1,
+            LexicalRank: 1,
+            VectorScore: 0.93,
+            LexicalScore: 0.4);
+        repository.Results.Add(candidate);
         var retriever = new KnowledgeRetriever(embeddingClient, repository);
         var handler = new SearchKnowledgeQueryHandler(retriever, currentUser);
 
@@ -30,8 +34,10 @@ public sealed class KnowledgeSearchHandlerTests {
         Assert.Equal("stop machine", embeddingClient.Input);
         Assert.Equal(currentUser.CompanyId, repository.CompanyId);
         Assert.Equal("test-embedding-model", repository.EmbeddingModel);
-        Assert.Equal(7, repository.Limit);
-        Assert.Equal(expected, Assert.Single(result.Value!));
+        Assert.Equal(KnowledgeSearchConstraints.VectorCandidateLimit, repository.VectorLimit);
+        Assert.Equal(KnowledgeSearchConstraints.LexicalCandidateLimit, repository.LexicalLimit);
+        var match = Assert.Single(result.Value!);
+        Assert.Equal(candidate.ChunkId, match.ChunkId);
     }
 
     private sealed class FakeCurrentUser : ICurrentUser {
@@ -55,21 +61,25 @@ public sealed class KnowledgeSearchHandlerTests {
     }
 
     private sealed class FakeKnowledgeSearchRepository : IKnowledgeSearchRepository {
-        public List<KnowledgeSearchResult> Results { get; } = [];
+        public List<KnowledgeSearchCandidate> Results { get; } = [];
         public Guid? CompanyId { get; private set; }
         public string? EmbeddingModel { get; private set; }
-        public int? Limit { get; private set; }
+        public int? VectorLimit { get; private set; }
+        public int? LexicalLimit { get; private set; }
 
-        public Task<IReadOnlyList<KnowledgeSearchResult>> SearchAsync(
+        public Task<IReadOnlyList<KnowledgeSearchCandidate>> RetrieveCandidatesAsync(
             Guid companyId,
             string embeddingModel,
+            string normalizedQuery,
             float[] queryEmbedding,
-            int limit,
+            int vectorLimit,
+            int lexicalLimit,
             CancellationToken cancellationToken) {
             CompanyId = companyId;
             EmbeddingModel = embeddingModel;
-            Limit = limit;
-            return Task.FromResult<IReadOnlyList<KnowledgeSearchResult>>(Results);
+            VectorLimit = vectorLimit;
+            LexicalLimit = lexicalLimit;
+            return Task.FromResult<IReadOnlyList<KnowledgeSearchCandidate>>(Results);
         }
     }
 }
