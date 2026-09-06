@@ -24,6 +24,8 @@ using FluentValidation;
 using Mediator;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using FactoryMind.Infrastructure.AI;
 
 namespace FactoryMind.Tests;
 
@@ -99,5 +101,29 @@ public sealed class DependencyInjectionTests {
         Assert.Contains(services, descriptor =>
             descriptor.ServiceType == typeof(IDocumentTextExtractor)
             && descriptor.ImplementationType == typeof(PdfPigDocumentTextExtractor));
+    }
+
+    [Theory]
+    [InlineData("Gemini:ChatTimeoutSeconds", "0", "Gemini ChatTimeoutSeconds must be between 1 and 600.")]
+    [InlineData("Gemini:EmbeddingTimeoutSeconds", "301", "Gemini EmbeddingTimeoutSeconds must be between 1 and 300.")]
+    public void Infrastructure_registration_validates_AI_timeouts(
+        string key,
+        string value,
+        string expectedMessage) {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> {
+                ["ConnectionStrings:FactoryMind"] = "Host=localhost;Database=test",
+                [key] = value
+            })
+            .Build();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddInfrastructure(configuration);
+        using var provider = services.BuildServiceProvider();
+
+        var exception = Assert.Throws<OptionsValidationException>(() =>
+            provider.GetRequiredService<IOptions<GeminiSettings>>().Value);
+
+        Assert.Contains(expectedMessage, exception.Failures);
     }
 }

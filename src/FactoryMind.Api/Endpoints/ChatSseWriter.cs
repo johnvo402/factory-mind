@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FactoryMind.Application.Features.Chat;
+using FactoryMind.Shared.AI;
 
 namespace FactoryMind.Api.Endpoints;
 
@@ -36,6 +37,8 @@ public sealed class ChatSseWriter(ILogger<ChatSseWriter> logger) {
             await WriteEventAsync(httpContext.Response, "done", new { }, cancellationToken);
         } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
             logger.LogDebug("Chat stream {ConversationId} was cancelled by the client", chatStream.ConversationId);
+        } catch (AiProviderException) {
+            await TryWriteErrorAsync(httpContext.Response, cancellationToken);
         } catch (Exception exception) {
             logger.LogError(exception, "Chat stream {ConversationId} failed after streaming started", chatStream.ConversationId);
             await TryWriteErrorAsync(httpContext.Response, cancellationToken);

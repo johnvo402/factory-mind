@@ -1,6 +1,6 @@
 # FactoryMind
 
-[![CI](https://github.com/johnvo402/factory-mind/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/johnvo402/factory-mind/actions/workflows/ci.yml)
+[![CI](https://github.com/johnvo402/factory-mind/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/johnvo402/factory-mind/actions/workflows/ci.yml)
 
 FactoryMind là MVP quản trị dữ liệu nhà máy kết hợp AI. Hệ thống quản lý máy móc, nguyên liệu, sản phẩm, tồn kho và lệnh sản xuất; đồng thời dùng Google Gemini và RAG để trả lời câu hỏi dựa trên dữ liệu doanh nghiệp hoặc tài liệu PDF có trích dẫn.
 
@@ -17,6 +17,7 @@ FactoryMind là MVP quản trị dữ liệu nhà máy kết hợp AI. Hệ th�
 - [Chạy local](#chạy-local)
 - [API](#nhóm-api-chính)
 - [Kiểm thử](#chạy-kiểm-thử)
+- [Observability](#observability)
 - [Production và CI/CD](#production-containers)
 - [Bảo mật](#bảo-mật)
 - [Tài liệu](#tài-liệu)
@@ -613,6 +614,39 @@ docker compose --env-file .env.local down --volumes
 ```
 
 Lệnh `--volumes` không thể khôi phục dữ liệu đã xóa.
+
+## Observability
+
+FactoryMind giữ `Microsoft.Extensions.Logging`, xuất JSON console trong Production và dùng một
+OpenTelemetry ActivitySource/Meter tên `FactoryMind`. TraceId/SpanId theo W3C được gắn với request;
+`X-Correlation-ID` là mã hỗ trợ vận hành riêng, được API kiểm tra hoặc tự sinh rồi trả lại response.
+
+Health endpoints:
+
+| Endpoint | Ý nghĩa |
+| --- | --- |
+| `/health/live` | API process đang phục vụ HTTP; không phụ thuộc PostgreSQL, MinIO hoặc Gemini |
+| `/health/ready` | API sẵn sàng nhận traffic thông thường; kiểm tra PostgreSQL |
+| `/health` | Compatibility alias cho readiness |
+
+Gemini không gate readiness, vì AI outage không được làm inventory, production, machine hoặc routing
+ngừng phục vụ. Health response chỉ công bố tên check, trạng thái và thời lượng; không trả connection
+string, credentials hoặc exception details.
+
+Instrumentation luôn hoạt động cho test/local listeners. OTLP export là tùy chọn và không cần collector
+khi tắt. Ví dụ bật exporter tới collector do môi trường vận hành cung cấp:
+
+```text
+Observability__Otlp__Enabled=true
+Observability__Otlp__Endpoint=http://localhost:4317
+```
+
+Khi bật OTLP, endpoint phải là URI HTTP(S) tuyệt đối; cấu hình sai sẽ fail startup. Resource metadata
+gồm service name, assembly version và deployment environment. Các nhóm telemetry chính gồm HTTP,
+Gemini request/retry/timeout/token usage, chat response headers/time-to-first-token/stream, embedding,
+Knowledge RAG vector/lexical/rank, Business RAG và document processing. Metric dimensions chỉ dùng
+giá trị cardinality thấp; question, prompt, evidence, content, vector, secrets và tenant/entity IDs không
+được ghi vào metrics.
 
 ## Production containers
 

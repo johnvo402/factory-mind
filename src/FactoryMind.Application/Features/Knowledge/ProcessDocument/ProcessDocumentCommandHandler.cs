@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using FactoryMind.Domain.Knowledge;
 using FactoryMind.Shared.AI;
 using FactoryMind.Shared.Contracts;
+using FactoryMind.Shared.Observability;
 using Mediator;
 
 namespace FactoryMind.Application.Features.Knowledge.ProcessDocument;
@@ -22,13 +24,21 @@ public sealed class ProcessDocumentCommandHandler(
             return Result.Failure(DocumentErrors.NotFound);
         }
 
-        await repository.MarkProcessingAsync(document.Id, document.CompanyId, cancellationToken);
-
+        var startedTimestamp = Stopwatch.GetTimestamp();
+        var outcome = "success";
+        var chunkCount = 0;
+        var embeddingBatchCount = 0;
+        using var activity = FactoryMindTelemetry.ActivitySource.StartActivity(
+            "factorymind.documents.process",
+            ActivityKind.Internal);
         try {
+            await repository.MarkProcessingAsync(document.Id, document.CompanyId, cancellationToken);
             await using var content = await fileStorage.DownloadAsync(document.Path, cancellationToken);
             var pages = await textExtractor.ExtractAsync(content, cancellationToken);
             var chunks = chunker.Chunk(pages);
+            chunkCount = chunks.Count;
             if (chunks.Count == 0) {
+                outcome = "error";
                 await repository.MarkProcessingFailedAsync(
                     document.Id,
                     document.CompanyId,
@@ -49,6 +59,8 @@ public sealed class ProcessDocumentCommandHandler(
                 });
             }
 
+            embeddingBatchCount = (chunks.Count + DocumentEmbeddingConstraints.BatchSize - 1)
+                / DocumentEmbeddingConstraints.BatchSize;
             var embeddings = await CreateEmbeddingsAsync(entities, cancellationToken);
 
             await repository.CompleteProcessingAsync(
@@ -60,6 +72,7 @@ public sealed class ProcessDocumentCommandHandler(
                 cancellationToken);
             return Result.Success();
         } catch (DocumentParsingException exception) {
+            outcome = "error";
             await repository.MarkProcessingFailedAsync(
                 document.Id,
                 document.CompanyId,
@@ -67,7 +80,11 @@ public sealed class ProcessDocumentCommandHandler(
                 DateTime.UtcNow,
                 cancellationToken);
             return Result.Success();
+        } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
+            outcome = "cancelled";
+            throw;
         } catch {
+            outcome = "error";
             await repository.MarkProcessingFailedAsync(
                 document.Id,
                 document.CompanyId,
@@ -75,6 +92,20 @@ public sealed class ProcessDocumentCommandHandler(
                 DateTime.UtcNow,
                 cancellationToken);
             throw;
+        } finally {
+            var tags = FactoryMindTelemetry.Tags(("outcome", outcome));
+            FactoryMindTelemetry.DocumentsProcessed.Add(1, tags);
+            FactoryMindTelemetry.DocumentProcessingDuration.Record(
+                Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds,
+                tags);
+            FactoryMindTelemetry.DocumentChunksProduced.Record(chunkCount, tags);
+            FactoryMindTelemetry.DocumentEmbeddingBatches.Record(embeddingBatchCount, tags);
+            activity?.SetTag("factorymind.outcome", outcome);
+            activity?.SetTag("factorymind.documents.chunk_count", chunkCount);
+            activity?.SetTag("factorymind.documents.embedding_batch_count", embeddingBatchCount);
+            if (outcome == "error") {
+                activity?.SetStatus(ActivityStatusCode.Error);
+            }
         }
     }
 

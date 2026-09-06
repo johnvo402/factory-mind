@@ -93,7 +93,15 @@ public static class DependencyInjection {
         services.AddSingleton<IDocumentTextExtractor, PdfPigDocumentTextExtractor>();
         services.AddSingleton<IExcelWorkbookReader, ClosedXmlWorkbookReader>();
         services.AddSingleton<ICredentialHasher, CredentialHasher>();
-        services.Configure<GeminiSettings>(configuration.GetSection(GeminiSettings.SectionName));
+        services.AddOptions<GeminiSettings>()
+            .Bind(configuration.GetSection(GeminiSettings.SectionName))
+            .Validate(
+                settings => settings.ChatTimeoutSeconds is > 0 and <= 600,
+                "Gemini ChatTimeoutSeconds must be between 1 and 600.")
+            .Validate(
+                settings => settings.EmbeddingTimeoutSeconds is > 0 and <= 300,
+                "Gemini EmbeddingTimeoutSeconds must be between 1 and 300.")
+            .ValidateOnStart();
         services.PostConfigure<GeminiSettings>(settings => {
             if (string.IsNullOrWhiteSpace(settings.ApiKey)) {
                 settings.ApiKey = configuration["GEMINI_API_KEY"] ?? string.Empty;

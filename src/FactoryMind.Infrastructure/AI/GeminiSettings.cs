@@ -8,6 +8,8 @@ public sealed class GeminiSettings {
     public string ChatModel { get; set; } = "gemini-3.5-flash-lite";
     public string EmbeddingModel { get; set; } = "gemini-embedding-2";
     public int MaximumOutputTokens { get; set; } = 2_048;
+    public int ChatTimeoutSeconds { get; set; } = 120;
+    public int EmbeddingTimeoutSeconds { get; set; } = 30;
     public string SystemPrompt { get; set; } =
         "You are FactoryMind AI. Answer only manufacturing-related questions. "
         + "Do not invent company facts. If required data is unavailable, say that you do not know.";

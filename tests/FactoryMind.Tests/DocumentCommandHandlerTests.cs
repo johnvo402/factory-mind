@@ -178,6 +178,7 @@ public sealed class DocumentCommandHandlerTests {
             new FakeDocumentTextExtractor(pages),
             embeddingClient,
             new DocumentChunker());
+        using var telemetry = new TelemetryTestListener();
 
         var result = await handler.Handle(
             new ProcessDocumentCommand(document.Id, currentUser.CompanyId),
@@ -186,6 +187,20 @@ public sealed class DocumentCommandHandlerTests {
         Assert.True(result.IsSuccess);
         Assert.Equal([64, 1], embeddingClient.BatchSizes);
         Assert.Equal(65, repository.Embeddings.Count);
+        Assert.Contains(telemetry.Measurements, measurement =>
+            measurement.Name == "factorymind.documents.processed"
+            && measurement.Value == 1
+            && measurement.HasTags(("outcome", "success")));
+        Assert.Contains(telemetry.Measurements, measurement =>
+            measurement.Name == "factorymind.documents.chunks" && measurement.Value == 65);
+        Assert.Contains(telemetry.Measurements, measurement =>
+            measurement.Name == "factorymind.documents.embedding_batches" && measurement.Value == 2);
+        Assert.DoesNotContain(
+            telemetry.Measurements.SelectMany(measurement => measurement.Tags.Values),
+            value => string.Equals(
+                Convert.ToString(value),
+                currentUser.CompanyId.ToString(),
+                StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

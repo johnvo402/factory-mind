@@ -259,6 +259,30 @@ Done.
 * Gemini remains generation/embedding only. Reranking is deterministic and all AI behavior remains
   read-only.
 
+### Step 8 - Observability and production hardening
+
+Done.
+
+* Microsoft ILogger remains the logging stack; Production emits built-in structured JSON with
+  CorrelationId, W3C TraceId and SpanId context.
+* OpenTelemetry ASP.NET Core, HttpClient and runtime instrumentation share the canonical
+  `FactoryMind` ActivitySource/Meter; optional OTLP export is configuration-driven and validated.
+* Gemini chat/embedding calls have bounded timeouts, safe retry boundaries and consistent
+  success/error/cancelled/timeout/quota/invalid-response outcomes.
+* Provider usage metadata records exact input/output/total tokens without estimation or hardcoded
+  pricing. Chat telemetry distinguishes response headers, first generated chunk and total stream.
+* Knowledge RAG exposes embedding/vector/lexical/rank trace structure and stage metrics; Business RAG
+  and document processing expose bounded, low-cardinality measurements without sensitive content.
+* `/health/live` is dependency-free. `/health/ready` and compatibility `/health` check PostgreSQL;
+  Gemini does not gate readiness and is never pinged by health probes.
+* ActivityListener/MeterListener unit tests and real PostgreSQL HTTP/RAG integration tests validate
+  correlation, trace identity, health response safety, telemetry values and privacy boundaries.
+* No telemetry persistence migration, dashboard, collector deployment, AI tool, or write action was
+  added.
+
+Next: Step 9 - bounded read-only manufacturing AI tools, with tenant-safe deterministic queries and
+grounded answers. Write actions remain deferred.
+
 ---
 
 # Sprint 6

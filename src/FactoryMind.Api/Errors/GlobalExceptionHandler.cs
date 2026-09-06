@@ -12,6 +12,11 @@ public sealed class GlobalExceptionHandler(
         HttpContext httpContext,
         Exception exception,
         CancellationToken cancellationToken) {
+        if (exception is OperationCanceledException && httpContext.RequestAborted.IsCancellationRequested) {
+            logger.LogDebug("Request was cancelled by the client");
+            return true;
+        }
+
         var problemDetails = exception switch {
             AuthenticationRequiredException => CreateProblem(
                 StatusCodes.Status401Unauthorized,
@@ -35,8 +40,13 @@ public sealed class GlobalExceptionHandler(
                 "https://www.rfc-editor.org/rfc/rfc9110#section-15.6.1")
         };
 
-        if (problemDetails.Status >= StatusCodes.Status500InternalServerError) {
-            logger.LogError(exception, "Unhandled exception for request {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
+        if (exception is not AiProviderException
+            && problemDetails.Status >= StatusCodes.Status500InternalServerError) {
+            logger.LogError(
+                exception,
+                "Unhandled exception for request {Method} {Path}",
+                httpContext.Request.Method,
+                httpContext.Request.Path);
         }
 
         httpContext.Response.StatusCode = problemDetails.Status!.Value;

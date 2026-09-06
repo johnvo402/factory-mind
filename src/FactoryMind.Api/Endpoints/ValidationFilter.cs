@@ -1,4 +1,5 @@
 using FluentValidation;
+using FactoryMind.Api.Observability;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FactoryMind.Api.Endpoints;
@@ -28,7 +29,7 @@ public sealed class ValidationFilter<TRequest>(IValidator<TRequest> validator) :
             Detail = "One or more request fields are invalid.",
             Instance = context.HttpContext.Request.Path
         };
-        problemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+        problemDetails.Extensions["traceId"] = RequestTraceIdentifier.Get(context.HttpContext);
 
         return TypedResults.Problem(problemDetails);
     }

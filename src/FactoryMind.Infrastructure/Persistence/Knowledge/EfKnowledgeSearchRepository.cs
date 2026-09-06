@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using FactoryMind.Application.Common.Search;
 using FactoryMind.Application.Features.Knowledge;
 using FactoryMind.Domain.Knowledge;
 using Microsoft.EntityFrameworkCore;
 using Pgvector;
 using Pgvector.EntityFrameworkCore;
+using FactoryMind.Shared.Observability;
 
 namespace FactoryMind.Infrastructure.Persistence.Knowledge;
 
@@ -25,7 +27,7 @@ public sealed class EfKnowledgeSearchRepository(
             cancellationToken);
         var lexicalTerms = SearchTextNormalizer.LexicalTokens(normalizedQuery);
         var lexicalCandidates = lexicalTerms.Count == 0
-            ? []
+            ? RecordSkippedLexicalSearch()
             : await RetrieveLexicalCandidatesAsync(
                 companyId,
                 string.Join(" | ", lexicalTerms),
@@ -41,6 +43,11 @@ public sealed class EfKnowledgeSearchRepository(
         float[] queryEmbedding,
         int limit,
         CancellationToken cancellationToken) {
+        var startedTimestamp = Stopwatch.GetTimestamp();
+        using var activity = FactoryMindTelemetry.ActivitySource.StartActivity(
+            "factorymind.rag.vector_search",
+            ActivityKind.Internal);
+        activity?.SetTag("factorymind.rag.candidate_limit", limit);
         var vector = new Vector(queryEmbedding);
         var matches = await (
             from embedding in dbContext.DocumentEmbeddings.AsNoTracking()
@@ -68,7 +75,7 @@ public sealed class EfKnowledgeSearchRepository(
             .Take(limit)
             .ToListAsync(cancellationToken);
 
-        return matches.Select((match, index) => new KnowledgeSearchCandidate(
+        var results = matches.Select((match, index) => new KnowledgeSearchCandidate(
             match.DocumentId,
             match.DocumentTitle,
             match.FileName,
@@ -79,6 +86,11 @@ public sealed class EfKnowledgeSearchRepository(
             VectorRank: index + 1,
             VectorScore: Math.Round(1d - match.Distance, 6)))
             .ToList();
+        activity?.SetTag("factorymind.rag.candidate_count", results.Count);
+        FactoryMindTelemetry.RagVectorDuration.Record(
+            Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds);
+        FactoryMindTelemetry.RagVectorCandidates.Record(results.Count);
+        return results;
     }
 
     private async Task<IReadOnlyList<KnowledgeSearchCandidate>> RetrieveLexicalCandidatesAsync(
@@ -86,6 +98,11 @@ public sealed class EfKnowledgeSearchRepository(
         string lexicalTsQuery,
         int limit,
         CancellationToken cancellationToken) {
+        var startedTimestamp = Stopwatch.GetTimestamp();
+        using var activity = FactoryMindTelemetry.ActivitySource.StartActivity(
+            "factorymind.rag.lexical_search",
+            ActivityKind.Internal);
+        activity?.SetTag("factorymind.rag.candidate_limit", limit);
         var matches = await dbContext.Database.SqlQuery<LexicalMatch>($"""
             SELECT
                 document."Id" AS "DocumentId",
@@ -110,7 +127,7 @@ public sealed class EfKnowledgeSearchRepository(
             """)
             .ToListAsync(cancellationToken);
 
-        return matches.Select((match, index) => new KnowledgeSearchCandidate(
+        var results = matches.Select((match, index) => new KnowledgeSearchCandidate(
             match.DocumentId,
             match.DocumentTitle,
             match.FileName,
@@ -121,6 +138,21 @@ public sealed class EfKnowledgeSearchRepository(
             LexicalRank: index + 1,
             LexicalScore: Math.Round(match.Score, 6)))
             .ToList();
+        activity?.SetTag("factorymind.rag.candidate_count", results.Count);
+        FactoryMindTelemetry.RagLexicalDuration.Record(
+            Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds);
+        FactoryMindTelemetry.RagLexicalCandidates.Record(results.Count);
+        return results;
+    }
+
+    private static IReadOnlyList<KnowledgeSearchCandidate> RecordSkippedLexicalSearch() {
+        using var activity = FactoryMindTelemetry.ActivitySource.StartActivity(
+            "factorymind.rag.lexical_search",
+            ActivityKind.Internal);
+        activity?.SetTag("factorymind.rag.candidate_count", 0);
+        FactoryMindTelemetry.RagLexicalDuration.Record(0);
+        FactoryMindTelemetry.RagLexicalCandidates.Record(0);
+        return [];
     }
 
     private sealed class LexicalMatch {

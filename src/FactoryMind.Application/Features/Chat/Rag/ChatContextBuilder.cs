@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using FactoryMind.Shared.Observability;
+
 namespace FactoryMind.Application.Features.Chat.Rag;
 
 public sealed class ChatContextBuilder(
@@ -18,27 +21,66 @@ public sealed class ChatContextBuilder(
         Guid companyId,
         string question,
         CancellationToken cancellationToken) {
-        var route = intentRouter.Route(question);
-        KnowledgeContext? knowledge = null;
-        BusinessContext? business = null;
+        var startedTimestamp = Stopwatch.GetTimestamp();
+        var outcome = "success";
+        var intent = "unknown";
+        using var activity = FactoryMindTelemetry.ActivitySource.StartActivity(
+            "factorymind.chat.context",
+            ActivityKind.Internal);
+        try {
+            IntentRoute route;
+            using (var routeActivity = FactoryMindTelemetry.ActivitySource.StartActivity(
+                "factorymind.chat.route",
+                ActivityKind.Internal)) {
+                route = intentRouter.Route(question);
+                intent = route.Intent.ToString().ToLowerInvariant();
+                routeActivity?.SetTag("factorymind.chat.intent", intent);
+            }
 
-        if (route.Intent is ChatIntent.Knowledge or ChatIntent.Hybrid) {
-            knowledge = await knowledgeContextBuilder.BuildAsync(companyId, question, cancellationToken);
+            activity?.SetTag("factorymind.chat.intent", intent);
+            KnowledgeContext? knowledge = null;
+            BusinessContext? business = null;
+
+            if (route.Intent is ChatIntent.Knowledge or ChatIntent.Hybrid) {
+                knowledge = await knowledgeContextBuilder.BuildAsync(companyId, question, cancellationToken);
+            }
+
+            if (route.Intent is ChatIntent.Business or ChatIntent.Hybrid) {
+                business = await businessContextBuilder.BuildAsync(
+                    companyId,
+                    question,
+                    route,
+                    cancellationToken);
+            }
+
+            var sections = new[] { BaseInstructions, business?.Prompt, knowledge?.Prompt }
+                .Where(section => !string.IsNullOrWhiteSpace(section));
+            var result = new ChatContext(
+                string.Join("\n\n", sections),
+                knowledge?.Sources ?? [],
+                business?.Evidence ?? []);
+            var intentTags = FactoryMindTelemetry.Tags(("intent", intent));
+            FactoryMindTelemetry.ChatKnowledgeSources.Record(result.Sources.Count, intentTags);
+            FactoryMindTelemetry.ChatBusinessEvidence.Record(result.BusinessEvidence.Count, intentTags);
+            activity?.SetTag("factorymind.chat.knowledge_source_count", result.Sources.Count);
+            activity?.SetTag("factorymind.chat.business_evidence_count", result.BusinessEvidence.Count);
+            return result;
+        } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
+            outcome = "cancelled";
+            throw;
+        } catch {
+            outcome = "error";
+            activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
+        } finally {
+            var tags = FactoryMindTelemetry.Tags(
+                ("intent", intent),
+                ("outcome", outcome));
+            FactoryMindTelemetry.ChatContextRequests.Add(1, tags);
+            FactoryMindTelemetry.ChatContextDuration.Record(
+                Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds,
+                tags);
+            activity?.SetTag("factorymind.outcome", outcome);
         }
-
-        if (route.Intent is ChatIntent.Business or ChatIntent.Hybrid) {
-            business = await businessContextBuilder.BuildAsync(
-                companyId,
-                question,
-                route,
-                cancellationToken);
-        }
-
-        var sections = new[] { BaseInstructions, business?.Prompt, knowledge?.Prompt }
-            .Where(section => !string.IsNullOrWhiteSpace(section));
-        return new ChatContext(
-            string.Join("\n\n", sections),
-            knowledge?.Sources ?? [],
-            business?.Evidence ?? []);
     }
 }

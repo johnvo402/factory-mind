@@ -1,10 +1,12 @@
 using FactoryMind.Api;
 using FactoryMind.Api.Endpoints;
+using FactoryMind.Api.Observability;
 using FactoryMind.Application;
 using FactoryMind.Infrastructure;
 using FactoryMind.Api.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddFactoryMindLogging();
 
 builder.Services
     .AddApplication()
@@ -15,6 +17,7 @@ var app = builder.Build();
 await app.Services.InitializeInfrastructureAsync();
 
 app.UseCors();
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseAuthentication();
@@ -36,7 +39,7 @@ app.MapRoutingEndpoints();
 app.MapSettingsEndpoints();
 app.MapWarehouseEndpoints();
 app.MapWorkCenterEndpoints();
-app.MapGet(ApiRoutes.Health, () => Results.Ok(new { success = true, message = "FactoryMind API is running." }));
+app.MapFactoryMindHealthChecks();
 app.Run();
 
 public partial class Program;

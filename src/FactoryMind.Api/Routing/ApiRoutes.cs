@@ -3,6 +3,8 @@ namespace FactoryMind.Api.Routing;
 public static class ApiRoutes {
     public const string Base = "/api";
     public const string Health = "/health";
+    public const string HealthLive = Health + "/live";
+    public const string HealthReady = Health + "/ready";
 
     public static class Auth {
         public const string Group = Base + "/auth";

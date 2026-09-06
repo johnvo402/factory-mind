@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -5,6 +6,7 @@ using System.Text.Json.Serialization;
 using FactoryMind.Application.Features.Chat;
 using FactoryMind.Domain.Chat;
 using FactoryMind.Shared.AI;
+using FactoryMind.Shared.Observability;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -47,33 +49,167 @@ public sealed class GeminiChatCompletionClient : IChatCompletionClient {
             contents,
             new GeminiGenerationConfig(_settings.MaximumOutputTokens));
         var endpoint = $"models/{Uri.EscapeDataString(_settings.ChatModel)}:streamGenerateContent?alt=sse";
+        var startedTimestamp = Stopwatch.GetTimestamp();
+        var streamStartedTimestamp = 0L;
+        var outcome = GeminiTelemetry.Success;
+        var generatedChunks = 0L;
+        var completed = false;
+        var firstTokenRecorded = false;
+        GeminiUsageMetadata? usage = null;
+        using var activity = FactoryMindTelemetry.ActivitySource.StartActivity(
+            "factorymind.ai.chat",
+            ActivityKind.Client);
+        activity?.SetTag("gen_ai.operation.name", "chat");
+        activity?.SetTag("gen_ai.request.model", _settings.ChatModel);
+        activity?.SetTag("factorymind.ai.message_count", contents.Count);
+        activity?.SetTag("factorymind.ai.input_character_count", messages.Sum(message => message.Content.Length));
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(_settings.ChatTimeoutSeconds));
 
         _logger.LogInformation(
-            "Starting Gemini chat request using model {Model} with {MessageCount} messages",
+            "Starting Gemini chat request using model {Model} with {MessageCount} messages and {InputCharacterCount} input characters",
             _settings.ChatModel,
-            contents.Count);
-        using var response = await GeminiHttpResponse.SendAsync(
-            _httpClient,
-            () => CreateRequest(endpoint, payload),
-            HttpCompletionOption.ResponseHeadersRead,
-            _logger,
-            cancellationToken);
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var reader = new StreamReader(stream);
-
-        while (await reader.ReadLineAsync(cancellationToken) is { } line) {
-            if (!line.StartsWith("data:", StringComparison.OrdinalIgnoreCase)) {
-                continue;
+            contents.Count,
+            messages.Sum(message => message.Content.Length));
+        try {
+            HttpResponseMessage response;
+            try {
+                response = await GeminiHttpResponse.SendAsync(
+                    _httpClient,
+                    () => CreateRequest(endpoint, payload),
+                    HttpCompletionOption.ResponseHeadersRead,
+                    "chat",
+                    _settings.ChatModel,
+                    _logger,
+                    timeout.Token);
+            } catch (GeminiTransportException exception) {
+                outcome = exception.Outcome;
+                throw new AiProviderException(exception.Message, exception);
+            } catch (OperationCanceledException exception) {
+                throw GeminiTelemetry.TranslateCancellation(
+                    exception,
+                    cancellationToken,
+                    timeout.Token,
+                    out outcome);
             }
 
-            var data = line[5..].Trim();
-            if (data.Length == 0) {
-                continue;
+            using (response) {
+                var responseHeadersMs = Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds;
+                FactoryMindTelemetry.AiChatResponseHeadersDuration.Record(
+                    responseHeadersMs,
+                    FactoryMindTelemetry.Tags(("model", _settings.ChatModel)));
+                streamStartedTimestamp = Stopwatch.GetTimestamp();
+                Stream stream;
+                try {
+                    stream = await response.Content.ReadAsStreamAsync(timeout.Token);
+                } catch (OperationCanceledException exception) {
+                    throw GeminiTelemetry.TranslateCancellation(
+                        exception,
+                        cancellationToken,
+                        timeout.Token,
+                        out outcome);
+                } catch (Exception exception) {
+                    outcome = GeminiTelemetry.Error;
+                    throw new AiProviderException(
+                        "AI service response stream failed.",
+                        exception);
+                }
+
+                await using (stream) {
+                    using var reader = new StreamReader(stream);
+                    while (true) {
+                        string? line;
+                        try {
+                            line = await reader.ReadLineAsync(timeout.Token);
+                        } catch (OperationCanceledException exception) {
+                            throw GeminiTelemetry.TranslateCancellation(
+                                exception,
+                                cancellationToken,
+                                timeout.Token,
+                                out outcome);
+                        } catch (Exception exception) {
+                            outcome = GeminiTelemetry.Error;
+                            throw new AiProviderException(
+                                "AI service response stream failed.",
+                                exception);
+                        }
+
+                        if (line is null) {
+                            break;
+                        }
+
+                        if (!line.StartsWith("data:", StringComparison.OrdinalIgnoreCase)) {
+                            continue;
+                        }
+
+                        var data = line[5..].Trim();
+                        if (data.Length == 0) {
+                            continue;
+                        }
+
+                        GeminiStreamEvent streamEvent;
+                        try {
+                            streamEvent = ReadEvent(data);
+                        } catch (GeminiTransportException exception) {
+                            outcome = exception.Outcome;
+                            throw new AiProviderException(exception.Message, exception);
+                        } catch (AiProviderException) {
+                            outcome = GeminiTelemetry.InvalidResponse;
+                            throw;
+                        }
+
+                        usage = streamEvent.Usage ?? usage;
+                        if (!string.IsNullOrEmpty(streamEvent.Content)) {
+                            if (!firstTokenRecorded) {
+                                FactoryMindTelemetry.AiChatTimeToFirstToken.Record(
+                                    Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds,
+                                    FactoryMindTelemetry.Tags(("model", _settings.ChatModel)));
+                                firstTokenRecorded = true;
+                            }
+
+                            generatedChunks++;
+                            yield return streamEvent.Content;
+                        }
+                    }
+                }
             }
 
-            var content = ReadContent(data);
-            if (!string.IsNullOrEmpty(content)) {
-                yield return content;
+            completed = true;
+        } finally {
+            if (!completed && outcome == GeminiTelemetry.Success) {
+                outcome = GeminiTelemetry.Cancelled;
+            }
+
+            if (usage is not null) {
+                GeminiTelemetry.RecordUsage("chat", _settings.ChatModel, usage);
+            }
+
+            var tags = FactoryMindTelemetry.Tags(
+                ("model", _settings.ChatModel),
+                ("outcome", outcome));
+            if (streamStartedTimestamp > 0) {
+                FactoryMindTelemetry.AiChatStreamDuration.Record(
+                    Stopwatch.GetElapsedTime(streamStartedTimestamp).TotalMilliseconds,
+                    tags);
+            }
+
+            FactoryMindTelemetry.AiChatGeneratedChunks.Record(generatedChunks, tags);
+            GeminiTelemetry.RecordRequest("chat", _settings.ChatModel, outcome, startedTimestamp);
+            activity?.SetTag("factorymind.outcome", outcome);
+            activity?.SetTag("factorymind.ai.generated_chunk_count", generatedChunks);
+            if (outcome is not GeminiTelemetry.Success and not GeminiTelemetry.Cancelled) {
+                activity?.SetStatus(ActivityStatusCode.Error);
+            }
+
+            if (outcome == GeminiTelemetry.Success) {
+                _logger.LogInformation(
+                    "Gemini chat completed with {GeneratedChunkCount} chunks in {ElapsedMs} ms",
+                    generatedChunks,
+                    Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds);
+            } else if (outcome == GeminiTelemetry.Cancelled) {
+                _logger.LogDebug("Gemini chat was cancelled by the caller");
+            } else {
+                _logger.LogWarning("Gemini chat completed with outcome {Outcome}", outcome);
             }
         }
     }
@@ -86,12 +222,18 @@ public sealed class GeminiChatCompletionClient : IChatCompletionClient {
         return request;
     }
 
-    private static string? ReadContent(string data) {
+    private static GeminiStreamEvent ReadEvent(string data) {
         try {
             using var document = JsonDocument.Parse(data);
             if (document.RootElement.TryGetProperty("error", out _)) {
-                throw new AiProviderException("AI service is temporarily unavailable.");
+                throw new GeminiTransportException(
+                    "AI service is temporarily unavailable.",
+                    GeminiTelemetry.Error);
             }
+
+            var usage = document.RootElement.TryGetProperty("usageMetadata", out var usageElement)
+                ? ReadUsage(usageElement)
+                : null;
 
             if (!document.RootElement.TryGetProperty("candidates", out var candidates)
                 || candidates.ValueKind != JsonValueKind.Array
@@ -99,7 +241,7 @@ public sealed class GeminiChatCompletionClient : IChatCompletionClient {
                 || !candidates[0].TryGetProperty("content", out var content)
                 || !content.TryGetProperty("parts", out var parts)
                 || parts.ValueKind != JsonValueKind.Array) {
-                return null;
+                return new GeminiStreamEvent(null, usage);
             }
 
             var tokens = new List<string>();
@@ -113,11 +255,25 @@ public sealed class GeminiChatCompletionClient : IChatCompletionClient {
                 }
             }
 
-            return tokens.Count == 0 ? null : string.Concat(tokens);
+            return new GeminiStreamEvent(
+                tokens.Count == 0 ? null : string.Concat(tokens),
+                usage);
         } catch (JsonException exception) {
             throw new AiProviderException("AI service returned an invalid response.", exception);
         }
     }
+
+    private static GeminiUsageMetadata ReadUsage(JsonElement element) => new(
+        ReadTokenCount(element, "promptTokenCount"),
+        ReadTokenCount(element, "candidatesTokenCount"),
+        ReadTokenCount(element, "totalTokenCount"));
+
+    private static long? ReadTokenCount(JsonElement element, string propertyName) =>
+        element.TryGetProperty(propertyName, out var value)
+        && value.TryGetInt64(out var count)
+        && count >= 0
+            ? count
+            : null;
 
     private void EnsureConfigured() {
         if (string.IsNullOrWhiteSpace(_settings.ApiKey)) {
@@ -141,4 +297,6 @@ public sealed class GeminiChatCompletionClient : IChatCompletionClient {
     private sealed record GeminiPart(string Text);
 
     private sealed record GeminiGenerationConfig(int MaxOutputTokens);
+
+    private sealed record GeminiStreamEvent(string? Content, GeminiUsageMetadata? Usage);
 }

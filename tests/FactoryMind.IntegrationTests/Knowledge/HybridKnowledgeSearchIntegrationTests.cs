@@ -271,6 +271,57 @@ public sealed class HybridKnowledgeSearchIntegrationTests(PostgreSqlFixture fixt
             candidate.ChunkId == newChunk.Id && candidate.LexicalRank.HasValue);
     }
 
+    [Fact]
+    public async Task Hybrid_retrieval_records_safe_channel_counts_results_and_trace_hierarchy() {
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        var userId = await UserIdAsync(dbContext, TestData.CompanyAId);
+        AddDocument(
+            dbContext,
+            TestData.CompanyAId,
+            userId,
+            "Telemetry SOP",
+            "telemetry.pdf",
+            "super-secret-chunk SOP-TELEMETRY-001 lockout verification.",
+            Vector(1f, 0f));
+        await dbContext.SaveChangesAsync();
+        var retriever = new KnowledgeRetriever(
+            new FixedEmbeddingClient(Vector(1f, 0f)),
+            new EfKnowledgeSearchRepository(dbContext));
+        using var telemetry = new ObservabilityTestListener();
+
+        var results = await retriever.SearchAsync(
+            TestData.CompanyAId,
+            "super-secret-question SOP-TELEMETRY-001",
+            8,
+            CancellationToken.None);
+
+        Assert.NotEmpty(results);
+        Assert.Contains(telemetry.Measurements, measurement =>
+            measurement.Name == "factorymind.rag.vector.candidates" && measurement.Value >= 1);
+        Assert.Contains(telemetry.Measurements, measurement =>
+            measurement.Name == "factorymind.rag.lexical.candidates" && measurement.Value >= 1);
+        Assert.Contains(telemetry.Measurements, measurement =>
+            measurement.Name == "factorymind.rag.results" && measurement.Value >= 1);
+        var knowledge = Assert.Single(telemetry.Activities, activity =>
+            activity.Name == "factorymind.rag.knowledge");
+        Assert.Contains(telemetry.Activities, activity =>
+            activity.Name == "factorymind.rag.vector_search"
+            && activity.ParentSpanId == knowledge.SpanId);
+        Assert.Contains(telemetry.Activities, activity =>
+            activity.Name == "factorymind.rag.lexical_search"
+            && activity.ParentSpanId == knowledge.SpanId);
+        Assert.Contains(telemetry.Activities, activity =>
+            activity.Name == "factorymind.rag.rank"
+            && activity.ParentSpanId == knowledge.SpanId);
+        var telemetryText = string.Join('|', telemetry.Measurements
+            .SelectMany(measurement => measurement.Tags.Values)
+            .Concat(telemetry.Activities.SelectMany(activity => activity.Tags.Values)));
+        Assert.DoesNotContain("super-secret-question", telemetryText, StringComparison.Ordinal);
+        Assert.DoesNotContain("super-secret-chunk", telemetryText, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestData.CompanyAId.ToString(), telemetryText, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static async Task<IReadOnlyList<KnowledgeSearchResult>> SearchAsync(
         FactoryMindDbContext dbContext,
         Guid companyId,
@@ -336,5 +387,14 @@ public sealed class HybridKnowledgeSearchIntegrationTests(PostgreSqlFixture fixt
         values[0] = first;
         values[1] = second;
         return values;
+    }
+
+    private sealed class FixedEmbeddingClient(float[] vector) : IEmbeddingClient {
+        public Task<EmbeddingBatch> CreateAsync(
+            IReadOnlyList<string> inputs,
+            EmbeddingPurpose purpose,
+            CancellationToken cancellationToken) => Task.FromResult(new EmbeddingBatch(
+                "integration-model",
+                [vector]));
     }
 }
