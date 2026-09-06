@@ -4,7 +4,7 @@ using FluentValidation;
 
 namespace FactoryMind.Api.Endpoints;
 
-public sealed record MachineRequest(string Code, string Name, string Status);
+public sealed record MachineRequest(string Code, string Name, string Status, Guid? WorkCenterId = null);
 
 public sealed class MachineRequestValidator : AbstractValidator<MachineRequest> {
     public MachineRequestValidator() {
@@ -18,7 +18,7 @@ public sealed class MachineRequestValidator : AbstractValidator<MachineRequest> 
             .WithMessage($"Machine name must not exceed {MachineConstraints.MaximumNameLength} characters.");
         RuleFor(request => request.Status)
             .NotEmpty().WithMessage("Machine status is required.")
-            .Must(status => status is not null && MachineStatuses.All.Contains(status.Trim()))
-            .WithMessage("Machine status must be available, running, maintenance, or offline.");
+            .Must(status => status is not null && MachineStatuses.Administrative.Contains(status.Trim()))
+            .WithMessage("Machine status must be available, maintenance, or offline. Running is system-managed.");
     }
 }

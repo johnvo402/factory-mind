@@ -14,7 +14,8 @@ public sealed class MachineRequestValidatorTests {
         result.ShouldHaveValidationErrorFor(request => request.Code);
         result.ShouldHaveValidationErrorFor(request => request.Name);
         result.ShouldHaveValidationErrorFor(request => request.Status)
-            .WithErrorMessage("Machine status must be available, running, maintenance, or offline.");
+            .WithErrorMessage(
+                "Machine status must be available, maintenance, or offline. Running is system-managed.");
     }
 
     [Fact]
@@ -25,5 +26,15 @@ public sealed class MachineRequestValidatorTests {
             new MachineRequest("M-001", "Injection molding", MachineStatuses.Available.ToUpperInvariant()));
 
         result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public async Task Machine_request_rejects_manual_running_status() {
+        var validator = new MachineRequestValidator();
+
+        var result = await validator.TestValidateAsync(
+            new MachineRequest("M-001", "Injection molding", MachineStatuses.Running));
+
+        result.ShouldHaveValidationErrorFor(request => request.Status);
     }
 }

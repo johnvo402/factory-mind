@@ -1,5 +1,6 @@
 using FactoryMind.Application.Common.Authorization;
 using FactoryMind.Application.Common.Identity;
+using FactoryMind.Application.Features.Machines;
 using FactoryMind.Shared.Contracts;
 using Mediator;
 
@@ -10,7 +11,10 @@ public sealed record GetProductionOrderOperationsQuery(Guid ProductionOrderId)
     public string Policy => AuthorizationPolicies.Manager;
 }
 
-public sealed record StartProductionOrderOperationCommand(Guid ProductionOrderId, Guid OperationId)
+public sealed record StartProductionOrderOperationCommand(
+    Guid ProductionOrderId,
+    Guid OperationId,
+    Guid MachineId)
     : IRequest<Result<ProductionOrderOperationResponse>>, IAuthorizedRequest {
     public string Policy => AuthorizationPolicies.Manager;
 }
@@ -60,14 +64,18 @@ public sealed class StartProductionOrderOperationCommandHandler(
         var result = await repository.TryStartOperationAsync(
             command.ProductionOrderId,
             command.OperationId,
+            command.MachineId,
             currentUser.CompanyId,
             DateTime.UtcNow,
             cancellationToken);
-        return result.Status == ProductionExecutionStatus.Success
-            ? Result<ProductionOrderOperationResponse>.Success(
-                ProductionOrderOperationResponse.From(result.Operation!))
-            : Result<ProductionOrderOperationResponse>.Failure(
-                ProductionOrderErrors.OperationInvalidTransition);
+        return result.Status switch {
+            ProductionExecutionStatus.Success => Result<ProductionOrderOperationResponse>.Success(
+                ProductionOrderOperationResponse.From(result.Operation!)),
+            ProductionExecutionStatus.MachineNotFound =>
+                Result<ProductionOrderOperationResponse>.Failure(MachineErrors.NotFound),
+            _ => Result<ProductionOrderOperationResponse>.Failure(
+                ProductionOrderErrors.OperationInvalidTransition)
+        };
     }
 }
 

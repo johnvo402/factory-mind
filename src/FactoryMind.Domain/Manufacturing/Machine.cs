@@ -9,6 +9,8 @@ public sealed class Machine {
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Status { get; set; } = MachineStatuses.Available;
+    public Guid? WorkCenterId { get; set; }
+    public WorkCenter? WorkCenter { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
@@ -22,6 +24,12 @@ public static class MachineStatuses {
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
         Available,
         Running,
+        Maintenance,
+        Offline
+    };
+
+    public static readonly IReadOnlySet<string> Administrative = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+        Available,
         Maintenance,
         Offline
     };

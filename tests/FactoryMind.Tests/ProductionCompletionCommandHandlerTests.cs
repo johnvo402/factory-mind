@@ -142,6 +142,7 @@ public sealed class ProductionCompletionCommandHandlerTests {
         public Task<ProductionOperationExecutionResult> TryStartOperationAsync(
             Guid productionOrderId,
             Guid operationId,
+            Guid machineId,
             Guid companyId,
             DateTime startedAt,
             CancellationToken cancellationToken) => throw new NotSupportedException();

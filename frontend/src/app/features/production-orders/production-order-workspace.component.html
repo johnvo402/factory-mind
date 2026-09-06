@@ -147,9 +147,24 @@
           @for (operation of order.operations; track operation.id) {
             <article class="execution-operation" [class.running]="operation.status === 'in_progress'" [class.done]="operation.status === 'completed'">
               <div class="operation-sequence">{{ operation.sequence }}</div>
-              <div class="operation-copy"><strong>{{ operation.name }}</strong><span>{{ operation.workCenterCode }} — {{ operation.workCenterName }}</span><small>Setup {{ operation.setupTimeMinutes }} phút · Run {{ operation.runTimeMinutes }} phút</small></div>
+              <div class="operation-copy"><strong>{{ operation.name }}</strong><span>{{ operation.workCenterCode }} — {{ operation.workCenterName }}</span><small>Machine: {{ operation.machineCode ? operation.machineCode + ' — ' + operation.machineName : 'Chưa gán' }}</small><small>Setup {{ operation.setupTimeMinutes }} phút · Run {{ operation.runTimeMinutes }} phút</small></div>
               <div class="operation-timing"><span>{{ operationStatusLabel(operation.status) }}</span><small>Bắt đầu: {{ operation.startedAt ? (operation.startedAt | date: 'short') : '—' }}</small><small>Hoàn thành: {{ operation.completedAt ? (operation.completedAt | date: 'short') : '—' }}</small></div>
-              <div class="operation-actions">@if (canStartOperation(order, operation)) { <button type="button" class="primary" [disabled]="store.isSaving()" (click)="startOperation(order, operation)">Start Operation</button> } @if (order.status === 'in_progress' && operation.status === 'in_progress') { <button type="button" class="primary" [disabled]="store.isSaving()" (click)="completeOperation(order, operation)">Complete Operation</button> }</div>
+              <div class="operation-actions">
+                @if (canStartOperation(order, operation)) {
+                  <label class="machine-picker">
+                    Machine
+                    <select [value]="selectedMachineId(operation.id)" (change)="selectMachine(operation.id, $event)">
+                      <option value="" disabled>Chọn Machine</option>
+                      @for (machine of eligibleMachines(operation); track machine.id) {
+                        <option [value]="machine.id">{{ machine.code }} — {{ machine.name }}</option>
+                      }
+                    </select>
+                  </label>
+                  <button type="button" class="primary" [disabled]="store.isSaving() || !selectedMachineId(operation.id)" (click)="startOperation(order, operation)">Start Operation</button>
+                  @if (eligibleMachines(operation).length === 0) { <small>Không có Machine Available trong Work Center này.</small> }
+                }
+                @if (order.status === 'in_progress' && operation.status === 'in_progress') { <button type="button" class="primary" [disabled]="store.isSaving()" (click)="completeOperation(order, operation)">Complete Operation</button> }
+              </div>
             </article>
           }
         </div>

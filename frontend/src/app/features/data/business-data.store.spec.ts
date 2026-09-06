@@ -8,6 +8,7 @@ import { InventoryStore } from '../inventories/inventory.store';
 import { MaterialApiService } from '../materials/material-api.service';
 import { Material } from '../materials/material.models';
 import { MaterialStore } from '../materials/material.store';
+import { MachineApiService } from '../machines/machine-api.service';
 import { ProductApiService } from '../products/product-api.service';
 import { Product } from '../products/product.models';
 import { ProductStore } from '../products/product.store';
@@ -97,14 +98,17 @@ describe('Business data stores', () => {
     const bomApi = jasmine.createSpyObj<BomApiService>('BomApiService', [
       'getProductionOrderRequirements',
     ]);
+    const machineApi = jasmine.createSpyObj<MachineApiService>('MachineApiService', ['getMachines']);
     orderApi.getProductionOrders.and.returnValue(success([productionOrder()]));
     productApi.getProducts.and.returnValue(success([product()]));
+    machineApi.getMachines.and.returnValue(success([]));
     TestBed.configureTestingModule({
       providers: [
         ProductionOrderStore,
         { provide: ProductionOrderApiService, useValue: orderApi },
         { provide: ProductApiService, useValue: productApi },
         { provide: BomApiService, useValue: bomApi },
+        { provide: MachineApiService, useValue: machineApi },
       ],
     });
     const store = TestBed.inject(ProductionOrderStore);

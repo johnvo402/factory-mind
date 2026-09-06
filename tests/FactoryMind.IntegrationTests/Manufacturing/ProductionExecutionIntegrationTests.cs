@@ -7,6 +7,7 @@ using FactoryMind.Api.Routing;
 using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.Inventories;
 using FactoryMind.Application.Features.Materials;
+using FactoryMind.Application.Features.Machines;
 using FactoryMind.Application.Features.Products;
 using FactoryMind.Application.Features.ProductionOrders;
 using FactoryMind.Application.Features.Routings;
@@ -544,6 +545,11 @@ public sealed class ProductionExecutionIntegrationTests(PostgreSqlFixture fixtur
         workCenterResponse.EnsureSuccessStatusCode();
         var workCenter = (await workCenterResponse.Content
             .ReadFromJsonAsync<ApiResponse<WorkCenterResponse>>())!.Data!;
+        using var machineResponse = await client.PostAsJsonAsync(
+            ApiRoutes.Machines.Group,
+            new MachineRequest(
+                $"M-{productId:N}", "Default Machine", MachineStatuses.Available, workCenter.Id));
+        machineResponse.EnsureSuccessStatusCode();
         using var createResponse = await client.PostAsJsonAsync(routingsRoute, new RoutingRequest([
             new RoutingOperationRequest(10, "Manufacture", workCenter.Id, 0, 1, null)
         ]));
@@ -593,8 +599,14 @@ public sealed class ProductionExecutionIntegrationTests(PostgreSqlFixture fixtur
         foreach (var operation in order.Operations
                      .Where(operation => operation.Status != ProductionOperationStatuses.Completed)
                      .OrderBy(operation => operation.Sequence)) {
-            using var startOperation = await client.PostAsync(
-                StartOperationRoute(orderId, operation.Id), null);
+            var machines = await client.GetFromJsonAsync<ApiResponse<IReadOnlyList<MachineResponse>>>(
+                ApiRoutes.Machines.Group);
+            var machine = machines!.Data!.Single(candidate =>
+                candidate.WorkCenterId == operation.WorkCenterId &&
+                candidate.Status == MachineStatuses.Available);
+            using var startOperation = await client.PostAsJsonAsync(
+                StartOperationRoute(orderId, operation.Id),
+                new StartProductionOrderOperationRequest(machine.Id));
             startOperation.EnsureSuccessStatusCode();
             using var completeOperation = await client.PostAsync(
                 CompleteOperationRoute(orderId, operation.Id), null);

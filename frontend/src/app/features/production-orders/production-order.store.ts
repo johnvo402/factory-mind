@@ -5,6 +5,8 @@ import { BomApiService } from '../boms/bom-api.service';
 import { MaterialRequirements } from '../boms/bom.models';
 import { ProductApiService } from '../products/product-api.service';
 import { Product } from '../products/product.models';
+import { MachineApiService } from '../machines/machine-api.service';
+import { Machine } from '../machines/machine.models';
 import { ProductionOrderApiService } from './production-order-api.service';
 import { ProductionOrder, ProductionOrderInput } from './production-order.models';
 
@@ -13,8 +15,10 @@ export class ProductionOrderStore {
   private readonly api = inject(ProductionOrderApiService);
   private readonly productApi = inject(ProductApiService);
   private readonly bomApi = inject(BomApiService);
+  private readonly machineApi = inject(MachineApiService);
   private readonly orderItems = signal<ProductionOrder[]>([]);
   private readonly productItems = signal<Product[]>([]);
+  private readonly machineItems = signal<Machine[]>([]);
   private readonly loadingState = signal(false);
   private readonly savingState = signal(false);
   private readonly errorState = signal('');
@@ -25,6 +29,7 @@ export class ProductionOrderStore {
 
   readonly orders = this.orderItems.asReadonly();
   readonly products = this.productItems.asReadonly();
+  readonly machines = this.machineItems.asReadonly();
   readonly isLoading = this.loadingState.asReadonly();
   readonly isSaving = this.savingState.asReadonly();
   readonly error = this.errorState.asReadonly();
@@ -37,12 +42,14 @@ export class ProductionOrderStore {
     this.loadingState.set(true);
     this.errorState.set('');
     try {
-      const [orderResponse, productResponse] = await Promise.all([
+      const [orderResponse, productResponse, machineResponse] = await Promise.all([
         firstValueFrom(this.api.getProductionOrders()),
         firstValueFrom(this.productApi.getProducts()),
+        firstValueFrom(this.machineApi.getMachines()),
       ]);
       this.orderItems.set(orderResponse.data ?? []);
       this.productItems.set(productResponse.data ?? []);
+      this.machineItems.set(machineResponse.data ?? []);
     } catch (error: unknown) {
       this.errorState.set(businessDataErrorMessage(error));
     } finally {
@@ -98,8 +105,8 @@ export class ProductionOrderStore {
     }
   }
 
-  async startOperation(orderId: string, operationId: string): Promise<boolean> {
-    return this.transitionOperation(() => this.api.startOperation(orderId, operationId));
+  async startOperation(orderId: string, operationId: string, machineId: string): Promise<boolean> {
+    return this.transitionOperation(() => this.api.startOperation(orderId, operationId, machineId));
   }
 
   async completeOperation(orderId: string, operationId: string): Promise<boolean> {
@@ -135,7 +142,12 @@ export class ProductionOrderStore {
     this.errorState.set('');
     try {
       await firstValueFrom(request());
-      await this.load();
+      const [orderResponse, machineResponse] = await Promise.all([
+        firstValueFrom(this.api.getProductionOrders(this.searchState())),
+        firstValueFrom(this.machineApi.getMachines()),
+      ]);
+      this.orderItems.set(orderResponse.data ?? []);
+      this.machineItems.set(machineResponse.data ?? []);
       return true;
     } catch (error: unknown) {
       this.errorState.set(businessDataErrorMessage(error));

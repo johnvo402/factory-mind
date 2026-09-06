@@ -10,6 +10,9 @@ export interface ProductionOrderOperation {
   workCenterId: string;
   workCenterCode: string;
   workCenterName: string;
+  machineId: string | null;
+  machineCode: string | null;
+  machineName: string | null;
   setupTimeMinutes: number;
   runTimeMinutes: number;
   description: string | null;

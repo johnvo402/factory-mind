@@ -18,8 +18,15 @@ public sealed class DeleteMachineCommandHandler(
             return Result.Failure(MachineErrors.NotFound);
         }
 
-        repository.Remove(machine);
-        await repository.SaveChangesAsync(cancellationToken);
-        return Result.Success();
+        if (await repository.HasActiveOperationAsync(machine.Id, currentUser.CompanyId, cancellationToken)) {
+            return Result.Failure(MachineErrors.ActiveExecution);
+        }
+        if (await repository.HasOperationReferenceAsync(machine.Id, currentUser.CompanyId, cancellationToken)) {
+            return Result.Failure(MachineErrors.HistoryProtected);
+        }
+
+        return await repository.TryDeleteAsync(machine, cancellationToken)
+            ? Result.Success()
+            : Result.Failure(MachineErrors.HistoryProtected);
     }
 }

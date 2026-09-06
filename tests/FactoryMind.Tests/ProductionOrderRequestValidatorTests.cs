@@ -26,4 +26,15 @@ public sealed class ProductionOrderRequestValidatorTests {
 
         result.ShouldNotHaveAnyValidationErrors();
     }
+
+    [Fact]
+    public async Task Start_operation_requires_an_explicit_machine() {
+        var validator = new StartProductionOrderOperationRequestValidator();
+
+        var result = await validator.TestValidateAsync(
+            new StartProductionOrderOperationRequest(Guid.Empty));
+
+        result.ShouldHaveValidationErrorFor(request => request.MachineId)
+            .WithErrorMessage("Machine is required.");
+    }
 }

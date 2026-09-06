@@ -16,6 +16,10 @@ public sealed class ProductionOrderOperation {
     public WorkCenter? WorkCenter { get; set; }
     public string WorkCenterCode { get; set; } = string.Empty;
     public string WorkCenterName { get; set; } = string.Empty;
+    public Guid? MachineId { get; set; }
+    public Machine? Machine { get; set; }
+    public string? MachineCode { get; set; }
+    public string? MachineName { get; set; }
     public int SetupTimeMinutes { get; set; }
     public int RunTimeMinutes { get; set; }
     public string? Description { get; set; }

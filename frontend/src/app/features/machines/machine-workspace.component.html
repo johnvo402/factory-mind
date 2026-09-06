@@ -38,13 +38,14 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Mã máy</th><th>Tên máy</th><th>Trạng thái</th><th>Cập nhật</th><th></th></tr>
+            <tr><th>Mã máy</th><th>Tên máy</th><th>Work Center</th><th>Trạng thái</th><th>Cập nhật</th><th></th></tr>
           </thead>
           <tbody>
             @for (machine of store.machines(); track machine.id) {
               <tr>
                 <td><strong>{{ machine.code }}</strong></td>
                 <td>{{ machine.name }}</td>
+                <td>{{ machine.workCenterCode ? machine.workCenterCode + ' — ' + machine.workCenterName : '—' }}</td>
                 <td><span class="status" [attr.data-status]="machine.status">{{ statusLabel(machine.status) }}</span></td>
                 <td>{{ machine.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
                 <td class="actions">
@@ -94,12 +95,30 @@
             }
           </label>
           <label>
+            Work Center
+            <select formControlName="workCenterId">
+              <option value="">Chưa gán Work Center</option>
+              @for (workCenter of store.workCenters(); track workCenter.id) {
+                @if (workCenter.isActive) {
+                  <option [value]="workCenter.id">{{ workCenter.code }} — {{ workCenter.name }}</option>
+                }
+              }
+            </select>
+          </label>
+          @if (editingRunningMachine()) {
+            <p class="runtime-note" role="note">
+              Trạng thái hiện tại: <strong>Đang chạy</strong>. Running do thực thi công đoạn quản lý;
+              lưu thay đổi sẽ bị từ chối nếu máy đang thực sự được sử dụng.
+            </p>
+          }
+          <label>
             Trạng thái
             <select formControlName="status">
               @for (status of statuses; track status.value) {
                 <option [value]="status.value">{{ status.label }}</option>
               }
             </select>
+            <small>Running chỉ được thiết lập khi bắt đầu công đoạn sản xuất.</small>
           </label>
           <footer>
             <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button>

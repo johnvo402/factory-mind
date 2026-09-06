@@ -123,8 +123,11 @@ public sealed class ImportExcelCommandHandler(
             .ToUpperInvariant();
         var name = Required(row, mapping, "name", rowNumber, MachineConstraints.MaximumNameLength, errors);
         var status = Required(row, mapping, "status", rowNumber, 30, errors).ToLowerInvariant();
-        if (status.Length > 0 && !MachineStatuses.All.Contains(status)) {
-            errors.Add(new(rowNumber, "status", "Machine status is invalid."));
+        if (status.Length > 0 && !MachineStatuses.Administrative.Contains(status)) {
+            errors.Add(new(
+                rowNumber,
+                "status",
+                "Machine status must be available, maintenance, or offline."));
         }
         AddDuplicateError(code, "code", rowNumber, keys, errors);
         if (errors.Count == start) {

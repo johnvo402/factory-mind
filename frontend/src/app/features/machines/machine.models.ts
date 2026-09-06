@@ -5,6 +5,9 @@ export interface Machine {
   code: string;
   name: string;
   status: MachineStatus;
+  workCenterId: string | null;
+  workCenterCode: string | null;
+  workCenterName: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -13,4 +16,5 @@ export interface MachineInput {
   code: string;
   name: string;
   status: MachineStatus;
+  workCenterId: string | null;
 }

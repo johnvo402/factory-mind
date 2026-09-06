@@ -132,5 +132,8 @@
 .execution-operation.running { border-color: var(--color-warning); }.execution-operation.done { border-color: var(--color-success); }
 .operation-sequence { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--color-surface-subtle); font-weight: 800; font-variant-numeric: tabular-nums; }
 .operation-copy, .operation-timing { display: grid; gap: 4px; }.operation-copy span, .operation-copy small, .operation-timing small, .execution-note { color: var(--color-muted); }.operation-timing > span { font-weight: 800; }
-.operation-actions { display: flex; gap: 8px; }.execution-note { margin-top: 16px; }
+.operation-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }.execution-note { margin-top: 16px; }
+.machine-picker { display: grid; gap: 4px; min-width: 190px; color: var(--color-muted); font-size: 0.78rem; font-weight: 700; }
+.machine-picker select { min-height: 44px; }
+.operation-actions > small { flex-basis: 100%; color: var(--color-muted); line-height: 1.4; }
 @media (max-width: 760px) { .execution-operation { grid-template-columns: 40px 1fr; }.operation-timing, .operation-actions { grid-column: 2; } }

@@ -4,6 +4,7 @@ using FactoryMind.Application.Features.Machines.CreateMachine;
 using FactoryMind.Application.Features.Machines.DeleteMachine;
 using FactoryMind.Application.Features.Machines.GetMachines;
 using FactoryMind.Application.Features.Machines.UpdateMachine;
+using FactoryMind.Application.Features.WorkCenters;
 using FactoryMind.Domain.Manufacturing;
 
 namespace FactoryMind.Tests;
@@ -13,10 +14,10 @@ public sealed class MachineCommandHandlerTests {
     public async Task Create_normalizes_machine_and_uses_current_company() {
         var currentUser = new FakeCurrentUser();
         var repository = new FakeMachineRepository();
-        var handler = new CreateMachineCommandHandler(repository, currentUser);
+        var handler = new CreateMachineCommandHandler(repository, new FakeWorkCenterRepository(), currentUser);
 
         var result = await handler.Handle(
-            new CreateMachineCommand("  m-002 ", "  Packing line  ", " RUNNING "),
+            new CreateMachineCommand("  m-002 ", "  Packing line  ", " AVAILABLE ", null),
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -24,7 +25,7 @@ public sealed class MachineCommandHandlerTests {
         Assert.Equal(currentUser.CompanyId, machine.CompanyId);
         Assert.Equal("M-002", machine.Code);
         Assert.Equal("Packing line", machine.Name);
-        Assert.Equal(MachineStatuses.Running, machine.Status);
+        Assert.Equal(MachineStatuses.Available, machine.Status);
         Assert.Equal(1, repository.SaveChangesCount);
     }
 
@@ -37,10 +38,10 @@ public sealed class MachineCommandHandlerTests {
             Code = "M-001",
             Name = "Existing machine"
         });
-        var handler = new CreateMachineCommandHandler(repository, currentUser);
+        var handler = new CreateMachineCommandHandler(repository, new FakeWorkCenterRepository(), currentUser);
 
         var result = await handler.Handle(
-            new CreateMachineCommand("m-001", "Duplicate", MachineStatuses.Available),
+            new CreateMachineCommand("m-001", "Duplicate", MachineStatuses.Available, null),
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -84,7 +85,8 @@ public sealed class MachineCommandHandlerTests {
                 repository.Machines[0].Id,
                 "M-001",
                 "Changed",
-                MachineStatuses.Offline),
+                MachineStatuses.Offline,
+                null),
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -156,12 +158,73 @@ public sealed class MachineCommandHandlerTests {
             return Task.FromResult(exists);
         }
 
+        public Task<bool> HasActiveOperationAsync(
+            Guid machineId,
+            Guid companyId,
+            CancellationToken cancellationToken) => Task.FromResult(false);
+
+        public Task<bool> HasOperationReferenceAsync(
+            Guid machineId,
+            Guid companyId,
+            CancellationToken cancellationToken) => Task.FromResult(false);
+
+        public Task<MachineUpdateResult> TryUpdateAsync(
+            Guid machineId,
+            Guid companyId,
+            string code,
+            string name,
+            string status,
+            Guid? workCenterId,
+            DateTime updatedAt,
+            CancellationToken cancellationToken) {
+            var machine = Machines.SingleOrDefault(candidate =>
+                candidate.Id == machineId && candidate.CompanyId == companyId);
+            if (machine is null) {
+                return Task.FromResult(new MachineUpdateResult(MachineUpdateStatus.NotFound, null));
+            }
+            machine.Code = code;
+            machine.Name = name;
+            machine.Status = status;
+            machine.WorkCenterId = workCenterId;
+            machine.UpdatedAt = updatedAt;
+            SaveChangesCount++;
+            return Task.FromResult(new MachineUpdateResult(MachineUpdateStatus.Success, machine));
+        }
+
+        public Task<bool> TryDeleteAsync(Machine machine, CancellationToken cancellationToken) {
+            Machines.Remove(machine);
+            SaveChangesCount++;
+            return Task.FromResult(true);
+        }
+
         public void Add(Machine machine) => Machines.Add(machine);
-        public void Remove(Machine machine) => Machines.Remove(machine);
 
         public Task SaveChangesAsync(CancellationToken cancellationToken) {
             SaveChangesCount++;
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class FakeWorkCenterRepository : IWorkCenterRepository {
+        public Task<IReadOnlyList<WorkCenter>> GetByCompanyAsync(
+            Guid companyId,
+            string? search,
+            CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<WorkCenter>>([]);
+
+        public Task<WorkCenter?> GetByIdAsync(
+            Guid id,
+            Guid companyId,
+            CancellationToken cancellationToken) => Task.FromResult<WorkCenter?>(null);
+
+        public Task<bool> CodeExistsAsync(
+            Guid companyId,
+            string code,
+            Guid? excludedId,
+            CancellationToken cancellationToken) => Task.FromResult(false);
+
+        public void Add(WorkCenter workCenter) {
+        }
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

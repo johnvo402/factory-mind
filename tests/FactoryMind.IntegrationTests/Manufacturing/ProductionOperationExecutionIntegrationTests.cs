@@ -4,6 +4,7 @@ using FactoryMind.Api.Endpoints;
 using FactoryMind.Api.Routing;
 using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.Materials;
+using FactoryMind.Application.Features.Machines;
 using FactoryMind.Application.Features.Products;
 using FactoryMind.Application.Features.ProductionOrders;
 using FactoryMind.Application.Features.Routings;
@@ -220,8 +221,10 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         var started = await StartOrderAsync(Client, released, scenario, 5m);
         Assert.Equal(ProductionOrderStatuses.InProgress, started.Status);
 
-        using (var startSecond = await Client.PostAsync(
-                   StartOperationRoute(order.Id, released.Operations[1].Id), null)) {
+        using (var startSecond = await Client.PostAsJsonAsync(
+                   StartOperationRoute(order.Id, released.Operations[1].Id),
+                   new StartProductionOrderOperationRequest(
+                       MachineFor(scenario, released.Operations[1]).Id))) {
             Assert.Equal(HttpStatusCode.Conflict, startSecond.StatusCode);
         }
         using (var completeTooEarly = await Client.PostAsJsonAsync(
@@ -230,12 +233,17 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         }
 
         foreach (var operation in released.Operations) {
-            var running = await StartOperationAsync(Client, order.Id, operation.Id);
+            var machine = MachineFor(scenario, operation);
+            var running = await StartOperationAsync(Client, order.Id, operation.Id, machine.Id);
             Assert.Equal(ProductionOperationStatuses.InProgress, running.Status);
             Assert.NotNull(running.StartedAt);
+            Assert.Equal(machine.Id, running.MachineId);
+            Assert.Equal(machine.Code, running.MachineCode);
+            Assert.Equal(machine.Name, running.MachineName);
             var completed = await CompleteOperationAsync(Client, order.Id, operation.Id);
             Assert.Equal(ProductionOperationStatuses.Completed, completed.Status);
             Assert.NotNull(completed.CompletedAt);
+            Assert.Equal(machine.Id, completed.MachineId);
         }
         var completedOrder = await CompleteOrderAsync(Client, order.Id, scenario.Finished.Id);
         Assert.Equal(ProductionOrderStatuses.Completed, completedOrder.Status);
@@ -259,8 +267,10 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         var operation = released.Operations[0];
 
         var starts = await Task.WhenAll(
-            Client.PostAsync(StartOperationRoute(order.Id, operation.Id), null),
-            Client.PostAsync(StartOperationRoute(order.Id, operation.Id), null));
+            Client.PostAsJsonAsync(StartOperationRoute(order.Id, operation.Id),
+                new StartProductionOrderOperationRequest(MachineFor(scenario, operation).Id)),
+            Client.PostAsJsonAsync(StartOperationRoute(order.Id, operation.Id),
+                new StartProductionOrderOperationRequest(MachineFor(scenario, operation).Id)));
         Assert.Single(starts, response => response.StatusCode == HttpStatusCode.OK);
         Assert.Single(starts, response => response.StatusCode == HttpStatusCode.Conflict);
         foreach (var response in starts) {
@@ -277,13 +287,15 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         }
 
         foreach (var remaining in released.Operations.Skip(1)) {
-            await StartOperationAsync(Client, order.Id, remaining.Id);
+            await StartOperationAsync(
+                Client, order.Id, remaining.Id, MachineFor(scenario, remaining).Id);
             await CompleteOperationAsync(Client, order.Id, remaining.Id);
         }
         await CompleteOrderAsync(Client, order.Id, scenario.Finished.Id);
 
-        using var startAfterOrderComplete = await Client.PostAsync(
-            StartOperationRoute(order.Id, operation.Id), null);
+        using var startAfterOrderComplete = await Client.PostAsJsonAsync(
+            StartOperationRoute(order.Id, operation.Id),
+            new StartProductionOrderOperationRequest(MachineFor(scenario, operation).Id));
         using var completeAfterOrderComplete = await Client.PostAsync(
             CompleteOperationRoute(order.Id, operation.Id), null);
         using var completeOrderAgain = await Client.PostAsJsonAsync(
@@ -300,7 +312,11 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         var order = await CreateOrderAsync(Client, "PO-RACE", scenario.Product.Id, 5m);
         var released = await ReleaseAsync(Client, order.Id);
         await StartOrderAsync(Client, released, scenario, 5m);
-        await StartOperationAsync(Client, order.Id, released.Operations[0].Id);
+        await StartOperationAsync(
+            Client,
+            order.Id,
+            released.Operations[0].Id,
+            MachineFor(scenario, released.Operations[0]).Id);
 
         var results = await Task.WhenAll(
             Client.PostAsync(CompleteOperationRoute(order.Id, released.Operations[0].Id), null),
@@ -324,6 +340,262 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
     }
 
     [Fact]
+    public async Task Wrong_work_center_and_unavailable_machine_leave_operation_and_machine_unchanged() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        var scenario = await CreateScenarioAsync(Client, "ELIGIBILITY", operationCount: 1);
+        var order = await CreateOrderAsync(Client, "PO-ELIGIBILITY", scenario.Product.Id, 1m);
+        var released = await ReleaseAsync(Client, order.Id);
+        await StartOrderAsync(Client, released, scenario, 1m);
+        var operation = released.Operations[0];
+        var wrongMachine = scenario.Machines.Single(machine => machine.WorkCenterId == scenario.Assembly.Id);
+
+        using (var wrongWorkCenter = await Client.PostAsJsonAsync(
+                   StartOperationRoute(order.Id, operation.Id),
+                   new StartProductionOrderOperationRequest(wrongMachine.Id))) {
+            Assert.Equal(HttpStatusCode.Conflict, wrongWorkCenter.StatusCode);
+        }
+
+        var requiredMachine = MachineFor(scenario, operation);
+        await SetMachineStatusAsync(requiredMachine.Id, MachineStatuses.Maintenance);
+        using (var maintenance = await Client.PostAsJsonAsync(
+                   StartOperationRoute(order.Id, operation.Id),
+                   new StartProductionOrderOperationRequest(requiredMachine.Id))) {
+            Assert.Equal(HttpStatusCode.Conflict, maintenance.StatusCode);
+        }
+        await SetMachineStatusAsync(requiredMachine.Id, MachineStatuses.Offline);
+        using (var offline = await Client.PostAsJsonAsync(
+                   StartOperationRoute(order.Id, operation.Id),
+                   new StartProductionOrderOperationRequest(requiredMachine.Id))) {
+            Assert.Equal(HttpStatusCode.Conflict, offline.StatusCode);
+        }
+        await SetMachineStatusAsync(requiredMachine.Id, MachineStatuses.Running);
+        using (var running = await Client.PostAsJsonAsync(
+                   StartOperationRoute(order.Id, operation.Id),
+                   new StartProductionOrderOperationRequest(requiredMachine.Id))) {
+            Assert.Equal(HttpStatusCode.Conflict, running.StatusCode);
+        }
+
+        var persisted = await GetOrderAsync(Client, order.Id);
+        Assert.Equal(ProductionOperationStatuses.Pending, persisted.Operations[0].Status);
+        Assert.Null(persisted.Operations[0].MachineId);
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        Assert.Equal(MachineStatuses.Available, (await dbContext.Machines.SingleAsync(
+            machine => machine.Id == wrongMachine.Id)).Status);
+        Assert.Equal(MachineStatuses.Running, (await dbContext.Machines.SingleAsync(
+            machine => machine.Id == requiredMachine.Id)).Status);
+    }
+
+    [Fact]
+    public async Task Concurrent_orders_claiming_the_same_machine_have_exactly_one_success() {
+        var firstClient = CreateClient();
+        var secondClient = CreateClient();
+        await LoginAsync(firstClient, TestData.CompanyAAdminEmail);
+        await LoginAsync(secondClient, TestData.CompanyAAdminEmail);
+        var scenario = await CreateScenarioAsync(firstClient, "MACHINE-RACE", operationCount: 1);
+        var orderA = await CreateOrderAsync(firstClient, "PO-MACHINE-RACE-A", scenario.Product.Id, 1m);
+        var orderB = await CreateOrderAsync(firstClient, "PO-MACHINE-RACE-B", scenario.Product.Id, 1m);
+        var releasedA = await ReleaseAsync(firstClient, orderA.Id);
+        var releasedB = await ReleaseAsync(firstClient, orderB.Id);
+        await StartOrderAsync(firstClient, releasedA, scenario, 1m);
+        await StartOrderAsync(firstClient, releasedB, scenario, 1m);
+        var machine = MachineFor(scenario, releasedA.Operations[0]);
+
+        var responses = await Task.WhenAll(
+            firstClient.PostAsJsonAsync(
+                StartOperationRoute(orderA.Id, releasedA.Operations[0].Id),
+                new StartProductionOrderOperationRequest(machine.Id)),
+            secondClient.PostAsJsonAsync(
+                StartOperationRoute(orderB.Id, releasedB.Operations[0].Id),
+                new StartProductionOrderOperationRequest(machine.Id)));
+
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.OK);
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.Conflict);
+        foreach (var response in responses) response.Dispose();
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        var operations = await dbContext.ProductionOrderOperations
+            .Where(operation => operation.ProductionOrderId == orderA.Id ||
+                operation.ProductionOrderId == orderB.Id)
+            .ToListAsync();
+        Assert.Single(operations, operation =>
+            operation.Status == ProductionOperationStatuses.InProgress &&
+            operation.MachineId == machine.Id);
+        Assert.Single(operations, operation =>
+            operation.Status == ProductionOperationStatuses.Pending && operation.MachineId == null);
+        Assert.Equal(MachineStatuses.Running,
+            (await dbContext.Machines.SingleAsync(candidate => candidate.Id == machine.Id)).Status);
+    }
+
+    [Fact]
+    public async Task Completed_operation_releases_machine_for_reuse_and_preserves_both_snapshots() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        var scenario = await CreateScenarioAsync(Client, "REUSE", operationCount: 1);
+        var orderA = await CreateOrderAsync(Client, "PO-REUSE-A", scenario.Product.Id, 1m);
+        var orderB = await CreateOrderAsync(Client, "PO-REUSE-B", scenario.Product.Id, 1m);
+        var releasedA = await ReleaseAsync(Client, orderA.Id);
+        var releasedB = await ReleaseAsync(Client, orderB.Id);
+        await StartOrderAsync(Client, releasedA, scenario, 1m);
+        await StartOrderAsync(Client, releasedB, scenario, 1m);
+        var machine = MachineFor(scenario, releasedA.Operations[0]);
+
+        await StartOperationAsync(Client, orderA.Id, releasedA.Operations[0].Id, machine.Id);
+        var completedA = await CompleteOperationAsync(Client, orderA.Id, releasedA.Operations[0].Id);
+        var runningB = await StartOperationAsync(Client, orderB.Id, releasedB.Operations[0].Id, machine.Id);
+
+        Assert.Equal(machine.Id, completedA.MachineId);
+        Assert.Equal(machine.Code, completedA.MachineCode);
+        Assert.Equal(machine.Name, completedA.MachineName);
+        Assert.Equal(machine.Id, runningB.MachineId);
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        Assert.Equal(MachineStatuses.Running,
+            (await dbContext.Machines.SingleAsync(candidate => candidate.Id == machine.Id)).Status);
+    }
+
+    [Fact]
+    public async Task Legacy_in_progress_operation_without_machine_completes_without_modifying_machines() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        var scenario = await CreateScenarioAsync(Client, "LEGACY-OP", operationCount: 1);
+        var order = await CreateOrderAsync(Client, "PO-LEGACY-OP", scenario.Product.Id, 1m);
+        var released = await ReleaseAsync(Client, order.Id);
+        await StartOrderAsync(Client, released, scenario, 1m);
+        using (var scope = ApiFactory.Services.CreateScope()) {
+            var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+            await dbContext.ProductionOrderOperations
+                .Where(operation => operation.Id == released.Operations[0].Id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(operation => operation.Status, ProductionOperationStatuses.InProgress)
+                    .SetProperty(operation => operation.StartedAt, DateTime.UtcNow));
+        }
+
+        var completed = await CompleteOperationAsync(Client, order.Id, released.Operations[0].Id);
+
+        Assert.Equal(ProductionOperationStatuses.Completed, completed.Status);
+        Assert.Null(completed.MachineId);
+        Assert.Null(completed.MachineCode);
+        Assert.Null(completed.MachineName);
+        using var verificationScope = ApiFactory.Services.CreateScope();
+        var verificationContext = verificationScope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        Assert.All(await verificationContext.Machines.ToListAsync(),
+            machine => Assert.Equal(MachineStatuses.Available, machine.Status));
+    }
+
+    [Fact]
+    public async Task Active_machine_rejects_admin_changes_then_completes_and_history_blocks_delete() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        var scenario = await CreateScenarioAsync(Client, "ADMIN-GUARD", operationCount: 1);
+        var order = await CreateOrderAsync(Client, "PO-ADMIN-GUARD", scenario.Product.Id, 1m);
+        var released = await ReleaseAsync(Client, order.Id);
+        await StartOrderAsync(Client, released, scenario, 1m);
+        var machine = MachineFor(scenario, released.Operations[0]);
+        await StartOperationAsync(Client, order.Id, released.Operations[0].Id, machine.Id);
+
+        using (var changeStatus = await Client.PutAsJsonAsync(
+                   MachineByIdRoute(machine.Id),
+                   new MachineRequest(machine.Code, machine.Name, MachineStatuses.Maintenance, machine.WorkCenterId))) {
+            Assert.Equal(HttpStatusCode.Conflict, changeStatus.StatusCode);
+        }
+        using (var changeWorkCenter = await Client.PutAsJsonAsync(
+                   MachineByIdRoute(machine.Id),
+                   new MachineRequest(machine.Code, machine.Name, MachineStatuses.Available, scenario.Assembly.Id))) {
+            Assert.Equal(HttpStatusCode.Conflict, changeWorkCenter.StatusCode);
+        }
+
+        using (var deactivate = await Client.PostAsync(
+                   DeactivateWorkCenterRoute(scenario.Cutting.Id), null)) {
+            deactivate.EnsureSuccessStatusCode();
+        }
+
+        await CompleteOperationAsync(Client, order.Id, released.Operations[0].Id);
+        using var delete = await Client.DeleteAsync(MachineByIdRoute(machine.Id));
+        Assert.Equal(HttpStatusCode.Conflict, delete.StatusCode);
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        var persistedMachine = await dbContext.Machines.SingleAsync(candidate => candidate.Id == machine.Id);
+        Assert.Equal(MachineStatuses.Available, persistedMachine.Status);
+        Assert.Equal(machine.WorkCenterId, persistedMachine.WorkCenterId);
+        Assert.Equal(machine.Id, (await dbContext.ProductionOrderOperations.SingleAsync(
+            operation => operation.Id == released.Operations[0].Id)).MachineId);
+    }
+
+    [Fact]
+    public async Task Complete_rejects_corrupted_assigned_machine_status_and_preserves_operation() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        var scenario = await CreateScenarioAsync(Client, "COMPLETE-GUARD", operationCount: 1);
+        var order = await CreateOrderAsync(Client, "PO-COMPLETE-GUARD", scenario.Product.Id, 1m);
+        var released = await ReleaseAsync(Client, order.Id);
+        await StartOrderAsync(Client, released, scenario, 1m);
+        var operation = released.Operations[0];
+        var machine = MachineFor(scenario, operation);
+        await StartOperationAsync(Client, order.Id, operation.Id, machine.Id);
+        await SetMachineStatusAsync(machine.Id, MachineStatuses.Maintenance);
+
+        using var complete = await Client.PostAsync(
+            CompleteOperationRoute(order.Id, operation.Id), null);
+
+        Assert.Equal(HttpStatusCode.Conflict, complete.StatusCode);
+        var persisted = await GetOrderAsync(Client, order.Id);
+        Assert.Equal(ProductionOperationStatuses.InProgress, persisted.Operations[0].Status);
+        Assert.Equal(machine.Id, persisted.Operations[0].MachineId);
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        Assert.Equal(MachineStatuses.Maintenance,
+            (await dbContext.Machines.SingleAsync(candidate => candidate.Id == machine.Id)).Status);
+    }
+
+    [Fact]
+    public async Task Deactivated_work_center_blocks_start_without_mutating_machine_or_snapshot() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        var scenario = await CreateScenarioAsync(Client, "DEACTIVATED-START", operationCount: 1);
+        var order = await CreateOrderAsync(Client, "PO-DEACTIVATED-START", scenario.Product.Id, 1m);
+        var released = await ReleaseAsync(Client, order.Id);
+        await StartOrderAsync(Client, released, scenario, 1m);
+        using (var deactivate = await Client.PostAsync(
+                   DeactivateWorkCenterRoute(scenario.Cutting.Id), null)) {
+            deactivate.EnsureSuccessStatusCode();
+        }
+        var machine = MachineFor(scenario, released.Operations[0]);
+
+        using var start = await Client.PostAsJsonAsync(
+            StartOperationRoute(order.Id, released.Operations[0].Id),
+            new StartProductionOrderOperationRequest(machine.Id));
+
+        Assert.Equal(HttpStatusCode.Conflict, start.StatusCode);
+        var persisted = await GetOrderAsync(Client, order.Id);
+        Assert.Equal(ProductionOperationStatuses.Pending, persisted.Operations[0].Status);
+        Assert.Equal(released.Operations[0].WorkCenterCode, persisted.Operations[0].WorkCenterCode);
+        Assert.Null(persisted.Operations[0].MachineId);
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        Assert.Equal(MachineStatuses.Available,
+            (await dbContext.Machines.SingleAsync(candidate => candidate.Id == machine.Id)).Status);
+    }
+
+    [Fact]
+    public async Task Start_does_not_disclose_or_claim_another_tenants_machine() {
+        var companyAClient = CreateClient();
+        var companyBClient = CreateClient();
+        await LoginAsync(companyAClient, TestData.CompanyAAdminEmail);
+        await LoginAsync(companyBClient, TestData.CompanyBAdminEmail);
+        var scenarioA = await CreateScenarioAsync(companyAClient, "TENANT-MACHINE-A", operationCount: 1);
+        var scenarioB = await CreateScenarioAsync(companyBClient, "TENANT-MACHINE-B", operationCount: 1);
+        var order = await CreateOrderAsync(
+            companyAClient, "PO-TENANT-MACHINE", scenarioA.Product.Id, 1m);
+        var released = await ReleaseAsync(companyAClient, order.Id);
+        await StartOrderAsync(companyAClient, released, scenarioA, 1m);
+        var tenantBMachine = scenarioB.Machines.Single(
+            machine => machine.WorkCenterId == scenarioB.Cutting.Id);
+
+        using var start = await companyAClient.PostAsJsonAsync(
+            StartOperationRoute(order.Id, released.Operations[0].Id),
+            new StartProductionOrderOperationRequest(tenantBMachine.Id));
+
+        Assert.Equal(HttpStatusCode.NotFound, start.StatusCode);
+        Assert.Null((await GetOrderAsync(companyAClient, order.Id)).Operations[0].MachineId);
+    }
+
+    [Fact]
     public async Task Operation_routes_do_not_disclose_another_tenants_order() {
         var companyAClient = CreateClient();
         var companyBClient = CreateClient();
@@ -334,8 +606,9 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         var released = await ReleaseAsync(companyAClient, order.Id);
 
         using var list = await companyBClient.GetAsync(OperationsRoute(order.Id));
-        using var start = await companyBClient.PostAsync(
-            StartOperationRoute(order.Id, released.Operations[0].Id), null);
+        using var start = await companyBClient.PostAsJsonAsync(
+            StartOperationRoute(order.Id, released.Operations[0].Id),
+            new StartProductionOrderOperationRequest(MachineFor(scenario, released.Operations[0]).Id));
         using var complete = await companyBClient.PostAsync(
             CompleteOperationRoute(order.Id, released.Operations[0].Id), null);
         Assert.Equal(HttpStatusCode.NotFound, list.StatusCode);
@@ -368,6 +641,16 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
             client, ApiRoutes.WorkCenters.Group, new WorkCenterCreateRequest($"ASM-{suffix}", "Assembly", null));
         var packaging = await PostAsync<WorkCenterResponse>(
             client, ApiRoutes.WorkCenters.Group, new WorkCenterCreateRequest($"PKG-{suffix}", "Packaging", null));
+        var machines = new[] { cutting, assembly, packaging }
+            .Select((workCenter, index) => PostAsync<MachineResponse>(
+                client,
+                ApiRoutes.Machines.Group,
+                new MachineRequest(
+                    $"MC-{suffix}-{index + 1}",
+                    $"Machine {suffix} {index + 1}",
+                    MachineStatuses.Available,
+                    workCenter.Id)))
+            .ToArray();
         var definitions = new[] {
             new RoutingOperationRequest(10, "Cutting", cutting.Id, 2, 5, null),
             new RoutingOperationRequest(20, "Assembly", assembly.Id, 1, 10, null),
@@ -375,7 +658,16 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         }.Take(operationCount).ToList();
         var routing = await CreateRoutingAsync(client, product.Id, definitions);
         await ActivateRoutingAsync(client, product.Id, routing.Id);
-        return new(product, material, raw, finished, bom, routing, cutting, assembly);
+        return new(
+            product,
+            material,
+            raw,
+            finished,
+            bom,
+            routing,
+            cutting,
+            assembly,
+            await Task.WhenAll(machines));
     }
 
     private static async Task<T> PostAsync<T>(HttpClient client, string route, object body) {
@@ -422,8 +714,11 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
     private static async Task<ProductionOrderOperationResponse> StartOperationAsync(
         HttpClient client,
         Guid orderId,
-        Guid operationId) {
-        using var response = await client.PostAsync(StartOperationRoute(orderId, operationId), null);
+        Guid operationId,
+        Guid machineId) {
+        using var response = await client.PostAsJsonAsync(
+            StartOperationRoute(orderId, operationId),
+            new StartProductionOrderOperationRequest(machineId));
         response.EnsureSuccessStatusCode();
         return (await response.Content
             .ReadFromJsonAsync<ApiResponse<ProductionOrderOperationResponse>>())!.Data!;
@@ -451,6 +746,11 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         return response!.Data!.Single(order => order.Id == orderId);
     }
 
+    private static MachineResponse MachineFor(
+        Scenario scenario,
+        ProductionOrderOperationResponse operation) => scenario.Machines.Single(
+            machine => machine.WorkCenterId == operation.WorkCenterId);
+
     private async Task SetExecutionStateAsync(
         Guid orderId,
         Guid billOfMaterialId,
@@ -470,6 +770,14 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
                 .SetProperty(order => order.StartedAt, startedAt)
                 .SetProperty(order => order.UpdatedAt, changedAt));
         Assert.Equal(1, affected);
+    }
+
+    private async Task SetMachineStatusAsync(Guid machineId, string status) {
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        Assert.Equal(1, await dbContext.Machines
+            .Where(machine => machine.Id == machineId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(machine => machine.Status, status)));
     }
 
     private static string BomsRoute(Guid productId) => ApiRoutes.Products.Group + ApiRoutes.Products.Boms
@@ -507,5 +815,6 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         BomResponse Bom,
         RoutingResponse Routing,
         WorkCenterResponse Cutting,
-        WorkCenterResponse Assembly);
+        WorkCenterResponse Assembly,
+        IReadOnlyList<MachineResponse> Machines);
 }

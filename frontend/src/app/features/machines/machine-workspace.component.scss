@@ -27,3 +27,13 @@
   background: var(--color-surface-subtle);
   color: var(--color-subtle);
 }
+
+.runtime-note {
+  margin: 0;
+  border-left: 4px solid var(--color-warning);
+  border-radius: 8px;
+  background: var(--color-warning-soft);
+  padding: 12px;
+  color: var(--color-warning);
+  line-height: 1.5;
+}

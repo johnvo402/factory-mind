@@ -74,7 +74,7 @@ Ngoài phạm vi hiện tại:
 | Chat | Conversation history, Markdown an toàn, Gemini streaming qua SSE | Mọi user đã đăng nhập |
 | Hybrid RAG | Route câu hỏi thành `Business`, `Knowledge` hoặc `Hybrid`; trả `[B#]` evidence và `[S#]` citations | Mọi user đã đăng nhập |
 | Knowledge | Upload PDF tối đa 100 MB, xem trạng thái, retry processing, semantic search và re-index | User upload/search; Manager/Admin re-index |
-| Machines | Quản lý mã máy, tên và trạng thái vận hành | Manager/Admin |
+| Machines | Quản lý máy vật lý theo Work Center; Running do thực thi công đoạn quản lý | Manager/Admin |
 | Materials | Quản lý nguyên liệu và đơn vị tính | Manager/Admin |
 | Products | Quản lý danh mục sản phẩm | Manager/Admin |
 | Bill of Materials | Quản lý BOM theo revision và xem trước nhu cầu/thiếu hụt nguyên liệu mà không thay đổi tồn kho | Manager/Admin |
@@ -277,8 +277,10 @@ erDiagram
     PRODUCT ||--o{ ROUTING : defines
     ROUTING ||--o{ PRODUCTION_ORDER : locked_by
     ROUTING ||--o{ ROUTING_OPERATION : contains
-    WORK_CENTER ||--o{ ROUTING_OPERATION : performs_at
+    WORK_CENTER ||--o{ ROUTING_OPERATION : requires
+    WORK_CENTER ||--o{ MACHINE : contains
     PRODUCTION_ORDER ||--o{ PRODUCTION_ORDER_OPERATION : snapshots
+    MACHINE ||--o{ PRODUCTION_ORDER_OPERATION : executes
     MATERIAL ||--o{ BOM_ITEM : component
     USER ||--o{ CONVERSATION : starts
     CONVERSATION ||--o{ MESSAGE : contains
@@ -295,8 +297,8 @@ Một số invariant quan trọng:
 - Inventory balance duy nhất theo `CompanyId + WarehouseId + MaterialId`; mọi thay đổi balance phải có transaction giải thích.
 - Production Order phải tham chiếu Product thuộc cùng Company.
 - Production Order mới luôn bắt đầu ở Planned. Release khóa đúng BOM và Routing revision, đồng thời snapshot toàn bộ operation; Start chỉ chạy từ Released và tiêu thụ toàn bộ phân bổ vật tư trong một PostgreSQL transaction.
-- BOM trả lời vật tư nào cần dùng; Routing trả lời công đoạn nào phải thực hiện theo thứ tự; Work Center trả lời công đoạn diễn ra ở đâu; ProductionOrderOperation giữ snapshot thực thi không phụ thuộc cấu hình Routing thay đổi về sau.
-- Operation chỉ chuyển `pending -> in_progress -> completed`, theo đúng Sequence và tối đa một operation InProgress trên mỗi Production Order. Order chỉ Complete khi mọi operation snapshot đã Completed.
+- BOM trả lời vật tư nào cần dùng; Routing trả lời công đoạn nào phải thực hiện theo thứ tự; Work Center là năng lực/vị trí sản xuất bắt buộc; Machine là tài nguyên vật lý được chọn khi thực thi; ProductionOrderOperation giữ snapshot Work Center và Machine thực tế không phụ thuộc cấu hình thay đổi về sau.
+- Operation chỉ chuyển `pending -> in_progress -> completed`, theo đúng Sequence và tối đa một operation InProgress trên mỗi Production Order. Start yêu cầu Machine Available thuộc đúng Work Center, atomically chuyển Machine sang Running; Complete atomically trả Machine về Available. Mỗi Machine chỉ phục vụ tối đa một operation InProgress. Order chỉ Complete khi mọi operation snapshot đã Completed.
 - BOM revision và mọi Material component phải thuộc cùng Company; mỗi Product chỉ có tối đa một revision Active.
 - Material requirement là phép tính preview chỉ đọc: Planned dùng active BOM, còn Released/InProgress dùng BOM đã khóa. Release không giữ chỗ tồn kho.
 - `ProductionConsume` giữ quantity dương trong ledger, signed quantity âm, và tham chiếu Production Order; mọi balance decrement, ledger insert và chuyển trạng thái InProgress cùng commit hoặc cùng rollback.
@@ -537,7 +539,7 @@ Tất cả business endpoints dùng prefix `/api` và tenant được lấy từ
 | `/api/production-orders` | `GET`, `POST`, `PUT`, `DELETE` | Planned Production Order planning data | Manager/Admin |
 | `/api/production-orders/{id}/release`, `/cancel` | `POST` | Explicit lifecycle; Release locks active BOM + Routing and snapshots operations | Manager/Admin |
 | `/api/production-orders/{id}/start` | `POST` | Validate allocations and atomically consume raw materials | Manager/Admin |
-| `/api/production-orders/{id}/operations/{operationId}/start`, `/complete` | `POST` | Sequential, concurrency-safe operation execution | Manager/Admin |
+| `/api/production-orders/{id}/operations/{operationId}/start`, `/complete` | `POST` | Thực thi tuần tự; Start nhận Machine rõ ràng và Complete giải phóng Machine atomically | Manager/Admin |
 | `/api/production-orders/{id}/complete` | `POST` | Require all operations Completed, then atomically receive finished goods | Manager/Admin |
 | `/api/production-orders/{id}/material-requirements` | `GET` | Planned uses active BOM; execution uses locked BOM | Manager/Admin |
 | `/api/settings/company` | `GET`, `PUT` | Company settings | Admin |

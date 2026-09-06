@@ -19,6 +19,8 @@ public sealed record StartProductionOrderRequest(
 
 public sealed record CompleteProductionOrderRequest(Guid WarehouseId);
 
+public sealed record StartProductionOrderOperationRequest(Guid MachineId);
+
 public sealed class ProductionOrderRequestValidator : AbstractValidator<ProductionOrderRequest> {
     public ProductionOrderRequestValidator() {
         RuleFor(request => request.Number)
@@ -73,5 +75,13 @@ public sealed class CompleteProductionOrderRequestValidator : AbstractValidator<
     public CompleteProductionOrderRequestValidator() {
         RuleFor(request => request.WarehouseId)
             .NotEmpty().WithMessage("Destination warehouse is required.");
+    }
+}
+
+public sealed class StartProductionOrderOperationRequestValidator
+    : AbstractValidator<StartProductionOrderOperationRequest> {
+    public StartProductionOrderOperationRequestValidator() {
+        RuleFor(request => request.MachineId)
+            .NotEmpty().WithMessage("Machine is required.");
     }
 }

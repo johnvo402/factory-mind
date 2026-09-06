@@ -173,9 +173,14 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
             entity.Property(machine => machine.Code).HasMaxLength(MachineConstraints.MaximumCodeLength).IsRequired();
             entity.Property(machine => machine.Name).HasMaxLength(MachineConstraints.MaximumNameLength).IsRequired();
             entity.Property(machine => machine.Status).HasMaxLength(30).IsRequired();
+            entity.HasIndex(machine => machine.WorkCenterId);
             entity.HasOne(machine => machine.Company)
                 .WithMany(company => company.Machines)
                 .HasForeignKey(machine => machine.CompanyId);
+            entity.HasOne(machine => machine.WorkCenter)
+                .WithMany()
+                .HasForeignKey(machine => machine.WorkCenterId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Material>(entity => {
@@ -506,6 +511,10 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
                 table.HasCheckConstraint(
                     "CK_production_order_operations_Status_valid",
                     "\"Status\" IN ('pending', 'in_progress', 'completed')");
+                table.HasCheckConstraint(
+                    "CK_production_order_operations_Machine_snapshot_consistent",
+                    "(\"MachineId\" IS NULL AND \"MachineCode\" IS NULL AND \"MachineName\" IS NULL) OR " +
+                    "(\"MachineId\" IS NOT NULL AND \"MachineCode\" IS NOT NULL AND \"MachineName\" IS NOT NULL)");
             });
             entity.HasIndex(operation => new { operation.ProductionOrderId, operation.Sequence }).IsUnique();
             entity.HasIndex(
@@ -513,6 +522,12 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
                 "IX_production_order_operations_ProductionOrderId");
             entity.HasIndex(operation => operation.RoutingOperationId);
             entity.HasIndex(operation => operation.WorkCenterId);
+            entity.HasIndex(operation => operation.MachineId);
+            entity.HasIndex(
+                    operation => operation.MachineId,
+                    "IX_production_order_operations_one_in_progress_per_machine")
+                .IsUnique()
+                .HasFilter("\"Status\" = 'in_progress' AND \"MachineId\" IS NOT NULL");
             entity.HasIndex(operation => new { operation.ProductionOrderId, operation.Status });
             entity.HasIndex(
                     operation => operation.ProductionOrderId,
@@ -529,6 +544,10 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
             entity.Property(operation => operation.WorkCenterName)
                 .HasMaxLength(WorkCenterConstraints.MaximumNameLength)
                 .IsRequired();
+            entity.Property(operation => operation.MachineCode)
+                .HasMaxLength(MachineConstraints.MaximumCodeLength);
+            entity.Property(operation => operation.MachineName)
+                .HasMaxLength(MachineConstraints.MaximumNameLength);
             entity.Property(operation => operation.Description)
                 .HasMaxLength(RoutingConstraints.MaximumOperationDescriptionLength);
             entity.Property(operation => operation.Status)
@@ -545,6 +564,10 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
             entity.HasOne(operation => operation.WorkCenter)
                 .WithMany()
                 .HasForeignKey(operation => operation.WorkCenterId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(operation => operation.Machine)
+                .WithMany()
+                .HasForeignKey(operation => operation.MachineId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

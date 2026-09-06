@@ -34,9 +34,13 @@ export class ProductionOrderApiService {
     );
   }
 
-  startOperation(productionOrderId: string, operationId: string): Observable<ApiResponse<ProductionOrderOperation>> {
+  startOperation(
+    productionOrderId: string,
+    operationId: string,
+    machineId: string,
+  ): Observable<ApiResponse<ProductionOrderOperation>> {
     return this.http.post<ApiResponse<ProductionOrderOperation>>(
-      API_ROUTES.productionOrders.startOperation(productionOrderId, operationId), null,
+      API_ROUTES.productionOrders.startOperation(productionOrderId, operationId), { machineId },
     );
   }
 

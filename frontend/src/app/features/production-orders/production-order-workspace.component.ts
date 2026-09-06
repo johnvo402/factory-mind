@@ -25,6 +25,7 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
   protected readonly requirementsOpen = signal(false);
   protected readonly requirementOrder = signal<ProductionOrder | null>(null);
   protected readonly executionOrderId = signal<string | null>(null);
+  protected readonly selectedMachineIds = signal<Record<string, string>>({});
   protected readonly executionOrder = computed(() =>
     this.store.orders().find(order => order.id === this.executionOrderId()) ?? null,
   );
@@ -127,15 +128,34 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
     this.store.clearRequirements();
   }
 
-  protected openExecution(order: ProductionOrder): void { this.executionOrderId.set(order.id); }
+  protected openExecution(order: ProductionOrder): void {
+    this.executionOrderId.set(order.id);
+    const executable = order.operations.find(operation => this.canStartOperation(order, operation));
+    const firstEligible = executable ? this.eligibleMachines(executable)[0] : null;
+    this.selectedMachineIds.set(executable && firstEligible ? { [executable.id]: firstEligible.id } : {});
+  }
   protected closeExecution(): void { this.executionOrderId.set(null); }
   protected canStartOperation(order: ProductionOrder, operation: ProductionOrderOperation): boolean {
     return order.status === 'in_progress' && operation.status === 'pending' &&
       !order.operations.some(item => item.status === 'in_progress') &&
       order.operations.find(item => item.status !== 'completed')?.id === operation.id;
   }
+  protected eligibleMachines(operation: ProductionOrderOperation) {
+    return this.store.machines().filter(machine =>
+      machine.workCenterId === operation.workCenterId && machine.status === 'available');
+  }
+  protected selectedMachineId(operationId: string): string {
+    return this.selectedMachineIds()[operationId] ?? '';
+  }
+  protected selectMachine(operationId: string, event: Event): void {
+    const machineId = (event.target as HTMLSelectElement).value;
+    this.selectedMachineIds.update(selections => ({ ...selections, [operationId]: machineId }));
+  }
   protected async startOperation(order: ProductionOrder, operation: ProductionOrderOperation): Promise<void> {
-    await this.store.startOperation(order.id, operation.id);
+    const machineId = this.selectedMachineId(operation.id);
+    if (machineId) {
+      await this.store.startOperation(order.id, operation.id, machineId);
+    }
   }
   protected async completeOperation(order: ProductionOrder, operation: ProductionOrderOperation): Promise<void> {
     await this.store.completeOperation(order.id, operation.id);

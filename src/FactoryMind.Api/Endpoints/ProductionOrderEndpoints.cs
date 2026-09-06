@@ -112,10 +112,13 @@ public static class ProductionOrderEndpoints {
         group.MapPost(ApiRoutes.ProductionOrders.StartOperation, async (
             Guid productionOrderId,
             Guid operationId,
+            [FromBody] StartProductionOrderOperationRequest request,
             ISender sender,
             CancellationToken cancellationToken) => (await sender.Send(
-                new StartProductionOrderOperationCommand(productionOrderId, operationId),
-                cancellationToken)).ToHttpResult());
+                new StartProductionOrderOperationCommand(
+                    productionOrderId, operationId, request.MachineId),
+                cancellationToken)).ToHttpResult())
+            .WithRequestValidation<StartProductionOrderOperationRequest>();
 
         group.MapPost(ApiRoutes.ProductionOrders.CompleteOperation, async (
             Guid productionOrderId,

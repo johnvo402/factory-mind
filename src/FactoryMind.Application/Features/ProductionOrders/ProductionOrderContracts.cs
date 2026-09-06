@@ -60,6 +60,9 @@ public sealed record ProductionOrderOperationResponse(
     Guid WorkCenterId,
     string WorkCenterCode,
     string WorkCenterName,
+    Guid? MachineId,
+    string? MachineCode,
+    string? MachineName,
     int SetupTimeMinutes,
     int RunTimeMinutes,
     string? Description,
@@ -76,6 +79,9 @@ public sealed record ProductionOrderOperationResponse(
         operation.WorkCenterId,
         operation.WorkCenterCode,
         operation.WorkCenterName,
+        operation.MachineId,
+        operation.MachineCode,
+        operation.MachineName,
         operation.SetupTimeMinutes,
         operation.RunTimeMinutes,
         operation.Description,
@@ -134,7 +140,8 @@ public enum ProductionExecutionStatus {
     InsufficientStock,
     WarehouseUnavailable,
     MaterialUnavailable,
-    ProductUnavailable
+    ProductUnavailable,
+    MachineNotFound
 }
 
 public sealed record ProductionOperationExecutionResult(
@@ -181,6 +188,7 @@ public interface IProductionExecutionRepository {
     Task<ProductionOperationExecutionResult> TryStartOperationAsync(
         Guid productionOrderId,
         Guid operationId,
+        Guid machineId,
         Guid companyId,
         DateTime startedAt,
         CancellationToken cancellationToken);

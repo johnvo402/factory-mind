@@ -161,12 +161,14 @@ Name
 
 Status
 
+WorkCenterId?
+
 CreatedAt
 
 UpdatedAt
 ```
 
-`Machine.Code` is normalized to uppercase and unique per company. MVP statuses are `available`, `running`, `maintenance`, and `offline`.
+`Machine.Code` is normalized to uppercase and unique per company. A Machine optionally belongs to one same-tenant active Work Center; nullable `WorkCenterId` preserves legacy rows without fabricated assignments. MVP statuses are `available`, `running`, `maintenance`, and `offline`, but `running` is system-managed by ProductionOrderOperation Start/Complete and cannot be set through administrative create/update requests.
 
 ---
 
@@ -260,6 +262,10 @@ UpdatedAt
 `ProductionOrder.Number` is normalized to uppercase and unique per company. `Quantity` uses `numeric(18,3)` and must be greater than zero. Product deletion is restricted while an order references it. Statuses are `planned`, `released`, `in_progress`, legacy-readable `completed`, and `cancelled`.
 
 New orders begin Planned. Release stores the exact active `BillOfMaterialId` and `ReleasedAt`; Start records `StartedAt` only after every explicitly allocated raw-material decrement and `ProductionConsume` ledger insert succeeds in one transaction. Cancel records `CancelledAt` and is allowed only before consumption. The nullable BOM reference and timestamps preserve existing rows without inventing history, and the restrictive BOM foreign key prevents deletion of a referenced revision.
+
+Release also locks the active Routing revision and creates immutable ProductionOrderOperation snapshots. Each operation stores its required Work Center snapshot and later records nullable `MachineId`, `MachineCode`, and `MachineName` when an Available Machine from that Work Center is explicitly selected at Start. Machine claim plus operation Start commit atomically; operation Complete plus Machine release commit atomically. Filtered unique indexes enforce at most one InProgress operation per Production Order and per Machine. Legacy operation rows keep null Machine fields and legacy InProgress operations may Complete without a Machine release.
+
+Machine-to-Work-Center and operation-to-Machine foreign keys are restrictive. Once an operation references a Machine, that Machine is manufacturing history and cannot be hard deleted.
 
 ---
 

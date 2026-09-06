@@ -1,5 +1,6 @@
 using FactoryMind.Application.Common.Identity;
 using FactoryMind.Application.Features.BusinessData;
+using FactoryMind.Domain.Manufacturing;
 using FactoryMind.Shared.Contracts;
 using Mediator;
 
@@ -11,28 +12,31 @@ public sealed class UpdateMachineCommandHandler(
     public async ValueTask<Result<MachineResponse>> Handle(
         UpdateMachineCommand command,
         CancellationToken cancellationToken) {
-        var machine = await repository.GetByIdAsync(
+        var status = command.Status.Trim().ToLowerInvariant();
+        if (!MachineStatuses.Administrative.Contains(status)) {
+            return Result<MachineResponse>.Failure(MachineErrors.RunningIsSystemManaged);
+        }
+        var code = BusinessDataNormalization.Code(command.Code);
+        var result = await repository.TryUpdateAsync(
             command.MachineId,
             currentUser.CompanyId,
+            code,
+            BusinessDataNormalization.Name(command.Name),
+            status,
+            command.WorkCenterId,
+            DateTime.UtcNow,
             cancellationToken);
-        if (machine is null) {
-            return Result<MachineResponse>.Failure(MachineErrors.NotFound);
-        }
-
-        var code = BusinessDataNormalization.Code(command.Code);
-        if (await repository.CodeExistsAsync(
-                currentUser.CompanyId,
-                code,
-                machine.Id,
-                cancellationToken)) {
-            return Result<MachineResponse>.Failure(MachineErrors.CodeAlreadyExists);
-        }
-
-        machine.Code = code;
-        machine.Name = BusinessDataNormalization.Name(command.Name);
-        machine.Status = command.Status.Trim().ToLowerInvariant();
-        machine.UpdatedAt = DateTime.UtcNow;
-        await repository.SaveChangesAsync(cancellationToken);
-        return Result<MachineResponse>.Success(MachineResponse.From(machine));
+        return result.Status switch {
+            MachineUpdateStatus.Success => Result<MachineResponse>.Success(
+                MachineResponse.From(result.Machine!)),
+            MachineUpdateStatus.NotFound => Result<MachineResponse>.Failure(MachineErrors.NotFound),
+            MachineUpdateStatus.CodeAlreadyExists =>
+                Result<MachineResponse>.Failure(MachineErrors.CodeAlreadyExists),
+            MachineUpdateStatus.WorkCenterNotFound =>
+                Result<MachineResponse>.Failure(MachineErrors.WorkCenterNotFound),
+            MachineUpdateStatus.WorkCenterInactive =>
+                Result<MachineResponse>.Failure(MachineErrors.WorkCenterInactive),
+            _ => Result<MachineResponse>.Failure(MachineErrors.ActiveExecution)
+        };
     }
 }

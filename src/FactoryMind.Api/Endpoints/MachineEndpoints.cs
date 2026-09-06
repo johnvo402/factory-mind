@@ -29,7 +29,8 @@ public static class MachineEndpoints {
             ISender sender,
             CancellationToken cancellationToken) => {
                 return (await sender.Send(
-                    new CreateMachineCommand(request.Code, request.Name, request.Status),
+                    new CreateMachineCommand(
+                        request.Code, request.Name, request.Status, request.WorkCenterId),
                     cancellationToken)).ToHttpResult();
             })
             .WithRequestValidation<MachineRequest>();
@@ -40,7 +41,8 @@ public static class MachineEndpoints {
             ISender sender,
             CancellationToken cancellationToken) => {
                 return (await sender.Send(
-                    new UpdateMachineCommand(machineId, request.Code, request.Name, request.Status),
+                    new UpdateMachineCommand(
+                        machineId, request.Code, request.Name, request.Status, request.WorkCenterId),
                     cancellationToken)).ToHttpResult();
             })
             .WithRequestValidation<MachineRequest>();

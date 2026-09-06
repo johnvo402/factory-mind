@@ -87,7 +87,8 @@ public sealed class RoutingMigrationIntegrationTests(PostgreSqlFixture fixture)
             Assert.Equal(4, orders.Count);
             Assert.All(orders, order => Assert.Null(order.RoutingId));
             Assert.Empty(await dbContext.Routings.ToListAsync());
-            Assert.Empty(await dbContext.ProductionOrderOperations.ToListAsync());
+            Assert.Equal("0", await ScalarAsync(
+                dbContext, "SELECT COUNT(*)::text FROM production_order_operations;"));
         } finally {
             await migrator.MigrateAsync();
         }

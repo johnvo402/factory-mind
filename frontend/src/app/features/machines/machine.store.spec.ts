@@ -5,10 +5,12 @@ import { ApiResponse } from '../../core/api/api.models';
 import { MachineApiService } from './machine-api.service';
 import { Machine, MachineInput } from './machine.models';
 import { MachineStore } from './machine.store';
+import { WorkCenterApiService } from '../work-centers/work-center-api.service';
 
 describe('MachineStore', () => {
   let store: MachineStore;
   let api: jasmine.SpyObj<MachineApiService>;
+  let workCenterApi: jasmine.SpyObj<WorkCenterApiService>;
 
   beforeEach(() => {
     api = jasmine.createSpyObj<MachineApiService>('MachineApiService', [
@@ -17,8 +19,15 @@ describe('MachineStore', () => {
       'updateMachine',
       'deleteMachine',
     ]);
+    workCenterApi = jasmine.createSpyObj<WorkCenterApiService>('WorkCenterApiService', [
+      'getWorkCenters',
+    ]);
     TestBed.configureTestingModule({
-      providers: [MachineStore, { provide: MachineApiService, useValue: api }],
+      providers: [
+        MachineStore,
+        { provide: MachineApiService, useValue: api },
+        { provide: WorkCenterApiService, useValue: workCenterApi },
+      ],
     });
     store = TestBed.inject(MachineStore);
   });
@@ -38,6 +47,7 @@ describe('MachineStore', () => {
       code: 'M-002',
       name: 'Packing line',
       status: 'available',
+      workCenterId: null,
     };
     api.createMachine.and.returnValue(success(machine('M-002')));
     api.getMachines.and.returnValue(success([machine('M-002')]));
@@ -67,6 +77,9 @@ describe('MachineStore', () => {
       code,
       name: 'Injection molding',
       status: 'available',
+      workCenterId: null,
+      workCenterCode: null,
+      workCenterName: null,
       createdAt: '2026-08-01T00:00:00Z',
       updatedAt: '2026-08-01T00:00:00Z',
     };

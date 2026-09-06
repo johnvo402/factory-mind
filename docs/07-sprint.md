@@ -391,6 +391,22 @@ Implementation status: implemented as the execution bridge between Production Or
 
 ---
 
+## Machine assignment and operation execution increment
+
+* Optional Machine-to-Work-Center ownership preserves legacy Machines with no fabricated assignment.
+* Routing identifies the required Work Center; a user explicitly selects the physical Machine at operation Start.
+* Start atomically claims an Available Machine as Running and snapshots Machine identity/code/name into the ProductionOrderOperation.
+* Complete atomically completes the operation and releases its assigned Machine to Available.
+* PostgreSQL partial uniqueness enforces at most one InProgress operation per Machine while retaining the existing per-order constraint.
+* Running is system-managed; administrative updates expose only Available, Maintenance, and Offline.
+* Active execution blocks Machine edits and deletion; any historical operation reference permanently blocks hard deletion.
+* Legacy InProgress operations without Machine assignment may still complete without fabricated Machine history.
+* Automatic selection, capacity scheduling, calendars, telemetry, OEE, downtime, maintenance planning, labor, shifts, quality, scrap, rework, and AI scheduling remain deferred.
+
+Implementation status: implemented as the focused physical-resource execution layer on top of Work Centers and immutable ProductionOrderOperation snapshots, including PostgreSQL concurrency and compatibility coverage plus minimal Angular selectors.
+
+---
+
 # MVP Checklist
 
 ## Authentication

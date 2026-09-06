@@ -4,7 +4,12 @@ using Mediator;
 
 namespace FactoryMind.Application.Features.Machines.UpdateMachine;
 
-public sealed record UpdateMachineCommand(Guid MachineId, string Code, string Name, string Status)
+public sealed record UpdateMachineCommand(
+    Guid MachineId,
+    string Code,
+    string Name,
+    string Status,
+    Guid? WorkCenterId)
     : IRequest<Result<MachineResponse>>, IAuthorizedRequest {
     public string Policy => AuthorizationPolicies.Manager;
 }

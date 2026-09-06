@@ -353,29 +353,115 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
     public async Task<ProductionOperationExecutionResult> TryStartOperationAsync(
         Guid productionOrderId,
         Guid operationId,
+        Guid machineId,
         Guid companyId,
         DateTime startedAt,
         CancellationToken cancellationToken) {
-        var affected = await dbContext.ProductionOrderOperations
-            .Where(operation => operation.Id == operationId &&
-                operation.ProductionOrderId == productionOrderId &&
-                operation.CompanyId == companyId &&
-                operation.Status == ProductionOperationStatuses.Pending &&
-                operation.ProductionOrder!.Status == ProductionOrderStatuses.InProgress &&
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            IsolationLevel.ReadCommitted, cancellationToken);
+        var order = await dbContext.ProductionOrders
+            .FromSqlInterpolated($"""
+                SELECT * FROM production_orders
+                WHERE "Id" = {productionOrderId}
+                  AND "CompanyId" = {companyId}
+                FOR UPDATE
+                """)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        if (order is null || order.Status != ProductionOrderStatuses.InProgress) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.StateConflict, null);
+        }
+
+        var operation = await dbContext.ProductionOrderOperations
+            .FromSqlInterpolated($"""
+                SELECT * FROM production_order_operations
+                WHERE "Id" = {operationId}
+                  AND "ProductionOrderId" = {productionOrderId}
+                  AND "CompanyId" = {companyId}
+                FOR UPDATE
+                """)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        if (operation is null || operation.Status != ProductionOperationStatuses.Pending) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.StateConflict, null);
+        }
+
+        var blockedBySequence = await dbContext.ProductionOrderOperations.AsNoTracking().AnyAsync(
+            candidate => candidate.ProductionOrderId == productionOrderId &&
+                candidate.CompanyId == companyId &&
+                ((candidate.Status == ProductionOperationStatuses.InProgress) ||
+                 (candidate.Sequence < operation.Sequence &&
+                  candidate.Status != ProductionOperationStatuses.Completed)),
+            cancellationToken);
+        if (blockedBySequence) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.StateConflict, null);
+        }
+
+        var workCenterAvailable = await dbContext.WorkCenters
+            .FromSqlInterpolated($"""
+                SELECT * FROM work_centers
+                WHERE "Id" = {operation.WorkCenterId}
+                  AND "CompanyId" = {companyId}
+                  AND "IsActive" = TRUE
+                FOR SHARE
+                """)
+            .AsNoTracking()
+            .AnyAsync(cancellationToken);
+        if (!workCenterAvailable) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.RoutingWorkCenterUnavailable, null);
+        }
+
+        var machineExists = await dbContext.Machines.AsNoTracking().AnyAsync(
+            machine => machine.Id == machineId && machine.CompanyId == companyId,
+            cancellationToken);
+        if (!machineExists) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.MachineNotFound, null);
+        }
+
+        var claimedMachine = await dbContext.Machines
+            .Where(machine => machine.Id == machineId &&
+                machine.CompanyId == companyId &&
+                machine.WorkCenterId == operation.WorkCenterId &&
+                machine.Status == MachineStatuses.Available &&
                 !dbContext.ProductionOrderOperations.Any(candidate =>
-                    candidate.ProductionOrderId == productionOrderId &&
-                    candidate.Status == ProductionOperationStatuses.InProgress) &&
-                !dbContext.ProductionOrderOperations.Any(candidate =>
-                    candidate.ProductionOrderId == productionOrderId &&
-                    candidate.Sequence < operation.Sequence &&
-                    candidate.Status != ProductionOperationStatuses.Completed))
+                    candidate.CompanyId == companyId &&
+                    candidate.MachineId == machine.Id &&
+                    candidate.Status == ProductionOperationStatuses.InProgress))
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(operation => operation.Status, ProductionOperationStatuses.InProgress)
-                .SetProperty(operation => operation.StartedAt, startedAt), cancellationToken);
-        return affected == 1
-            ? new(ProductionExecutionStatus.Success, await GetOperationAsync(
-                productionOrderId, operationId, companyId, cancellationToken))
-            : new(ProductionExecutionStatus.StateConflict, null);
+                .SetProperty(machine => machine.Status, MachineStatuses.Running)
+                .SetProperty(machine => machine.UpdatedAt, startedAt), cancellationToken);
+        if (claimedMachine != 1) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.StateConflict, null);
+        }
+
+        var machineSnapshot = await dbContext.Machines.AsNoTracking().SingleAsync(
+            machine => machine.Id == machineId && machine.CompanyId == companyId,
+            cancellationToken);
+        var startedOperation = await dbContext.ProductionOrderOperations
+            .Where(candidate => candidate.Id == operationId &&
+                candidate.ProductionOrderId == productionOrderId &&
+                candidate.CompanyId == companyId &&
+                candidate.Status == ProductionOperationStatuses.Pending)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(candidate => candidate.Status, ProductionOperationStatuses.InProgress)
+                .SetProperty(candidate => candidate.MachineId, machineSnapshot.Id)
+                .SetProperty(candidate => candidate.MachineCode, machineSnapshot.Code)
+                .SetProperty(candidate => candidate.MachineName, machineSnapshot.Name)
+                .SetProperty(candidate => candidate.StartedAt, startedAt), cancellationToken);
+        if (startedOperation != 1) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.StateConflict, null);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return new(ProductionExecutionStatus.Success, await GetOperationAsync(
+            productionOrderId, operationId, companyId, cancellationToken));
     }
 
     public async Task<ProductionOperationExecutionResult> TryCompleteOperationAsync(
@@ -384,19 +470,83 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
         Guid companyId,
         DateTime completedAt,
         CancellationToken cancellationToken) {
-        var affected = await dbContext.ProductionOrderOperations
-            .Where(operation => operation.Id == operationId &&
-                operation.ProductionOrderId == productionOrderId &&
-                operation.CompanyId == companyId &&
-                operation.Status == ProductionOperationStatuses.InProgress &&
-                operation.ProductionOrder!.Status == ProductionOrderStatuses.InProgress)
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            IsolationLevel.ReadCommitted, cancellationToken);
+        var order = await dbContext.ProductionOrders
+            .FromSqlInterpolated($"""
+                SELECT * FROM production_orders
+                WHERE "Id" = {productionOrderId}
+                  AND "CompanyId" = {companyId}
+                FOR UPDATE
+                """)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        if (order is null || order.Status != ProductionOrderStatuses.InProgress) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.StateConflict, null);
+        }
+
+        var operation = await dbContext.ProductionOrderOperations
+            .FromSqlInterpolated($"""
+                SELECT * FROM production_order_operations
+                WHERE "Id" = {operationId}
+                  AND "ProductionOrderId" = {productionOrderId}
+                  AND "CompanyId" = {companyId}
+                FOR UPDATE
+                """)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        if (operation is null || operation.Status != ProductionOperationStatuses.InProgress) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.StateConflict, null);
+        }
+
+        if (operation.MachineId.HasValue) {
+            var assignedMachine = await dbContext.Machines
+                .FromSqlInterpolated($"""
+                    SELECT * FROM machines
+                    WHERE "Id" = {operation.MachineId.Value}
+                      AND "CompanyId" = {companyId}
+                    FOR UPDATE
+                    """)
+                .AsNoTracking()
+                .SingleOrDefaultAsync(cancellationToken);
+            if (assignedMachine is null || assignedMachine.Status != MachineStatuses.Running) {
+                await transaction.RollbackAsync(cancellationToken);
+                return new(ProductionExecutionStatus.StateConflict, null);
+            }
+        }
+
+        var completedOperation = await dbContext.ProductionOrderOperations
+            .Where(candidate => candidate.Id == operationId &&
+                candidate.ProductionOrderId == productionOrderId &&
+                candidate.CompanyId == companyId &&
+                candidate.Status == ProductionOperationStatuses.InProgress)
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(operation => operation.Status, ProductionOperationStatuses.Completed)
-                .SetProperty(operation => operation.CompletedAt, completedAt), cancellationToken);
-        return affected == 1
-            ? new(ProductionExecutionStatus.Success, await GetOperationAsync(
-                productionOrderId, operationId, companyId, cancellationToken))
-            : new(ProductionExecutionStatus.StateConflict, null);
+                .SetProperty(candidate => candidate.Status, ProductionOperationStatuses.Completed)
+                .SetProperty(candidate => candidate.CompletedAt, completedAt), cancellationToken);
+        if (completedOperation != 1) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.StateConflict, null);
+        }
+
+        if (operation.MachineId.HasValue) {
+            var releasedMachine = await dbContext.Machines
+                .Where(machine => machine.Id == operation.MachineId.Value &&
+                    machine.CompanyId == companyId &&
+                    machine.Status == MachineStatuses.Running)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(machine => machine.Status, MachineStatuses.Available)
+                    .SetProperty(machine => machine.UpdatedAt, completedAt), cancellationToken);
+            if (releasedMachine != 1) {
+                await transaction.RollbackAsync(cancellationToken);
+                return new(ProductionExecutionStatus.StateConflict, null);
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return new(ProductionExecutionStatus.Success, await GetOperationAsync(
+            productionOrderId, operationId, companyId, cancellationToken));
     }
 
     private Task<ProductionOrderOperation?> GetOperationAsync(

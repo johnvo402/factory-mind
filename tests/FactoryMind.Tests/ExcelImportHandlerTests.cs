@@ -100,6 +100,28 @@ public sealed class ExcelImportHandlerTests {
     }
 
     [Fact]
+    public async Task Machine_import_rejects_system_managed_running_status() {
+        var reader = new FakeWorkbookReader(new(
+            ["Code", "Name", "Status"],
+            [Row(("Code", "M-RUN"), ("Name", "Running"), ("Status", "running"))],
+            1));
+        var repository = new FakeImportRepository();
+        var handler = new ImportExcelCommandHandler(reader, repository, new FakeCurrentUser());
+
+        var result = await handler.Handle(
+            new ImportExcelCommand(
+                "machine",
+                Map(("code", "Code"), ("name", "Name"), ("status", "Status")),
+                Stream.Null),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(0, result.Value?.ImportedCount);
+        Assert.Contains(result.Value!.Errors, error => error.Field == "status");
+        Assert.Null(repository.Batch);
+    }
+
+    [Fact]
     public async Task Inventory_import_resolves_material_code_inside_the_current_company() {
         var materialId = Guid.NewGuid();
         var warehouseId = Guid.NewGuid();
