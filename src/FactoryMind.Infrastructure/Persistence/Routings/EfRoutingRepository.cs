@@ -1,6 +1,7 @@
 using FactoryMind.Application.Features.Routings;
 using FactoryMind.Domain.Manufacturing;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FactoryMind.Infrastructure.Persistence.Routings;
 
@@ -23,20 +24,43 @@ public sealed class EfRoutingRepository(FactoryMindDbContext dbContext) : IRouti
                 routing.CompanyId == companyId,
             cancellationToken);
 
-    public async Task<int> GetNextRevisionAsync(
-        Guid productId,
-        Guid companyId,
+    public async Task<RoutingCreationResult> CreateNextRevisionAsync(
+        Routing routing,
         CancellationToken cancellationToken) {
-        var revision = await dbContext.Routings
-            .Where(routing => routing.ProductId == productId && routing.CompanyId == companyId)
-            .MaxAsync(routing => (int?)routing.Revision, cancellationToken);
-        return revision.GetValueOrDefault() + 1;
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var productExists = await dbContext.Products
+            .FromSqlInterpolated($"""
+                SELECT * FROM products
+                WHERE "Id" = {routing.ProductId}
+                  AND "CompanyId" = {routing.CompanyId}
+                FOR UPDATE
+                """)
+            .AsNoTracking()
+            .AnyAsync(cancellationToken);
+        if (!productExists) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(RoutingCreationStatus.ProductNotFound, null);
+        }
+
+        var currentRevision = await dbContext.Routings
+            .Where(candidate => candidate.ProductId == routing.ProductId &&
+                candidate.CompanyId == routing.CompanyId)
+            .MaxAsync(candidate => (int?)candidate.Revision, cancellationToken);
+        routing.Revision = currentRevision.GetValueOrDefault() + 1;
+        dbContext.Routings.Add(routing);
+        try {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return new(RoutingCreationStatus.Success, routing);
+        } catch (DbUpdateException exception) when (
+            exception.InnerException is PostgresException {
+                SqlState: PostgresErrorCodes.UniqueViolation,
+                ConstraintName: "IX_routings_CompanyId_ProductId_Revision"
+            }) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(RoutingCreationStatus.RevisionConflict, null);
+        }
     }
-
-    public void Add(Routing routing) => dbContext.Routings.Add(routing);
-
-    public Task SaveChangesAsync(CancellationToken cancellationToken) =>
-        dbContext.SaveChangesAsync(cancellationToken);
 
     public async Task<Routing?> ReplaceDraftOperationsAsync(
         Routing routing,

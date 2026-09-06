@@ -90,6 +90,37 @@ public sealed class WorkCenterRoutingIntegrationTests(PostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Concurrent_routing_creation_allocates_unique_monotonic_revisions() {
+        var firstClient = CreateClient();
+        var secondClient = CreateClient();
+        await LoginAsync(firstClient, TestData.CompanyAAdminEmail);
+        await LoginAsync(secondClient, TestData.CompanyAAdminEmail);
+        var product = await CreateProductAsync(firstClient, "P-ROUTE-RACE", "Concurrent Route Product");
+        var workCenter = await CreateWorkCenterAsync(firstClient, "WC-ROUTE-RACE", "Concurrent Center", null);
+        var request = new RoutingRequest([
+            new RoutingOperationRequest(10, "Manufacture", workCenter.Id, 0, 1, null)
+        ]);
+
+        var responses = await Task.WhenAll(
+            firstClient.PostAsJsonAsync(RoutingsRoute(product.Id), request),
+            secondClient.PostAsJsonAsync(RoutingsRoute(product.Id), request));
+        try {
+            Assert.All(responses, response => Assert.Equal(HttpStatusCode.OK, response.StatusCode));
+            var routings = await Task.WhenAll(responses.Select(async response =>
+                (await response.Content.ReadFromJsonAsync<ApiResponse<RoutingResponse>>())!.Data!));
+            Assert.Equal(new[] { 1, 2 }, routings.Select(routing => routing.Revision).Order().ToArray());
+            Assert.Equal(2, routings.Select(routing => routing.Id).Distinct().Count());
+        } finally {
+            foreach (var response in responses) {
+                response.Dispose();
+            }
+        }
+
+        var persisted = await GetRoutingsAsync(firstClient, product.Id);
+        Assert.Equal(new[] { 1, 2 }, persisted.Select(routing => routing.Revision).Order().ToArray());
+    }
+
+    [Fact]
     public async Task Routing_validation_rejects_empty_duplicate_inactive_and_cross_tenant_configuration() {
         var companyAClient = CreateClient();
         var companyBClient = CreateClient();

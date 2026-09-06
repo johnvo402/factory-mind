@@ -67,6 +67,16 @@ public sealed class ProductionCompletionCommandHandlerTests {
                 Status = orderStatus,
                 StartedAt = DateTime.UtcNow
             };
+            Order.Operations.Add(new ProductionOrderOperation {
+                CompanyId = User.CompanyId,
+                ProductionOrderId = Order.Id,
+                Sequence = 10,
+                Name = "Manufacture",
+                WorkCenterId = Guid.NewGuid(),
+                WorkCenterCode = "WC-01",
+                WorkCenterName = "Work Center",
+                Status = ProductionOperationStatuses.Completed
+            });
             Execution = new FakeProductionExecutionRepository(Order);
             Products = new FakeProductRepository(Product);
             Warehouses = new FakeWarehouseRepository(Warehouse);

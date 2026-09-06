@@ -99,16 +99,19 @@ public sealed class CreateRoutingCommandHandler(
             CompanyId = currentUser.CompanyId,
             ProductId = product.Id,
             Product = product,
-            Revision = await repository.GetNextRevisionAsync(
-                product.Id, currentUser.CompanyId, cancellationToken),
             Status = RoutingStatuses.Draft,
             CreatedAt = now,
             UpdatedAt = now
         };
         routing.Operations = MapOperations(routing, command.Operations, workCenters, now);
-        repository.Add(routing);
-        await repository.SaveChangesAsync(cancellationToken);
-        return Result<RoutingResponse>.Success(RoutingResponse.From(routing));
+        var result = await repository.CreateNextRevisionAsync(routing, cancellationToken);
+        return result.Status switch {
+            RoutingCreationStatus.Success => Result<RoutingResponse>.Success(
+                RoutingResponse.From(result.Routing!)),
+            RoutingCreationStatus.ProductNotFound =>
+                Result<RoutingResponse>.Failure(ProductErrors.NotFound),
+            _ => Result<RoutingResponse>.Failure(RoutingErrors.RevisionConflict)
+        };
     }
 
     internal static async Task<Dictionary<Guid, WorkCenter>?> ResolveWorkCentersAsync(

@@ -32,7 +32,11 @@ public sealed class StartProductionOrderCommandHandler(
         if (order.BillOfMaterial is null) {
             return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.LockedBomRequired);
         }
-        if (order.RoutingId is null) {
+        // Pre-Routing orders are compatible only when both the lock and snapshot are absent.
+        var hasOperationSnapshot = order.Operations.Count != 0;
+        var isLegacyExecution = order.RoutingId is null && !hasOperationSnapshot;
+        var isRoutedExecution = order.RoutingId is not null && hasOperationSnapshot;
+        if (!isLegacyExecution && !isRoutedExecution) {
             return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.LockedRoutingRequired);
         }
         if (command.Allocations.Count == 0) {

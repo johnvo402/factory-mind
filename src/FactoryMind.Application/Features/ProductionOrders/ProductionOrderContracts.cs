@@ -129,6 +129,7 @@ public enum ProductionExecutionStatus {
     StateConflict,
     ActiveBomNotFound,
     ActiveRoutingNotFound,
+    RoutingWorkCenterUnavailable,
     OperationsIncomplete,
     InsufficientStock,
     WarehouseUnavailable,

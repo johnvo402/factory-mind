@@ -24,11 +24,15 @@ public sealed class CompleteProductionOrderCommandHandler(
         if (order is null) {
             return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.NotFound);
         }
+        // Pre-Routing orders are compatible only when both the lock and snapshot are absent.
+        var hasOperationSnapshot = order.Operations.Count != 0;
+        var isLegacyExecution = order.RoutingId is null && !hasOperationSnapshot;
+        var isRoutedExecution = order.RoutingId is not null && hasOperationSnapshot;
         if (order.Status != ProductionOrderStatuses.InProgress ||
             order.BillOfMaterialId is null ||
-            order.RoutingId is null ||
             order.StartedAt is null ||
-            order.Quantity <= 0) {
+            order.Quantity <= 0 ||
+            (!isLegacyExecution && !isRoutedExecution)) {
             return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.InvalidTransition);
         }
 

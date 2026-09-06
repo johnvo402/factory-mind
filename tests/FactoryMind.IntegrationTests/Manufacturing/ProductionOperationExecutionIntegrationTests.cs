@@ -45,6 +45,123 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
     }
 
     [Fact]
+    public async Task Release_rejects_a_routing_whose_work_center_was_deactivated_after_activation() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        var scenario = await CreateScenarioAsync(Client, "INACTIVE-RELEASE");
+        using (var deactivate = await Client.PostAsync(
+                   DeactivateWorkCenterRoute(scenario.Cutting.Id), null)) {
+            deactivate.EnsureSuccessStatusCode();
+        }
+        var order = await CreateOrderAsync(Client, "PO-INACTIVE-RELEASE", scenario.Product.Id, 1m);
+
+        using var release = await Client.PostAsync(ReleaseOrderRoute(order.Id), null);
+        Assert.Equal(HttpStatusCode.Conflict, release.StatusCode);
+        var persisted = await GetOrderAsync(Client, order.Id);
+        Assert.Equal(ProductionOrderStatuses.Planned, persisted.Status);
+        Assert.Null(persisted.BillOfMaterialId);
+        Assert.Null(persisted.RoutingId);
+        Assert.Null(persisted.ReleasedAt);
+        Assert.Empty(persisted.Operations);
+    }
+
+    [Fact]
+    public async Task Legacy_released_order_starts_and_consumes_material_once_without_fabricating_routing() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        var scenario = await CreateScenarioAsync(Client, "LEGACY-START", operationCount: 1);
+        var order = await CreateOrderAsync(Client, "PO-LEGACY-START", scenario.Product.Id, 1m);
+        await SetExecutionStateAsync(
+            order.Id, scenario.Bom.Id, null, ProductionOrderStatuses.Released, startedAt: null);
+        var request = new StartProductionOrderRequest([
+            new ProductionMaterialAllocationRequest(scenario.Material.Id, scenario.Raw.Id, 1m)
+        ]);
+
+        var started = await PostAsync<ProductionOrderResponse>(Client, StartOrderRoute(order.Id), request);
+        Assert.Equal(ProductionOrderStatuses.InProgress, started.Status);
+        Assert.NotNull(started.StartedAt);
+        Assert.Null(started.RoutingId);
+        Assert.Empty(started.Operations);
+        using (var repeatedStart = await Client.PostAsJsonAsync(StartOrderRoute(order.Id), request)) {
+            Assert.Equal(HttpStatusCode.Conflict, repeatedStart.StatusCode);
+        }
+
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        Assert.Equal(99m, (await dbContext.InventoryBalances.SingleAsync(balance =>
+            balance.MaterialId == scenario.Material.Id && balance.WarehouseId == scenario.Raw.Id)).Quantity);
+        Assert.Single(await dbContext.InventoryTransactions.Where(transaction =>
+            transaction.ReferenceId == order.Id &&
+            transaction.Type == InventoryTransactionType.ProductionConsume).ToListAsync());
+        Assert.Empty(await dbContext.ProductionOrderOperations.Where(operation =>
+            operation.ProductionOrderId == order.Id).ToListAsync());
+    }
+
+    [Fact]
+    public async Task Legacy_in_progress_order_completes_and_outputs_once_without_fabricating_routing() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        var scenario = await CreateScenarioAsync(Client, "LEGACY-COMPLETE", operationCount: 1);
+        var order = await CreateOrderAsync(Client, "PO-LEGACY-COMPLETE", scenario.Product.Id, 2m);
+        await SetExecutionStateAsync(
+            order.Id, scenario.Bom.Id, null, ProductionOrderStatuses.InProgress, DateTime.UtcNow);
+        var request = new CompleteProductionOrderRequest(scenario.Finished.Id);
+
+        var completed = await PostAsync<ProductionOrderResponse>(Client, CompleteOrderRoute(order.Id), request);
+        Assert.Equal(ProductionOrderStatuses.Completed, completed.Status);
+        Assert.NotNull(completed.CompletedAt);
+        Assert.Null(completed.RoutingId);
+        Assert.Empty(completed.Operations);
+        using (var repeatedComplete = await Client.PostAsJsonAsync(CompleteOrderRoute(order.Id), request)) {
+            Assert.Equal(HttpStatusCode.Conflict, repeatedComplete.StatusCode);
+        }
+
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        Assert.Equal(2m, (await dbContext.ProductInventoryBalances.SingleAsync(balance =>
+            balance.ProductId == scenario.Product.Id && balance.WarehouseId == scenario.Finished.Id)).Quantity);
+        Assert.Single(await dbContext.ProductInventoryTransactions.Where(transaction =>
+            transaction.ReferenceId == order.Id &&
+            transaction.Type == ProductInventoryTransactionType.ProductionOutput).ToListAsync());
+        Assert.Empty(await dbContext.ProductionOrderOperations.Where(operation =>
+            operation.ProductionOrderId == order.Id).ToListAsync());
+    }
+
+    [Fact]
+    public async Task Routed_orders_without_operation_snapshots_cannot_use_the_legacy_bypass() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        var scenario = await CreateScenarioAsync(Client, "MALFORMED-ROUTED", operationCount: 1);
+        var released = await CreateOrderAsync(Client, "PO-MALFORMED-START", scenario.Product.Id, 1m);
+        await SetExecutionStateAsync(
+            released.Id,
+            scenario.Bom.Id,
+            scenario.Routing.Id,
+            ProductionOrderStatuses.Released,
+            startedAt: null);
+        using (var start = await Client.PostAsJsonAsync(StartOrderRoute(released.Id),
+                   new StartProductionOrderRequest([
+                       new ProductionMaterialAllocationRequest(scenario.Material.Id, scenario.Raw.Id, 1m)
+                   ]))) {
+            Assert.Equal(HttpStatusCode.Conflict, start.StatusCode);
+        }
+
+        var inProgress = await CreateOrderAsync(Client, "PO-MALFORMED-COMPLETE", scenario.Product.Id, 1m);
+        await SetExecutionStateAsync(
+            inProgress.Id,
+            scenario.Bom.Id,
+            scenario.Routing.Id,
+            ProductionOrderStatuses.InProgress,
+            DateTime.UtcNow);
+        using var complete = await Client.PostAsJsonAsync(
+            CompleteOrderRoute(inProgress.Id), new CompleteProductionOrderRequest(scenario.Finished.Id));
+        Assert.Equal(HttpStatusCode.Conflict, complete.StatusCode);
+
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        Assert.Empty(await dbContext.InventoryTransactions.Where(transaction =>
+            transaction.Type == InventoryTransactionType.ProductionConsume).ToListAsync());
+        Assert.Empty(await dbContext.ProductInventoryTransactions.ToListAsync());
+        Assert.Empty(await dbContext.ProductionOrderOperations.ToListAsync());
+    }
+
+    [Fact]
     public async Task Concurrent_release_has_one_success_and_one_conflict_with_one_complete_snapshot() {
         await LoginAsync(Client, TestData.CompanyAAdminEmail);
         var scenario = await CreateScenarioAsync(Client, "RELEASE-RACE");
@@ -334,6 +451,27 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         return response!.Data!.Single(order => order.Id == orderId);
     }
 
+    private async Task SetExecutionStateAsync(
+        Guid orderId,
+        Guid billOfMaterialId,
+        Guid? routingId,
+        string status,
+        DateTime? startedAt) {
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        var changedAt = DateTime.UtcNow;
+        var affected = await dbContext.ProductionOrders
+            .Where(order => order.Id == orderId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(order => order.BillOfMaterialId, billOfMaterialId)
+                .SetProperty(order => order.RoutingId, routingId)
+                .SetProperty(order => order.Status, status)
+                .SetProperty(order => order.ReleasedAt, changedAt)
+                .SetProperty(order => order.StartedAt, startedAt)
+                .SetProperty(order => order.UpdatedAt, changedAt));
+        Assert.Equal(1, affected);
+    }
+
     private static string BomsRoute(Guid productId) => ApiRoutes.Products.Group + ApiRoutes.Products.Boms
         .Replace("{productId:guid}", productId.ToString(), StringComparison.Ordinal);
     private static string ActivateBomRoute(Guid productId, Guid bomId) => ApiRoutes.Products.Group +
@@ -349,6 +487,9 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
     private static string StartOrderRoute(Guid orderId) => OrderRoute(ApiRoutes.ProductionOrders.Start, orderId);
     private static string CompleteOrderRoute(Guid orderId) => OrderRoute(ApiRoutes.ProductionOrders.Complete, orderId);
     private static string OperationsRoute(Guid orderId) => OrderRoute(ApiRoutes.ProductionOrders.Operations, orderId);
+    private static string DeactivateWorkCenterRoute(Guid workCenterId) => ApiRoutes.WorkCenters.Group +
+        ApiRoutes.WorkCenters.Deactivate.Replace(
+            "{workCenterId:guid}", workCenterId.ToString(), StringComparison.Ordinal);
     private static string StartOperationRoute(Guid orderId, Guid operationId) =>
         OperationRoute(ApiRoutes.ProductionOrders.StartOperation, orderId, operationId);
     private static string CompleteOperationRoute(Guid orderId, Guid operationId) =>

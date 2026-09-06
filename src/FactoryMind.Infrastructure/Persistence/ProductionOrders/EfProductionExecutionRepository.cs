@@ -63,12 +63,30 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
             await transaction.RollbackAsync(cancellationToken);
             return new(ProductionExecutionStatus.ActiveRoutingNotFound, null);
         }
-        await dbContext.Entry(routing).Collection(candidate => candidate.Operations).Query()
-            .Include(operation => operation.WorkCenter)
+        await dbContext.Entry(routing).Collection(candidate => candidate.Operations)
             .LoadAsync(cancellationToken);
         if (routing.Operations.Count == 0) {
             await transaction.RollbackAsync(cancellationToken);
             return new(ProductionExecutionStatus.ActiveRoutingNotFound, null);
+        }
+
+        var workCenters = new Dictionary<Guid, WorkCenter>();
+        foreach (var workCenterId in routing.Operations.Select(operation => operation.WorkCenterId).Distinct().Order()) {
+            var workCenter = await dbContext.WorkCenters
+                .FromSqlInterpolated($"""
+                    SELECT * FROM work_centers
+                    WHERE "Id" = {workCenterId}
+                      AND "CompanyId" = {companyId}
+                      AND "IsActive" = TRUE
+                    FOR SHARE
+                    """)
+                .AsNoTracking()
+                .SingleOrDefaultAsync(cancellationToken);
+            if (workCenter is null) {
+                await transaction.RollbackAsync(cancellationToken);
+                return new(ProductionExecutionStatus.RoutingWorkCenterUnavailable, null);
+            }
+            workCenters.Add(workCenter.Id, workCenter);
         }
 
         var snapshots = routing.Operations.OrderBy(operation => operation.Sequence)
@@ -79,8 +97,8 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
                 Sequence = operation.Sequence,
                 Name = operation.Name,
                 WorkCenterId = operation.WorkCenterId,
-                WorkCenterCode = operation.WorkCenter?.Code ?? string.Empty,
-                WorkCenterName = operation.WorkCenter?.Name ?? string.Empty,
+                WorkCenterCode = workCenters[operation.WorkCenterId].Code,
+                WorkCenterName = workCenters[operation.WorkCenterId].Name,
                 SetupTimeMinutes = operation.SetupTimeMinutes,
                 RunTimeMinutes = operation.RunTimeMinutes,
                 Description = operation.Description,
@@ -114,7 +132,10 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
                 order.CompanyId == companyId &&
                 order.Status == ProductionOrderStatuses.Released &&
                 order.BillOfMaterialId != null &&
-                order.RoutingId != null)
+                ((order.RoutingId == null && !dbContext.ProductionOrderOperations.Any(operation =>
+                    operation.ProductionOrderId == order.Id && operation.CompanyId == companyId)) ||
+                 (order.RoutingId != null && dbContext.ProductionOrderOperations.Any(operation =>
+                     operation.ProductionOrderId == order.Id && operation.CompanyId == companyId))))
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(order => order.Status, ProductionOrderStatuses.InProgress)
                 .SetProperty(order => order.StartedAt, startedAt)
@@ -234,14 +255,17 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
                 order.CompanyId == companyId &&
                 order.Status == ProductionOrderStatuses.InProgress &&
                 order.BillOfMaterialId != null &&
-                order.RoutingId != null &&
                 order.StartedAt != null &&
                 order.ProductId == outputTransaction.ProductId &&
                 order.Quantity == outputTransaction.Quantity &&
-                !dbContext.ProductionOrderOperations.Any(operation =>
-                    operation.ProductionOrderId == order.Id &&
-                    operation.CompanyId == companyId &&
-                    operation.Status != ProductionOperationStatuses.Completed))
+                ((order.RoutingId == null && !dbContext.ProductionOrderOperations.Any(operation =>
+                    operation.ProductionOrderId == order.Id && operation.CompanyId == companyId)) ||
+                 (order.RoutingId != null && dbContext.ProductionOrderOperations.Any(operation =>
+                     operation.ProductionOrderId == order.Id && operation.CompanyId == companyId) &&
+                  !dbContext.ProductionOrderOperations.Any(operation =>
+                      operation.ProductionOrderId == order.Id &&
+                      operation.CompanyId == companyId &&
+                      operation.Status != ProductionOperationStatuses.Completed))))
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(order => order.Status, ProductionOrderStatuses.Completed)
                 .SetProperty(order => order.CompletedAt, completedAt)

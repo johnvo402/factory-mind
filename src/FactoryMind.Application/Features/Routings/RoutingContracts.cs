@@ -74,15 +74,21 @@ public enum RoutingActivationStatus {
 
 public sealed record RoutingActivationResult(RoutingActivationStatus Status, Routing? Routing);
 
+public enum RoutingCreationStatus {
+    Success,
+    ProductNotFound,
+    RevisionConflict
+}
+
+public sealed record RoutingCreationResult(RoutingCreationStatus Status, Routing? Routing);
+
 public interface IRoutingRepository {
     Task<IReadOnlyList<Routing>> GetByProductAsync(
         Guid productId, Guid companyId, CancellationToken cancellationToken);
     Task<Routing?> GetByIdAsync(
         Guid routingId, Guid productId, Guid companyId, CancellationToken cancellationToken);
-    Task<int> GetNextRevisionAsync(
-        Guid productId, Guid companyId, CancellationToken cancellationToken);
-    void Add(Routing routing);
-    Task SaveChangesAsync(CancellationToken cancellationToken);
+    Task<RoutingCreationResult> CreateNextRevisionAsync(
+        Routing routing, CancellationToken cancellationToken);
     Task<Routing?> ReplaceDraftOperationsAsync(
         Routing routing,
         IReadOnlyList<RoutingOperation> operations,
@@ -114,6 +120,8 @@ public static class RoutingErrors {
         "routings.work_center_not_found", "Work center was not found.", 404);
     public static readonly Error WorkCenterInactive = new(
         "routings.work_center_inactive", "Every routing operation must use an active work center.", 409);
+    public static readonly Error RevisionConflict = new(
+        "routings.revision_conflict", "The routing revision could not be allocated. Please retry.", 409);
 }
 
 public static class RoutingSpecificationValidation {

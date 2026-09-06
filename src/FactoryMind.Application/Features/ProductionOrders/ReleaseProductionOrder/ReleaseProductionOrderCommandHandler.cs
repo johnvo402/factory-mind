@@ -37,6 +37,8 @@ public sealed class ReleaseProductionOrderCommandHandler(
                 Result<ProductionOrderResponse>.Failure(BomErrors.ActiveNotFound),
             ProductionExecutionStatus.ActiveRoutingNotFound =>
                 Result<ProductionOrderResponse>.Failure(RoutingErrors.ActiveNotFound),
+            ProductionExecutionStatus.RoutingWorkCenterUnavailable =>
+                Result<ProductionOrderResponse>.Failure(RoutingErrors.WorkCenterInactive),
             _ => Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.InvalidTransition)
         };
     }
