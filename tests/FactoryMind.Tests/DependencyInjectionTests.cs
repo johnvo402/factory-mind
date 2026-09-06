@@ -3,6 +3,7 @@ using FactoryMind.Application.Features.Auth.Login;
 using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.Chat;
 using FactoryMind.Application.Features.Chat.Rag;
+using FactoryMind.Application.Features.Chat.Tools;
 using FactoryMind.Application.Features.Knowledge;
 using FactoryMind.Application.Features.Inventories;
 using FactoryMind.Application.Features.Machines;
@@ -52,6 +53,9 @@ public sealed class DependencyInjectionTests {
         Assert.Contains(services, descriptor =>
             descriptor.ServiceType == typeof(IChatContextBuilder)
             && descriptor.ImplementationType == typeof(ChatContextBuilder));
+        Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(IAiToolOrchestrator)
+            && descriptor.ImplementationType == typeof(AiToolOrchestrator));
     }
 
     [Fact]
@@ -96,6 +100,10 @@ public sealed class DependencyInjectionTests {
             descriptor.ServiceType == typeof(IProductionOrderRepository)
             && descriptor.ImplementationType == typeof(EfProductionOrderRepository));
         Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(IManufacturingToolRegistry)
+            && descriptor.ImplementationType == typeof(ManufacturingToolRegistry));
+        Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IAiToolPlanner));
+        Assert.Contains(services, descriptor =>
             descriptor.ServiceType == typeof(IDocumentProcessingQueue)
             && descriptor.ImplementationType == typeof(HangfireDocumentProcessingQueue));
         Assert.Contains(services, descriptor =>
@@ -105,6 +113,7 @@ public sealed class DependencyInjectionTests {
 
     [Theory]
     [InlineData("Gemini:ChatTimeoutSeconds", "0", "Gemini ChatTimeoutSeconds must be between 1 and 600.")]
+    [InlineData("Gemini:ToolPlanningTimeoutSeconds", "61", "Gemini ToolPlanningTimeoutSeconds must be between 1 and 60.")]
     [InlineData("Gemini:EmbeddingTimeoutSeconds", "301", "Gemini EmbeddingTimeoutSeconds must be between 1 and 300.")]
     public void Infrastructure_registration_validates_AI_timeouts(
         string key,

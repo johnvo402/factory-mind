@@ -280,8 +280,33 @@ Done.
 * No telemetry persistence migration, dashboard, collector deployment, AI tool, or write action was
   added.
 
-Next: Step 9 - bounded read-only manufacturing AI tools, with tenant-safe deterministic queries and
-grounded answers. Write actions remain deferred.
+### Step 9 - Bounded read-only manufacturing AI tools
+
+Done.
+
+* A deterministic eligibility policy invokes a separate non-streaming Gemini native function-calling
+  planner only for Business intent and explicit manufacturing Hybrid intent.
+* One planning round may request zero to three distinct calls. Canonical duplicate calls are removed,
+  the server hard limit is three, and final `StreamAsync` receives no function declarations.
+* The explicit registry contains only `get_production_order_status`, `get_machine_status`,
+  `list_machines`, `get_work_center_status`, `get_material_inventory`,
+  `get_production_order_material_readiness`, and `list_production_orders`.
+* Every tool is typed, tenant-scoped, bounded, `AsNoTracking`, and strictly validates arguments with
+  no model-supplied identity. Unknown, malformed, cross-tenant, and injection-like inputs cannot
+  escape the registered read-only surface.
+* Material readiness reuses the production requirement calculator, aggregates active-warehouse stock,
+  states reservation/scheduling limitations, and returns `not_applicable` after consumption begins.
+* Targeted tool records precede and dedupe with Business RAG, reuse contiguous `[B#]` evidence and
+  existing citation-filtered persistence, while Knowledge RAG continues to provide `[S#]`.
+* Planner failures gracefully fall back to existing RAG. Cancellation and a validated 15-second
+  planning timeout are propagated without changing the SSE/frontend contract.
+* OpenTelemetry covers plan/execution counts, duration, outcomes and finite rejection reasons without
+  logging questions, prompts, arguments, results, identifiers, tenant IDs, or other high-cardinality data.
+* Unit, real PostgreSQL integration, hybrid/evidence persistence, read-only regression, RAG evaluation,
+  frontend, release build, and production-image checks cover the milestone without a migration.
+
+Next: Step 10 - AI tool safety/evaluation and carefully bounded decision support. Unrestricted writes
+and all mutation tools remain deferred.
 
 ---
 

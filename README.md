@@ -196,6 +196,9 @@ flowchart LR
     Extract --> Embed["Gemini embeddings"]
     Embed --> Vector["PostgreSQL + pgvector"]
     Question["Câu hỏi người dùng"] --> Router["Intent router"]
+    Router --> Eligibility["Deterministic tool eligibility"]
+    Eligibility --> Planner["Gemini tool planner (one non-streaming round)"]
+    Planner --> Tools["0..3 tenant-safe read-only tools"]
     Router --> Vector
     Router --> Lexical["PostgreSQL simple FTS"]
     Router --> Business["Tenant business data"]
@@ -203,6 +206,7 @@ flowchart LR
     Lexical --> Fusion
     Fusion --> Context["Bounded RAG context builder"]
     Business --> Context
+    Tools --> Context
     Context --> Gemini["Gemini chat"]
     Gemini --> SSE["SSE answer + citations"]
 ```
@@ -212,6 +216,9 @@ flowchart LR
 FactoryMind gọi trực tiếp native Gemini REST API, không dùng OpenAI-compatible client.
 
 - Chat gọi `streamGenerateContent` với model `gemini-3.5-flash-lite` và chuyển từng token thành SSE event.
+- Với Business intent hoặc manufacturing Hybrid rõ ràng, một request `generateContent` riêng dùng
+  native Gemini function calling để chọn tối đa 3 read-only tools. Knowledge-only và ambiguous
+  `Hybrid + All` không gọi planner; final streaming request không nhận tool definitions.
 - Document chunks dùng `gemini-embedding-2` với task `RETRIEVAL_DOCUMENT`.
 - Câu hỏi tìm kiếm dùng cùng embedding model với task `RETRIEVAL_QUERY`.
 - Embedding được chuẩn hóa về 1.536 chiều và lưu trong PostgreSQL bằng pgvector.
@@ -229,9 +236,28 @@ FactoryMind gọi trực tiếp native Gemini REST API, không dùng OpenAI-comp
   và timestamps thực tế; không suy diễn lịch, trễ, bottleneck hoặc downtime khi dữ liệu không có.
 - Context được giới hạn kích thước; model được yêu cầu không bịa dữ liệu và phải nói không biết khi context không đủ.
 - Chỉ `[B#]` hoặc `[S#]` thực sự xuất hiện trong câu trả lời cuối mới được persist và trả về UI.
+- Tool evidence được ưu tiên rồi dedupe với Business RAG theo entity trước khi đánh lại số `[B#]`, nên
+  frontend, SSE và persisted `ChatBusinessEvidence` không cần contract mới.
 - Khi đổi embedding model, Manager/Admin phải chạy explicit re-index để không trộn vector từ hai model space.
 - Bộ `FactoryMind.RagEval` chạy offline trong CI, đo Recall@5, MRR, Intent/Scope Accuracy và exact
   entity/identifier hit rate, đồng thời so sánh vector-only với hybrid.
+
+Read-only manufacturing tools hỗ trợ trực tiếp các câu hỏi như:
+
+- “Máy CNC-02 đang chạy lệnh nào?”
+- “PO-001 đang ở công đoạn nào?”
+- “Kho còn bao nhiêu RM-001?”
+- “PO-001 đủ nguyên liệu để bắt đầu chưa?”
+
+Registry chỉ gồm `get_production_order_status`, `get_machine_status`, `list_machines`,
+`get_work_center_status`, `get_material_inventory`, `get_production_order_material_readiness` và
+`list_production_orders`. Server tự lấy tenant từ authenticated claims, validate schema/arguments,
+và thực thi EF Core query có `CompanyId` predicate. Material readiness là snapshot độc lập của một
+order dựa trên stock hiện tại; nó không phải reservation, lịch sản xuất hay cam kết có thể bắt đầu
+trong tương lai.
+
+AI tools không thể đổi Machine status, start/complete order hoặc operation, assign Machine, thay đổi
+inventory, activate BOM/Routing, tạo record hay xóa dữ liệu. Yêu cầu hành động vẫn không gây mutation.
 
 SSE stream có các event semantic sau:
 
@@ -417,6 +443,7 @@ docker compose version
 | `GEMINI_API_KEY` | Gemini chat và embedding credential | Không có | Có |
 | `Gemini__BaseUrl` | Native Gemini API base URL | Google Generative Language API | Không |
 | `Gemini__ChatModel` | Model sinh câu trả lời | `gemini-3.5-flash-lite` | Không |
+| `Gemini__ToolPlanningTimeoutSeconds` | Timeout cho một vòng chọn read-only tools | `15` | Không |
 | `Gemini__EmbeddingModel` | Model tạo vector | `gemini-embedding-2` | Không |
 | `Jwt__Key` / `JWT_KEY` | Ký access token | Development key chỉ dành local | Có |
 | `BootstrapAdmin__*` / `BOOTSTRAP_*` | Tạo Company/Admin đầu tiên khi production DB trống | Không dùng trong Development | Có |
@@ -644,7 +671,7 @@ Observability__Otlp__Endpoint=http://localhost:4317
 Khi bật OTLP, endpoint phải là URI HTTP(S) tuyệt đối; cấu hình sai sẽ fail startup. Resource metadata
 gồm service name, assembly version và deployment environment. Các nhóm telemetry chính gồm HTTP,
 Gemini request/retry/timeout/token usage, chat response headers/time-to-first-token/stream, embedding,
-Knowledge RAG vector/lexical/rank, Business RAG và document processing. Metric dimensions chỉ dùng
+bounded tool plan/execution, Knowledge RAG vector/lexical/rank, Business RAG và document processing. Metric dimensions chỉ dùng
 giá trị cardinality thấp; question, prompt, evidence, content, vector, secrets và tenant/entity IDs không
 được ghi vào metrics.
 

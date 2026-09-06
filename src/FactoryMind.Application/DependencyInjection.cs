@@ -4,6 +4,7 @@ using FactoryMind.Application.Features.Auth.Login;
 using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.Chat;
 using FactoryMind.Application.Features.Chat.Rag;
+using FactoryMind.Application.Features.Chat.Tools;
 using FactoryMind.Application.Features.Knowledge;
 using FluentValidation;
 using Mediator;
@@ -24,6 +25,7 @@ public static class DependencyInjection {
         services.AddScoped<IIntentRouter, IntentRouter>();
         services.AddScoped<IBusinessContextBuilder, BusinessContextBuilder>();
         services.AddScoped<IChatContextBuilder, ChatContextBuilder>();
+        services.AddScoped<IAiToolOrchestrator, AiToolOrchestrator>();
 
         return services;
     }

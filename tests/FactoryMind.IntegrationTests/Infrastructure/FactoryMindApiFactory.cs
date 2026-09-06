@@ -32,10 +32,12 @@ public sealed class FactoryMindApiFactory(string connectionString) : WebApplicat
         });
         builder.ConfigureTestServices(services => {
             services.RemoveAll<IChatCompletionClient>();
+            services.RemoveAll<IAiToolPlanner>();
             services.RemoveAll<IEmbeddingClient>();
             services.RemoveAll<IFileStorage>();
             services.RemoveAll<IDocumentProcessingQueue>();
             services.AddSingleton<IChatCompletionClient, TestChatCompletionClient>();
+            services.AddSingleton<IAiToolPlanner, ZeroToolPlanner>();
             services.AddSingleton<IEmbeddingClient, TestEmbeddingClient>();
             services.AddSingleton<IFileStorage, TestFileStorage>();
             services.AddSingleton<IDocumentProcessingQueue, TestDocumentProcessingQueue>();
@@ -50,6 +52,14 @@ public sealed class FactoryMindApiFactory(string connectionString) : WebApplicat
             await Task.Yield();
             yield return "Deterministic integration test response.";
         }
+    }
+
+    private sealed class ZeroToolPlanner : IAiToolPlanner {
+        public Task<AiToolPlan> PlanAsync(
+            IReadOnlyList<ChatPromptMessage> messages,
+            IReadOnlyList<AiToolDefinition> tools,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(new AiToolPlan([]));
     }
 
     private sealed class TestEmbeddingClient : IEmbeddingClient {

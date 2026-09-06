@@ -57,7 +57,12 @@ public sealed class ChatCommandHandlerTests {
             Evidence = [evidence]
         };
         var chatClient = new FakeChatCompletionClient("Available now", " [B1] [S1].");
-        var handler = new SendMessageCommandHandler(repository, chatClient, contextBuilder, currentUser);
+        var handler = new SendMessageCommandHandler(
+            repository,
+            chatClient,
+            contextBuilder,
+            new FakeAiToolOrchestrator(),
+            currentUser);
 
         var result = await handler.Handle(
             new SendMessageCommand(conversation.Id, "  Which machine is available?  "),
@@ -102,7 +107,12 @@ public sealed class ChatCommandHandlerTests {
         var repository = new FakeConversationRepository();
         var chatClient = new FakeChatCompletionClient("unused");
         var contextBuilder = new FakeChatContextBuilder();
-        var handler = new SendMessageCommandHandler(repository, chatClient, contextBuilder, currentUser);
+        var handler = new SendMessageCommandHandler(
+            repository,
+            chatClient,
+            contextBuilder,
+            new FakeAiToolOrchestrator(),
+            currentUser);
         var conversationId = Guid.NewGuid();
 
         var result = await handler.Handle(
@@ -196,6 +206,7 @@ public sealed class ChatCommandHandlerTests {
             repository,
             chatClient,
             new FakeChatContextBuilder(),
+            new FakeAiToolOrchestrator(),
             currentUser);
 
         var result = await handler.Handle(
@@ -214,6 +225,15 @@ public sealed class ChatCommandHandlerTests {
         public Guid UserId { get; } = Guid.NewGuid();
         public Guid CompanyId { get; } = Guid.NewGuid();
         public string Role => "User";
+    }
+
+    private sealed class FakeAiToolOrchestrator : IAiToolOrchestrator {
+        public Task<IReadOnlyList<BusinessDataRecord>> CollectAsync(
+            Guid companyId,
+            string question,
+            IReadOnlyList<ChatPromptMessage> recentMessages,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<BusinessDataRecord>>([]);
     }
 
     private sealed class FakeChatCompletionClient(params string[] tokens) : IChatCompletionClient {

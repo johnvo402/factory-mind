@@ -9,6 +9,7 @@ public sealed class GeminiSettings {
     public string EmbeddingModel { get; set; } = "gemini-embedding-2";
     public int MaximumOutputTokens { get; set; } = 2_048;
     public int ChatTimeoutSeconds { get; set; } = 120;
+    public int ToolPlanningTimeoutSeconds { get; set; } = 15;
     public int EmbeddingTimeoutSeconds { get; set; } = 30;
     public string SystemPrompt { get; set; } =
         "You are FactoryMind AI. Answer only manufacturing-related questions. "

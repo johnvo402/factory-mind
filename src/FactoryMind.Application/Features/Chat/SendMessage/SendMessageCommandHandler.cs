@@ -12,6 +12,7 @@ public sealed class SendMessageCommandHandler(
     IConversationRepository repository,
     IChatCompletionClient chatClient,
     IChatContextBuilder contextBuilder,
+    IAiToolOrchestrator toolOrchestrator,
     ICurrentUser currentUser) : IRequestHandler<SendMessageCommand, Result<ChatStream>> {
     public async ValueTask<Result<ChatStream>> Handle(
         SendMessageCommand command,
@@ -31,9 +32,19 @@ public sealed class SendMessageCommandHandler(
             currentUser.UserId,
             cancellationToken);
         var content = command.Content.Trim();
+        var history = existingMessages
+            .TakeLast(KnowledgeContextBuilder.MaximumHistoryMessages)
+            .Select(message => new ChatPromptMessage(message.Role, message.Content))
+            .ToList();
+        var toolRecords = await toolOrchestrator.CollectAsync(
+            currentUser.CompanyId,
+            content,
+            history,
+            cancellationToken);
         var chatContext = await contextBuilder.BuildAsync(
             currentUser.CompanyId,
             content,
+            toolRecords,
             cancellationToken);
         var now = DateTime.UtcNow;
 
@@ -53,9 +64,7 @@ public sealed class SendMessageCommandHandler(
         var prompt = new List<ChatPromptMessage> {
             new(ChatRoles.System, chatContext.Prompt)
         };
-        prompt.AddRange(existingMessages
-            .TakeLast(KnowledgeContextBuilder.MaximumHistoryMessages)
-            .Select(message => new ChatPromptMessage(message.Role, message.Content)));
+        prompt.AddRange(history);
         prompt.Add(new ChatPromptMessage(ChatRoles.User, content));
 
         var updates = StreamAndPersistAsync(

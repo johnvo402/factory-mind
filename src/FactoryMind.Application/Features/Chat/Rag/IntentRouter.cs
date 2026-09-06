@@ -88,7 +88,7 @@ public sealed class IntentRouter : IIntentRouter {
             return new IntentRoute(ChatIntent.Business, scopes, machineStatus, productionOrderStatus);
         }
 
-        return new IntentRoute(ChatIntent.Hybrid, BusinessDataScope.All);
+        return new IntentRoute(ChatIntent.Hybrid, BusinessDataScope.All, IsFallback: true);
     }
 
     private static bool ContainsKeyword(string text, IReadOnlySet<string> words, string keyword) =>

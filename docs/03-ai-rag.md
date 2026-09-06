@@ -176,6 +176,32 @@ Chat now uses the same retrieval path to build a compact knowledge context. The 
 
 Sprint 5 routes chat questions to exactly one of `Business`, `Knowledge`, or `Hybrid`. The deterministic router normalizes Vietnamese text and uses documented manufacturing keywords; an ambiguous question falls back to `Hybrid` so classification does not require another LLM call. Business retrieval reads only small tenant-scoped projections from PostgreSQL, while Knowledge retrieval continues to use pgvector.
 
+Step 9 adds a bounded two-phase path for live manufacturing questions. Business intent and explicit
+manufacturing Hybrid intent may make one non-streaming native Gemini function-calling request. The
+planner can select zero to three calls from seven registered read-only tools; it never writes the final
+answer. The server rejects unknown names, unexpected properties (including model-supplied tenant
+identity), malformed values, invalid enums and unbounded limits, then injects authenticated
+`CompanyId` into typed EF Core queries.
+
+Tool results become priority `BusinessDataRecord` values, dedupe with normal Business RAG, and retain
+the existing `[B#]` persistence/rendering path. Knowledge RAG still contributes `[S#]`. The second
+phase is the existing Gemini stream with no tool definitions, so function calls cannot recurse or
+appear during SSE output. Planner failure or a zero-call plan falls back to the pre-Step-9 RAG path.
+
+The approved tools are:
+
+* `get_production_order_status`
+* `get_machine_status`
+* `list_machines`
+* `get_work_center_status`
+* `get_material_inventory`
+* `get_production_order_material_readiness`
+* `list_production_orders`
+
+There is no SQL/query tool and no mutation tool. Material readiness is a current, standalone stock
+comparison for one Planned/Released order, not a reservation or scheduling guarantee; it is explicitly
+not applicable once the order is InProgress, Completed or Cancelled.
+
 Business records are labeled `[B1]`, `[B2]`, and so on. Hybrid context merges these records with `[S#]` document sources under one system instruction. Only labels referenced by the final answer are returned and persisted as immutable evidence snapshots.
 
 ---

@@ -35,6 +35,7 @@ public sealed class HybridRagTests {
 
         Assert.Equal(ChatIntent.Hybrid, route.Intent);
         Assert.Equal(BusinessDataScope.All, route.BusinessScopes);
+        Assert.True(route.IsFallback);
     }
 
     [Fact]
@@ -63,6 +64,33 @@ public sealed class HybridRagTests {
         Assert.Equal(BusinessDataScope.Machines, repository.Scopes);
         Assert.Equal("available", repository.MachineStatus);
         Assert.Equal(BusinessContextBuilder.LimitPerScope, repository.LimitPerScope);
+    }
+
+    [Fact]
+    public async Task Business_context_builder_prioritizes_tool_records_and_deduplicates_without_label_gaps() {
+        var machineId = Guid.NewGuid();
+        var otherId = Guid.NewGuid();
+        var repository = new FakeBusinessContextRepository([
+            new BusinessDataRecord(machineId, "machine", "CNC-02", "generic status"),
+            new BusinessDataRecord(otherId, "machine", "CNC-03", "available")
+        ]);
+        var builder = new BusinessContextBuilder(repository);
+
+        var context = await builder.BuildAsync(
+            Guid.NewGuid(),
+            "CNC-02",
+            new IntentRoute(ChatIntent.Business, BusinessDataScope.Machines),
+            [new BusinessDataRecord(machineId, "machine", "CNC-02", "targeted current PO PO-001")],
+            CancellationToken.None);
+
+        Assert.Equal(2, context.Evidence.Count);
+        Assert.Equal(machineId, context.Evidence[0].EntityId);
+        Assert.Equal("targeted current PO PO-001", context.Evidence[0].Detail);
+        Assert.Equal(otherId, context.Evidence[1].EntityId);
+        Assert.Contains("[B1]", context.Prompt);
+        Assert.Contains("[B2]", context.Prompt);
+        Assert.DoesNotContain("[B3]", context.Prompt);
+        Assert.DoesNotContain("generic status", context.Prompt);
     }
 
     [Fact]

@@ -87,6 +87,14 @@ public static class DependencyInjection {
         services.AddScoped<IProductionOrderRepository, EfProductionOrderRepository>();
         services.AddScoped<IProductionExecutionRepository, EfProductionExecutionRepository>();
         services.AddScoped<ISettingsRepository, EfSettingsRepository>();
+        services.AddScoped<GetProductionOrderStatusTool>();
+        services.AddScoped<GetMachineStatusTool>();
+        services.AddScoped<ListMachinesTool>();
+        services.AddScoped<GetWorkCenterStatusTool>();
+        services.AddScoped<GetMaterialInventoryTool>();
+        services.AddScoped<GetProductionOrderMaterialReadinessTool>();
+        services.AddScoped<ListProductionOrdersTool>();
+        services.AddScoped<IManufacturingToolRegistry, ManufacturingToolRegistry>();
         services.AddSingleton<IAiSettingsReader, GeminiSettingsReader>();
         services.AddScoped<DocumentProcessingJob>();
         services.AddSingleton<IDocumentProcessingQueue, HangfireDocumentProcessingQueue>();
@@ -99,6 +107,9 @@ public static class DependencyInjection {
                 settings => settings.ChatTimeoutSeconds is > 0 and <= 600,
                 "Gemini ChatTimeoutSeconds must be between 1 and 600.")
             .Validate(
+                settings => settings.ToolPlanningTimeoutSeconds is > 0 and <= 60,
+                "Gemini ToolPlanningTimeoutSeconds must be between 1 and 60.")
+            .Validate(
                 settings => settings.EmbeddingTimeoutSeconds is > 0 and <= 300,
                 "Gemini EmbeddingTimeoutSeconds must be between 1 and 300.")
             .ValidateOnStart();
@@ -108,6 +119,7 @@ public static class DependencyInjection {
             }
         });
         services.AddHttpClient<IChatCompletionClient, GeminiChatCompletionClient>();
+        services.AddHttpClient<IAiToolPlanner, GeminiAiToolPlanner>();
         services.AddHttpClient<IEmbeddingClient, GeminiEmbeddingClient>();
         services.Configure<MinioSettings>(configuration.GetSection(MinioSettings.SectionName));
         services.AddSingleton<IFileStorage, MinioFileStorage>();

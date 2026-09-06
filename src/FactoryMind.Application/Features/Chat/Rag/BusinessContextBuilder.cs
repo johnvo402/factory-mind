@@ -19,6 +19,14 @@ public sealed class BusinessContextBuilder(
         Guid companyId,
         string question,
         IntentRoute route,
+        CancellationToken cancellationToken) =>
+        await BuildAsync(companyId, question, route, [], cancellationToken);
+
+    public async Task<BusinessContext> BuildAsync(
+        Guid companyId,
+        string question,
+        IntentRoute route,
+        IReadOnlyList<BusinessDataRecord> priorityRecords,
         CancellationToken cancellationToken) {
         var startedTimestamp = Stopwatch.GetTimestamp();
         var outcome = "success";
@@ -32,7 +40,7 @@ public sealed class BusinessContextBuilder(
         activity?.SetTag("factorymind.chat.intent", intent);
         activity?.SetTag("factorymind.rag.business.scope_count", scopeCount);
         try {
-            var records = await repository.RetrieveAsync(
+            var retrievedRecords = await repository.RetrieveAsync(
                 companyId,
                 question,
                 route.BusinessScopes,
@@ -40,8 +48,13 @@ public sealed class BusinessContextBuilder(
                 route.ProductionOrderStatus,
                 LimitPerScope,
                 cancellationToken);
+            var records = priorityRecords
+                .Concat(retrievedRecords)
+                .DistinctBy(
+                    record => (record.EntityType.ToLowerInvariant(), record.EntityId))
+                .ToList();
             FactoryMindTelemetry.BusinessRagCandidates.Record(
-                records.Count,
+                retrievedRecords.Count,
                 FactoryMindTelemetry.Tags(("intent", intent)));
             activity?.SetTag("factorymind.rag.business.candidate_count", records.Count);
             if (records.Count == 0) {

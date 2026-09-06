@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FactoryMind.Domain.Chat;
 using FactoryMind.Shared.Contracts;
 
@@ -85,7 +86,8 @@ public sealed record IntentRoute(
     ChatIntent Intent,
     BusinessDataScope BusinessScopes,
     string? MachineStatus = null,
-    string? ProductionOrderStatus = null);
+    string? ProductionOrderStatus = null,
+    bool IsFallback = false);
 
 public sealed record BusinessDataRecord(
     Guid EntityId,
@@ -121,12 +123,80 @@ public interface IBusinessContextBuilder {
         string question,
         IntentRoute route,
         CancellationToken cancellationToken);
+
+    Task<BusinessContext> BuildAsync(
+        Guid companyId,
+        string question,
+        IntentRoute route,
+        IReadOnlyList<BusinessDataRecord> priorityRecords,
+        CancellationToken cancellationToken) =>
+        BuildAsync(companyId, question, route, cancellationToken);
 }
 
 public interface IChatContextBuilder {
     Task<ChatContext> BuildAsync(
         Guid companyId,
         string question,
+        CancellationToken cancellationToken);
+
+    Task<ChatContext> BuildAsync(
+        Guid companyId,
+        string question,
+        IReadOnlyList<BusinessDataRecord> priorityRecords,
+        CancellationToken cancellationToken) =>
+        BuildAsync(companyId, question, cancellationToken);
+}
+
+public sealed record AiToolDefinition(string Name, string Description, JsonElement Parameters);
+
+public sealed record AiToolCall(string Name, JsonElement Arguments);
+
+public sealed record AiToolPlan(IReadOnlyList<AiToolCall> Calls);
+
+public interface IAiToolPlanner {
+    Task<AiToolPlan> PlanAsync(
+        IReadOnlyList<ChatPromptMessage> messages,
+        IReadOnlyList<AiToolDefinition> tools,
+        CancellationToken cancellationToken);
+}
+
+public static class ToolExecutionStatuses {
+    public const string Success = "success";
+    public const string NotFound = "not_found";
+    public const string InvalidArguments = "invalid_arguments";
+    public const string NotApplicable = "not_applicable";
+    public const string Error = "error";
+    public const string UnknownTool = "unknown_tool";
+}
+
+public sealed record ToolExecutionResult(
+    string Status,
+    IReadOnlyList<BusinessDataRecord> Records,
+    string? ErrorCode = null);
+
+public interface IManufacturingReadTool {
+    AiToolDefinition Definition { get; }
+
+    Task<ToolExecutionResult> ExecuteAsync(
+        Guid companyId,
+        JsonElement arguments,
+        CancellationToken cancellationToken);
+}
+
+public interface IManufacturingToolRegistry {
+    IReadOnlyList<AiToolDefinition> Definitions { get; }
+
+    Task<ToolExecutionResult> ExecuteAsync(
+        Guid companyId,
+        AiToolCall call,
+        CancellationToken cancellationToken);
+}
+
+public interface IAiToolOrchestrator {
+    Task<IReadOnlyList<BusinessDataRecord>> CollectAsync(
+        Guid companyId,
+        string question,
+        IReadOnlyList<ChatPromptMessage> recentMessages,
         CancellationToken cancellationToken);
 }
 

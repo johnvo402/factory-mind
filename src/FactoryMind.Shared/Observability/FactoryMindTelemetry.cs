@@ -47,6 +47,23 @@ public static class FactoryMindTelemetry {
     public static readonly Histogram<long> AiEmbeddingBatchSize = Meter.CreateHistogram<long>(
         "factorymind.ai.embedding.batch_size",
         description: "Inputs per embedding request.");
+    public static readonly Counter<long> AiToolPlans = Meter.CreateCounter<long>(
+        "factorymind.ai.tool.plans",
+        description: "AI tool planning requests by outcome.");
+    public static readonly Histogram<double> AiToolPlanDuration = Meter.CreateHistogram<double>(
+        "factorymind.ai.tool.plan.duration",
+        unit: "ms",
+        description: "AI tool planning duration.");
+    public static readonly Counter<long> AiToolCalls = Meter.CreateCounter<long>(
+        "factorymind.ai.tool.calls",
+        description: "Bounded read-only tool calls by registered tool and outcome.");
+    public static readonly Histogram<double> AiToolDuration = Meter.CreateHistogram<double>(
+        "factorymind.ai.tool.duration",
+        unit: "ms",
+        description: "Read-only manufacturing tool duration.");
+    public static readonly Counter<long> AiToolRejected = Meter.CreateCounter<long>(
+        "factorymind.ai.tool.rejected",
+        description: "Rejected AI tool calls by finite reason.");
 
     public static readonly Counter<long> RagRequests = Meter.CreateCounter<long>(
         "factorymind.rag.requests",
