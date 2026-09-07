@@ -750,7 +750,7 @@ docker compose --env-file .env.production -f compose.prod.yaml up -d --no-build 
 docker compose --env-file .env.production -f compose.prod.yaml ps
 ```
 
-Production Compose không chứa `build:` cho API/frontend và hard-code `ASPNETCORE_ENVIRONMENT=Production`. Production topology chỉ publish cổng Nginx frontend. Nginx phục vụ Angular và reverse proxy `/api` tới API private; PostgreSQL và MinIO chỉ nằm trong internal network.
+Production Compose không chứa `build:` cho API/frontend, đặt `pull_policy: always` để mỗi lần `up` đều kiểm tra release `prod` mới nhất, và hard-code `ASPNETCORE_ENVIRONMENT=Production`. Production topology chỉ publish cổng Nginx frontend. Nginx phục vụ Angular và reverse proxy `/api` tới API private; PostgreSQL và MinIO chỉ nằm trong internal network.
 
 Để rollback, tạm đổi `IMAGE_TAG` từ `prod` sang full commit SHA tốt trước đó, chạy lại `pull api frontend`, rồi `up -d --no-build --wait`. Đổi lại `prod` ở lần deploy tiếp theo để tiếp tục lấy release mới nhất đã vượt qua CI.
 
