@@ -733,7 +733,7 @@ Cấu hình tối thiểu trong `.env.production`:
 - `JWT_KEY` mạnh, tối thiểu 32 ký tự và không dùng development key
 - `GEMINI_API_KEY`
 - `BOOTSTRAP_COMPANY_NAME`, `BOOTSTRAP_ADMIN_NAME`, `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` khi database còn trống
-- `IMAGE_TAG` là full 40-character commit SHA đã được job `Production images` publish lên GHCR
+- `IMAGE_TAG=prod` dùng con trỏ release mới nhất đã vượt qua CI trên `main`; có thể thay bằng full 40-character commit SHA khi cần ghim phiên bản hoặc rollback
 
 Nếu GHCR package không public, đăng nhập registry bằng token chỉ có quyền `read:packages`:
 
@@ -752,14 +752,14 @@ docker compose --env-file .env.production -f compose.prod.yaml ps
 
 Production Compose không chứa `build:` cho API/frontend và hard-code `ASPNETCORE_ENVIRONMENT=Production`. Production topology chỉ publish cổng Nginx frontend. Nginx phục vụ Angular và reverse proxy `/api` tới API private; PostgreSQL và MinIO chỉ nằm trong internal network.
 
-Để rollback, đổi `IMAGE_TAG` sang full commit SHA tốt trước đó, chạy lại `pull api frontend`, rồi `up -d --no-build --wait`. Tag `prod` vẫn được CI publish như con trỏ release mới nhất, nhưng deployment thông thường luôn ghim commit SHA để có thể audit và rollback chính xác.
+Để rollback, tạm đổi `IMAGE_TAG` từ `prod` sang full commit SHA tốt trước đó, chạy lại `pull api frontend`, rồi `up -d --no-build --wait`. Đổi lại `prod` ở lần deploy tiếp theo để tiếp tục lấy release mới nhất đã vượt qua CI.
 
 Sau lần khởi tạo database đầu tiên, xóa các biến `BOOTSTRAP_*` khỏi deployment environment. API không đọc lại bootstrap credentials khi Company và User đã tồn tại.
 
 Trước mỗi lần nâng cấp:
 
 - Sao lưu PostgreSQL và MinIO volumes.
-- Chọn image tag bất biến theo full commit SHA thay vì dùng tag di động `prod`.
+- Xác nhận tag `prod` đang trỏ tới run CI mong muốn; ghi lại full commit SHA để có thể rollback.
 - Xác nhận health checks trước khi chuyển traffic.
 - Chuẩn bị rollback image và người chịu trách nhiệm rollback.
 
