@@ -15,10 +15,69 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
             order => order.Id == productionOrderId && order.CompanyId == companyId,
             cancellationToken);
 
+    public async Task<ProductionOrderReleaseSnapshot?> GetReleaseSnapshotByNumberAsync(
+        string number,
+        Guid companyId,
+        CancellationToken cancellationToken) {
+        var order = await dbContext.ProductionOrders.AsNoTracking()
+            .Where(candidate => candidate.CompanyId == companyId && candidate.Number == number)
+            .Select(candidate => new {
+                candidate.Id,
+                candidate.Number,
+                candidate.Status,
+                candidate.ProductId,
+                ProductCode = candidate.Product!.Code,
+                ProductName = candidate.Product.Name,
+                candidate.Quantity
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (order is null) {
+            return null;
+        }
+
+        var bom = await dbContext.BillOfMaterials.AsNoTracking()
+            .Where(candidate => candidate.CompanyId == companyId
+                && candidate.ProductId == order.ProductId
+                && candidate.Status == BillOfMaterialStatuses.Active)
+            .Select(candidate => new { candidate.Id, candidate.Revision })
+            .SingleOrDefaultAsync(cancellationToken);
+        var routing = await dbContext.Routings.AsNoTracking()
+            .Where(candidate => candidate.CompanyId == companyId
+                && candidate.ProductId == order.ProductId
+                && candidate.Status == RoutingStatuses.Active)
+            .Select(candidate => new { candidate.Id, candidate.Revision })
+            .SingleOrDefaultAsync(cancellationToken);
+        var hasOperations = routing is not null && await dbContext.RoutingOperations.AsNoTracking()
+            .AnyAsync(operation => operation.RoutingId == routing.Id, cancellationToken);
+        var workCentersAvailable = routing is not null && hasOperations
+            && !await dbContext.RoutingOperations.AsNoTracking()
+                .Where(operation => operation.RoutingId == routing.Id)
+                .AnyAsync(operation => !dbContext.WorkCenters.Any(workCenter =>
+                    workCenter.Id == operation.WorkCenterId
+                    && workCenter.CompanyId == companyId
+                    && workCenter.IsActive), cancellationToken);
+
+        return new ProductionOrderReleaseSnapshot(
+            order.Id,
+            order.Number,
+            order.Status,
+            order.ProductId,
+            order.ProductCode,
+            order.ProductName,
+            order.Quantity,
+            bom?.Id,
+            bom?.Revision,
+            routing?.Id,
+            routing?.Revision,
+            hasOperations,
+            workCentersAvailable);
+    }
+
     public async Task<ProductionExecutionResult> TryReleaseAsync(
         Guid productionOrderId,
         Guid companyId,
         DateTime releasedAt,
+        ProductionOrderReleaseExpectation? expectation,
         CancellationToken cancellationToken) {
         await using var transaction = await dbContext.Database.BeginTransactionAsync(
             IsolationLevel.ReadCommitted, cancellationToken);
@@ -33,6 +92,15 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
         if (order is null || order.Status != ProductionOrderStatuses.Planned) {
             await transaction.RollbackAsync(cancellationToken);
             return new(ProductionExecutionStatus.StateConflict, null);
+        }
+
+        if (expectation is not null
+            && (order.Number != expectation.Number
+                || order.Status != expectation.Status
+                || order.ProductId != expectation.ProductId
+                || order.Quantity != expectation.Quantity)) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.SnapshotStale, null);
         }
 
         var bom = await dbContext.BillOfMaterials
@@ -50,6 +118,11 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
             return new(ProductionExecutionStatus.ActiveBomNotFound, null);
         }
 
+        if (expectation is not null && bom.Id != expectation.ActiveBillOfMaterialId) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.SnapshotStale, null);
+        }
+
         var routing = await dbContext.Routings
             .FromSqlInterpolated($"""
                 SELECT * FROM routings
@@ -62,6 +135,10 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
         if (routing is null) {
             await transaction.RollbackAsync(cancellationToken);
             return new(ProductionExecutionStatus.ActiveRoutingNotFound, null);
+        }
+        if (expectation is not null && routing.Id != expectation.ActiveRoutingId) {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(ProductionExecutionStatus.SnapshotStale, null);
         }
         await dbContext.Entry(routing).Collection(candidate => candidate.Operations)
             .LoadAsync(cancellationToken);

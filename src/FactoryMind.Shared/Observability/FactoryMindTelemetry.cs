@@ -73,6 +73,19 @@ public static class FactoryMindTelemetry {
     public static readonly Counter<long> AiToolPlanCallsRejected = Meter.CreateCounter<long>(
         "factorymind.ai.tool.plan.calls_rejected",
         description: "Planner calls rejected by finite safety outcome.");
+    public static readonly Counter<long> AiActionProposals = Meter.CreateCounter<long>(
+        "factorymind.ai.action.proposals",
+        description: "AI action proposals by finite action, outcome, and reason.");
+    public static readonly Counter<long> AiActionConfirmations = Meter.CreateCounter<long>(
+        "factorymind.ai.action.confirmations",
+        description: "Explicit AI action confirmation attempts.");
+    public static readonly Counter<long> AiActionExecutions = Meter.CreateCounter<long>(
+        "factorymind.ai.action.executions",
+        description: "Confirmed AI action execution outcomes.");
+    public static readonly Histogram<double> AiActionDuration = Meter.CreateHistogram<double>(
+        "factorymind.ai.action.duration",
+        unit: "ms",
+        description: "AI action confirmation duration.");
 
     public static readonly Counter<long> RagRequests = Meter.CreateCounter<long>(
         "factorymind.rag.requests",

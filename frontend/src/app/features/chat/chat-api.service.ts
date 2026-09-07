@@ -6,6 +6,7 @@ import { API_ROUTES } from '../../core/api/api.routes';
 import { BROWSER_FETCH } from '../../core/api/browser-fetch.token';
 import { AuthService } from '../../core/auth/auth.service';
 import {
+  AiActionProposal,
   ChatBusinessEvidence,
   ChatCitation,
   ChatMessage,
@@ -33,6 +34,24 @@ export class ChatApiService {
   getMessages(conversationId: string): Observable<ApiResponse<ChatMessage[]>> {
     return this.http.get<ApiResponse<ChatMessage[]>>(
       API_ROUTES.conversations.messages(conversationId),
+    );
+  }
+
+  getActionProposals(conversationId: string): Observable<ApiResponse<AiActionProposal[]>> {
+    return this.http.get<ApiResponse<AiActionProposal[]>>(
+      API_ROUTES.conversations.actions(conversationId),
+    );
+  }
+
+  confirmAction(proposalId: string): Observable<ApiResponse<AiActionProposal>> {
+    return this.http.post<ApiResponse<AiActionProposal>>(
+      API_ROUTES.aiActions.confirm(proposalId), null,
+    );
+  }
+
+  cancelAction(proposalId: string): Observable<ApiResponse<AiActionProposal>> {
+    return this.http.post<ApiResponse<AiActionProposal>>(
+      API_ROUTES.aiActions.cancel(proposalId), null,
     );
   }
 
@@ -138,6 +157,10 @@ export class ChatApiService {
             ? (data['businessEvidence'] as ChatBusinessEvidence[])
             : [],
         };
+      case 'ai-action-proposal':
+        return typeof data['proposalId'] === 'string'
+          ? { type: 'ai-action-proposal', proposal: data as unknown as AiActionProposal }
+          : null;
       case 'done':
         return { type: 'done' };
       case 'error':

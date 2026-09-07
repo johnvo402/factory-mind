@@ -256,14 +256,17 @@ và thực thi EF Core query có `CompanyId` predicate. Material readiness là s
 order dựa trên stock hiện tại; nó không phải reservation, lịch sản xuất hay cam kết có thể bắt đầu
 trong tương lai.
 
-AI tools không thể đổi Machine status, start/complete order hoặc operation, assign Machine, thay đổi
-inventory, activate BOM/Routing, tạo record hay xóa dữ liệu. Yêu cầu hành động vẫn không gây mutation.
+FactoryMind có đúng 7 immediate read-only tools và 1 controlled proposed write action. Gemini chỉ có
+thể gọi `propose_release_production_order(number)` để tạo Pending proposal từ dữ liệu server. Chỉ
+`POST /api/ai/actions/{proposalId}/confirm`, sau Manager authorization và revalidation, mới gọi release.
+AI không thể đổi Machine status, start/complete/cancel order, start/complete operation, assign Machine,
+consume/adjust inventory, activate BOM/Routing, tạo record hay xóa dữ liệu.
 
 Tool planning được kiểm tra offline trong CI bởi `FactoryMind.AiToolEval`. Bộ 50 fixture đa ngôn ngữ đo
 tool selection, exact tool + arguments, no-tool precision, exact identifier, unauthorized-tool rejection,
 call bounds, duplicate rate và average calls. Điểm của bộ này mô tả deterministic policy fixture cùng
-server enforcement, không phải tuyên bố độ chính xác của live Gemini. FactoryMind hiện chỉ hỗ trợ bounded
-read-only manufacturing tools; không có AI mutation/write action.
+server enforcement, không phải tuyên bố độ chính xác của live Gemini. Write-action evaluation là một
+quality gate riêng; proposal không được tính là manufacturing mutation.
 
 SSE stream có các event semantic sau:
 
@@ -273,6 +276,7 @@ SSE stream có các event semantic sau:
 | `token` | Một phần nội dung Gemini vừa sinh |
 | `business-evidence` | Snapshot dữ liệu nghiệp vụ được trích dẫn |
 | `citations` | Document/page/chunk sources được trích dẫn |
+| `ai-action-proposal` | Server-validated proposal; không phải execution |
 | `done` | Stream đã hoàn tất |
 | `error` | Lỗi provider xảy ra sau khi response stream đã bắt đầu |
 
@@ -450,6 +454,8 @@ docker compose version
 | `Gemini__BaseUrl` | Native Gemini API base URL | Google Generative Language API | Không |
 | `Gemini__ChatModel` | Model sinh câu trả lời | `gemini-3.5-flash-lite` | Không |
 | `Gemini__ToolPlanningTimeoutSeconds` | Timeout cho một vòng chọn read-only tools | `15` | Không |
+| `AiActions__ProposalExpirationMinutes` | Thời gian sống proposal (1–60 phút) | `10` | Không |
+| `AiActions__MaximumPendingProposalsPerUser` | Active proposal cap | `10` | Không |
 | `Gemini__EmbeddingModel` | Model tạo vector | `gemini-embedding-2` | Không |
 | `Jwt__Key` / `JWT_KEY` | Ký access token | Development key chỉ dành local | Có |
 | `BootstrapAdmin__*` / `BOOTSTRAP_*` | Tạo Company/Admin đầu tiên khi production DB trống | Không dùng trong Development | Có |
@@ -566,6 +572,10 @@ Tất cả business endpoints dùng prefix `/api` và tenant được lấy từ
 | `/api/conversations` | `GET`, `POST` | Danh sách hoặc tạo conversation | Authenticated |
 | `/api/conversations/{id}/messages` | `GET` | Lịch sử message, citations và evidence | Conversation owner |
 | `/api/conversations/{id}/messages/stream` | `POST` | Gemini POST streaming bằng SSE | Conversation owner |
+| `/api/conversations/{id}/actions` | `GET` | Reload proposal cards | Same tenant + creator |
+| `/api/ai/actions/{proposalId}` | `GET` | Proposal detail | Same tenant + creator |
+| `/api/ai/actions/{proposalId}/confirm` | `POST` | Reauthorize, revalidate, rồi release | Same Manager creator |
+| `/api/ai/actions/{proposalId}/cancel` | `POST` | Cancel pending proposal | Same creator |
 | `/api/documents` | `GET`, `POST` | Danh sách và upload PDF | Authenticated |
 | `/api/documents/{id}/process` | `POST` | Queue/retry document processing | Authenticated |
 | `/api/documents/reindex` | `POST` | Queue re-index ready documents | Manager/Admin |

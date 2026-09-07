@@ -1,4 +1,5 @@
 using FactoryMind.Application.Common.Behaviors;
+using FactoryMind.Application.Features.AiActions;
 using FactoryMind.Application.Features.Auth;
 using FactoryMind.Application.Features.Auth.Login;
 using FactoryMind.Application.Features.Boms;
@@ -26,6 +27,9 @@ public static class DependencyInjection {
         services.AddScoped<IBusinessContextBuilder, BusinessContextBuilder>();
         services.AddScoped<IChatContextBuilder, ChatContextBuilder>();
         services.AddScoped<IAiToolOrchestrator, AiToolOrchestrator>();
+        services.AddSingleton<AiActionIntentGate>();
+        services.AddSingleton<IAiActionProposalRegistry, AiActionProposalRegistry>();
+        services.AddScoped<IAiActionOrchestrator, AiActionOrchestrator>();
 
         return services;
     }

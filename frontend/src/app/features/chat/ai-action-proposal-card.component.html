@@ -1,0 +1,21 @@
+<article class="action-card" [attr.data-status]="proposal().status" aria-label="Đề xuất hành động AI">
+  <header>
+    <span>Yêu cầu xác nhận</span>
+    <strong>{{ proposal().title }}</strong>
+  </header>
+  <dl>
+    <div><dt>Sản phẩm</dt><dd>{{ proposal().summary.product }}</dd></div>
+    <div><dt>Số lượng</dt><dd>{{ proposal().summary.quantity }}</dd></div>
+    <div><dt>BOM</dt><dd>Revision {{ proposal().summary.bomRevision }}</dd></div>
+    <div><dt>Routing</dt><dd>Revision {{ proposal().summary.routingRevision }}</dd></div>
+  </dl>
+  <p class="warning">Chưa có thay đổi sản xuất nào. Máy và vật tư sẽ không được khởi động hoặc tiêu thụ.</p>
+  <footer>
+    <span class="status">{{ proposal().status }}</span>
+    <button type="button" class="cancel" [disabled]="disabled" (click)="cancel()">Hủy</button>
+    <button type="button" class="confirm" [disabled]="disabled" (click)="confirm()">
+      {{ busy() ? 'Đang xử lý…' : 'Xác nhận release' }}
+    </button>
+  </footer>
+  @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+</article>

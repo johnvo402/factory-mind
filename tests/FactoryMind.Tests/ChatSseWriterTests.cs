@@ -1,6 +1,7 @@
 using System.Text;
 using FactoryMind.Api.Endpoints;
 using FactoryMind.Application.Features.Chat;
+using FactoryMind.Application.Features.AiActions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -40,6 +41,8 @@ public sealed class ChatSseWriterTests {
         Assert.True(body.IndexOf("event: conversation", StringComparison.Ordinal)
             < body.IndexOf("event: token", StringComparison.Ordinal));
         Assert.True(body.IndexOf("event: token", StringComparison.Ordinal)
+            < body.IndexOf("event: ai-action-proposal", StringComparison.Ordinal));
+        Assert.True(body.IndexOf("event: ai-action-proposal", StringComparison.Ordinal)
             < body.IndexOf("event: business-evidence", StringComparison.Ordinal));
         Assert.True(body.IndexOf("event: business-evidence", StringComparison.Ordinal)
             < body.IndexOf("event: citations", StringComparison.Ordinal));
@@ -48,6 +51,7 @@ public sealed class ChatSseWriterTests {
         Assert.Contains(conversationId.ToString(), body);
         Assert.Contains("\"documentTitle\":\"Safety manual\"", body);
         Assert.Contains("\"entityType\":\"machine\"", body);
+        Assert.Contains("\"actionType\":\"release_production_order\"", body);
     }
 
     private static async IAsyncEnumerable<ChatStreamUpdate> Updates(
@@ -56,6 +60,14 @@ public sealed class ChatSseWriterTests {
         await Task.Yield();
         yield return new ChatTokenUpdate("Stop");
         yield return new ChatTokenUpdate(" now [B1] [S1].");
+        yield return new AiActionProposalUpdate(new AiActionProposalResponse(
+            Guid.NewGuid(),
+            "release_production_order",
+            "pending",
+            "Release PO-001",
+            new("PO-001", "P-1 - Product", 10, 1, 1),
+            DateTime.UtcNow.AddMinutes(10),
+            null));
         yield return new ChatBusinessEvidenceUpdate([evidence]);
         yield return new ChatCitationsUpdate([citation]);
     }

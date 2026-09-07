@@ -422,3 +422,21 @@ LLM phân loại
 * Với tiếng Việt và phạm vi MVP nhỏ, hiệu quả thường đủ tốt.
 
 Nghĩa là **80% câu hỏi sẽ được route bằng code**, chỉ **20% câu hỏi mơ hồ** mới nhờ LLM xác định.
+
+## Step 11 — Controlled release proposal
+
+FactoryMind giữ nguyên đúng 7 read-only tools và thêm một kiến trúc action tách biệt. Gemini chỉ thấy
+`propose_release_production_order(number)`, không thấy command release. Deterministic gate chỉ cho explicit
+single-order release intent đi vào action planner; câu hỏi, `yes/ok/confirm`, unsupported writes và
+multi-order requests vẫn read-only.
+
+Server lấy Company/User từ authentication, kiểm tra Manager, resolve PO/BOM/Routing/Work Centers và lưu
+proposal Pending với snapshot product/quantity/state/BOM/Routing. Chat chỉ emit `ai-action-proposal`; không
+mutation manufacturing. Confirm button POST đúng proposal ID. Server query theo tenant + creator,
+authorize Manager lần hai, kiểm tra expiry/staleness/readiness và gọi canonical
+`ReleaseProductionOrderCommand`. Release không start order/operation/machine và không consume inventory.
+
+Trust boundary: Gemini output là untrusted proposal input → strict one-field schema → server validation →
+human confirmation → authorization/revalidation again → canonical locked release transaction. Không có
+natural-language hoặc autonomous confirmation, generic command tool, background execution hay hidden
+reasoning persistence.

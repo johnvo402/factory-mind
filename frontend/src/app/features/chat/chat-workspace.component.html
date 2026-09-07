@@ -45,6 +45,12 @@
             [streaming]="last && message.role === 'assistant' && store.isStreaming()"
           />
         }
+        @for (proposal of store.actionProposals(); track proposal.proposalId) {
+          <app-ai-action-proposal-card
+            [proposal]="proposal"
+            (proposalChange)="store.updateActionProposal($event)"
+          />
+        }
       </div>
     }
   </div>

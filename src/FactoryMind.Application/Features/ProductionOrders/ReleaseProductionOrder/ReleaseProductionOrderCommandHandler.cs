@@ -29,6 +29,7 @@ public sealed class ReleaseProductionOrderCommandHandler(
             order.Id,
             currentUser.CompanyId,
             DateTime.UtcNow,
+            command.Expectation,
             cancellationToken);
         return outcome.Status switch {
             ProductionExecutionStatus.Success => Result<ProductionOrderResponse>.Success(
@@ -39,6 +40,8 @@ public sealed class ReleaseProductionOrderCommandHandler(
                 Result<ProductionOrderResponse>.Failure(RoutingErrors.ActiveNotFound),
             ProductionExecutionStatus.RoutingWorkCenterUnavailable =>
                 Result<ProductionOrderResponse>.Failure(RoutingErrors.WorkCenterInactive),
+            ProductionExecutionStatus.SnapshotStale =>
+                Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.SnapshotStale),
             _ => Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.InvalidTransition)
         };
     }

@@ -22,6 +22,7 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapAiActionEndpoints();
 app.MapAuthEndpoints();
 app.MapBomEndpoints();
 app.MapChatEndpoints();

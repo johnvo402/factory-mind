@@ -18,6 +18,14 @@ public static class ApiRoutes {
         public const string Root = "";
         public const string Messages = "/{conversationId:guid}/messages";
         public const string StreamMessage = Messages + "/stream";
+        public const string Actions = "/{conversationId:guid}/actions";
+    }
+
+    public static class AiActions {
+        public const string Group = Base + "/ai/actions";
+        public const string ById = "/{proposalId:guid}";
+        public const string Confirm = ById + "/confirm";
+        public const string Cancel = ById + "/cancel";
     }
 
     public static class Documents {

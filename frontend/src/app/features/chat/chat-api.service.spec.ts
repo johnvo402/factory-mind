@@ -41,6 +41,7 @@ describe('ChatApiService', () => {
     browserFetch.and.resolveTo(sseResponse([
       'event: conversation\ndata: {"conversationId":"conversation-1"}\n\n',
       'event: token\ndata: {"content":"Answer [S1]."}\n\n',
+      'event: ai-action-proposal\ndata: {"proposalId":"p-1","actionType":"release_production_order","status":"pending","title":"Release PO-001","summary":{"productionOrderNumber":"PO-001","product":"P - Product","quantity":1,"bomRevision":1,"routingRevision":1},"expiresAt":"2099-01-01T00:00:00Z","failureCode":null}\n\n',
       'event: business-evidence\ndata: {"businessEvidence":[]}\n\n',
       'event: citations\ndata: {"citations":[]}\n\n',
       'event: done\ndata: {}\n\n',
@@ -53,6 +54,24 @@ describe('ChatApiService', () => {
     expect(events).toEqual([
       { type: 'conversation', conversationId: 'conversation-1' },
       { type: 'token', content: 'Answer [S1].' },
+      {
+        type: 'ai-action-proposal',
+        proposal: {
+          proposalId: 'p-1',
+          actionType: 'release_production_order',
+          status: 'pending',
+          title: 'Release PO-001',
+          summary: {
+            productionOrderNumber: 'PO-001',
+            product: 'P - Product',
+            quantity: 1,
+            bomRevision: 1,
+            routingRevision: 1,
+          },
+          expiresAt: '2099-01-01T00:00:00Z',
+          failureCode: null,
+        },
+      },
       { type: 'business-evidence', businessEvidence: [] },
       { type: 'citations', citations: [] },
       { type: 'done' },

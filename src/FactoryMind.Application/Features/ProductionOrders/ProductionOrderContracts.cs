@@ -130,6 +130,29 @@ public sealed record ProductionExecutionResult(
     ProductionExecutionStatus Status,
     ProductionOrder? Order);
 
+public sealed record ProductionOrderReleaseSnapshot(
+    Guid ProductionOrderId,
+    string Number,
+    string Status,
+    Guid ProductId,
+    string ProductCode,
+    string ProductName,
+    decimal Quantity,
+    Guid? ActiveBillOfMaterialId,
+    int? ActiveBillOfMaterialRevision,
+    Guid? ActiveRoutingId,
+    int? ActiveRoutingRevision,
+    bool HasRoutingOperations,
+    bool WorkCentersAvailable);
+
+public sealed record ProductionOrderReleaseExpectation(
+    string Number,
+    string Status,
+    Guid ProductId,
+    decimal Quantity,
+    Guid ActiveBillOfMaterialId,
+    Guid ActiveRoutingId);
+
 public enum ProductionExecutionStatus {
     Success,
     StateConflict,
@@ -141,7 +164,8 @@ public enum ProductionExecutionStatus {
     WarehouseUnavailable,
     MaterialUnavailable,
     ProductUnavailable,
-    MachineNotFound
+    MachineNotFound,
+    SnapshotStale
 }
 
 public sealed record ProductionOperationExecutionResult(
@@ -154,10 +178,16 @@ public interface IProductionExecutionRepository {
         Guid companyId,
         CancellationToken cancellationToken);
 
+    Task<ProductionOrderReleaseSnapshot?> GetReleaseSnapshotByNumberAsync(
+        string number,
+        Guid companyId,
+        CancellationToken cancellationToken);
+
     Task<ProductionExecutionResult> TryReleaseAsync(
         Guid productionOrderId,
         Guid companyId,
         DateTime releasedAt,
+        ProductionOrderReleaseExpectation? expectation,
         CancellationToken cancellationToken);
 
     Task<ProductionExecutionResult> TryStartAsync(
@@ -202,6 +232,10 @@ public interface IProductionExecutionRepository {
 }
 
 public static class ProductionOrderErrors {
+    public static readonly Error SnapshotStale = new(
+        "production_orders.snapshot_stale",
+        "The production order changed after it was reviewed.",
+        409);
     public static readonly Error NotFound = new(
         "production_orders.not_found",
         "Production order was not found.",

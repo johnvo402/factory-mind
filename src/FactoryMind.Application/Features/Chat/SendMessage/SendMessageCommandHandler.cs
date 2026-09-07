@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using FactoryMind.Application.Common.Identity;
+using FactoryMind.Application.Features.AiActions;
 using FactoryMind.Application.Features.Chat.Rag;
 using FactoryMind.Domain.Chat;
 using FactoryMind.Shared.Contracts;
@@ -13,7 +14,8 @@ public sealed class SendMessageCommandHandler(
     IChatCompletionClient chatClient,
     IChatContextBuilder contextBuilder,
     IAiToolOrchestrator toolOrchestrator,
-    ICurrentUser currentUser) : IRequestHandler<SendMessageCommand, Result<ChatStream>> {
+    ICurrentUser currentUser,
+    IAiActionOrchestrator? actionOrchestrator = null) : IRequestHandler<SendMessageCommand, Result<ChatStream>> {
     public async ValueTask<Result<ChatStream>> Handle(
         SendMessageCommand command,
         CancellationToken cancellationToken) {
@@ -53,17 +55,35 @@ public sealed class SendMessageCommandHandler(
         }
 
         conversation.UpdatedAt = now;
-        repository.AddMessage(new ChatMessage {
+        var userMessage = new ChatMessage {
             ConversationId = conversation.Id,
             Role = ChatRoles.User,
             Content = content,
             CreatedAt = now
-        });
+        };
+        repository.AddMessage(userMessage);
         await repository.SaveChangesAsync(cancellationToken);
 
-        var prompt = new List<ChatPromptMessage> {
-            new(ChatRoles.System, chatContext.Prompt)
-        };
+        var actionAttempt = actionOrchestrator is null
+            ? new AiActionProposalAttempt(null, null)
+            : await actionOrchestrator.ProposeAsync(
+                conversation.Id,
+                userMessage.Id,
+                content,
+                history,
+                cancellationToken);
+
+        var systemPrompt = chatContext.Prompt;
+        if (actionOrchestrator is not null) {
+            systemPrompt += "\n\nA proposed action is never an executed action. Never claim a production order was released before explicit UI confirmation."
+                + (actionAttempt.Proposal is not null
+                    ? " A server-validated release proposal was prepared; tell the user to review and explicitly confirm the card."
+                    : string.Empty)
+                + (actionAttempt.Notice is not null
+                    ? $" Server action notice: {actionAttempt.Notice}"
+                    : string.Empty);
+        }
+        var prompt = new List<ChatPromptMessage> { new(ChatRoles.System, systemPrompt) };
         prompt.AddRange(history);
         prompt.Add(new ChatPromptMessage(ChatRoles.User, content));
 
@@ -71,7 +91,8 @@ public sealed class SendMessageCommandHandler(
             conversation,
             prompt,
             chatContext.Sources,
-            chatContext.BusinessEvidence);
+            chatContext.BusinessEvidence,
+            actionAttempt.Proposal);
         var stream = new ChatStream(conversation.Id, updates);
         return Result<ChatStream>.Success(stream);
     }
@@ -81,8 +102,13 @@ public sealed class SendMessageCommandHandler(
         IReadOnlyList<ChatPromptMessage> prompt,
         IReadOnlyList<CitationResponse> sources,
         IReadOnlyList<BusinessEvidenceResponse> businessEvidence,
+        AiActionProposalResponse? actionProposal,
         [EnumeratorCancellation] CancellationToken cancellationToken = default) {
         var answer = new StringBuilder();
+
+        if (actionProposal is not null) {
+            yield return new AiActionProposalUpdate(actionProposal);
+        }
 
         await foreach (var token in chatClient.StreamAsync(prompt, cancellationToken)) {
             answer.Append(token);

@@ -105,6 +105,11 @@ public sealed class ProductionCompletionCommandHandlerTests {
             CancellationToken cancellationToken) => Task.FromResult<ProductionOrder?>(
             order.Id == productionOrderId && order.CompanyId == companyId ? order : null);
 
+        public Task<ProductionOrderReleaseSnapshot?> GetReleaseSnapshotByNumberAsync(
+            string number,
+            Guid companyId,
+            CancellationToken cancellationToken) => throw new NotSupportedException();
+
         public Task<ProductionExecutionResult> TryCompleteAsync(
             Guid productionOrderId,
             Guid companyId,
@@ -119,6 +124,7 @@ public sealed class ProductionCompletionCommandHandlerTests {
             Guid productionOrderId,
             Guid companyId,
             DateTime releasedAt,
+            ProductionOrderReleaseExpectation? expectation,
             CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task<ProductionExecutionResult> TryStartAsync(

@@ -1,3 +1,4 @@
+using FactoryMind.Application.Features.AiActions;
 using FactoryMind.Application.Features.Auth;
 using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.Chat;
@@ -42,6 +43,7 @@ using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Pgvector.EntityFrameworkCore;
 
 namespace FactoryMind.Infrastructure;
@@ -71,6 +73,7 @@ public static class DependencyInjection {
         services.AddScoped<IAuthRepository, EfAuthRepository>();
         services.AddScoped<IBomRepository, EfBomRepository>();
         services.AddScoped<IConversationRepository, EfConversationRepository>();
+        services.AddScoped<IAiActionProposalRepository, EfAiActionProposalRepository>();
         services.AddScoped<IBusinessContextRepository, EfBusinessContextRepository>();
         services.AddScoped<IDashboardRepository, EfDashboardRepository>();
         services.AddScoped<IExcelImportRepository, EfExcelImportRepository>();
@@ -120,7 +123,18 @@ public static class DependencyInjection {
         });
         services.AddHttpClient<IChatCompletionClient, GeminiChatCompletionClient>();
         services.AddHttpClient<IAiToolPlanner, GeminiAiToolPlanner>();
+        services.AddHttpClient<IAiActionPlanner, GeminiAiActionPlanner>();
         services.AddHttpClient<IEmbeddingClient, GeminiEmbeddingClient>();
+        services.AddSingleton(TimeProvider.System);
+        services.AddOptions<AiActionSettings>()
+            .Bind(configuration.GetSection(AiActionSettings.SectionName))
+            .Validate(settings => settings.ProposalExpirationMinutes is >= 1 and <= 60,
+                "AiActions ProposalExpirationMinutes must be between 1 and 60.")
+            .Validate(settings => settings.MaximumPendingProposalsPerUser is >= 1 and <= 20,
+                "AiActions MaximumPendingProposalsPerUser must be between 1 and 20.")
+            .ValidateOnStart();
+        services.AddSingleton(serviceProvider =>
+            serviceProvider.GetRequiredService<IOptions<AiActionSettings>>().Value);
         services.Configure<MinioSettings>(configuration.GetSection(MinioSettings.SectionName));
         services.AddSingleton<IFileStorage, MinioFileStorage>();
 

@@ -3,13 +3,14 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { ApiResponse, ProblemDetails } from '../../core/api/api.models';
 import { ChatApiService } from './chat-api.service';
-import { ChatMessage, ChatStreamEvent, Conversation } from './chat.models';
+import { AiActionProposal, ChatMessage, ChatStreamEvent, Conversation } from './chat.models';
 
 @Injectable({ providedIn: 'root' })
 export class ChatStore {
   private readonly api = inject(ChatApiService);
   private readonly conversationsState = signal<Conversation[]>([]);
   private readonly messagesState = signal<ChatMessage[]>([]);
+  private readonly actionProposalsState = signal<AiActionProposal[]>([]);
   private readonly selectedConversationIdState = signal<string | null>(null);
   private readonly loadingState = signal(false);
   private readonly streamingState = signal(false);
@@ -22,6 +23,7 @@ export class ChatStore {
 
   readonly conversations = this.conversationsState.asReadonly();
   readonly messages = this.messagesState.asReadonly();
+  readonly actionProposals = this.actionProposalsState.asReadonly();
   readonly selectedConversationId = this.selectedConversationIdState.asReadonly();
   readonly isLoading = this.loadingState.asReadonly();
   readonly isStreaming = this.streamingState.asReadonly();
@@ -74,10 +76,14 @@ export class ChatStore {
 
     this.selectedConversationIdState.set(conversationId);
     this.messagesState.set([]);
+    this.actionProposalsState.set([]);
     this.loadingState.set(true);
     this.errorState.set('');
     try {
-      await this.reloadMessages(conversationId, version);
+      await Promise.all([
+        this.reloadMessages(conversationId, version),
+        this.reloadActionProposals(conversationId, version),
+      ]);
     } catch (error) {
       if (this.isCurrentSession(version)) {
         this.errorState.set(this.errorMessage(error));
@@ -96,6 +102,7 @@ export class ChatStore {
 
     this.selectedConversationIdState.set(null);
     this.messagesState.set([]);
+    this.actionProposalsState.set([]);
     this.errorState.set('');
   }
 
@@ -131,6 +138,7 @@ export class ChatStore {
 
       await Promise.all([
         this.reloadMessages(conversationId, version),
+        this.reloadActionProposals(conversationId, version),
         this.reloadConversations(version),
       ]);
     } catch (error) {
@@ -163,6 +171,7 @@ export class ChatStore {
     this.initialized = false;
     this.conversationsState.set([]);
     this.messagesState.set([]);
+    this.actionProposalsState.set([]);
     this.selectedConversationIdState.set(null);
     this.loadingState.set(false);
     this.streamingState.set(false);
@@ -232,7 +241,18 @@ export class ChatStore {
         ...message,
         businessEvidence: event.businessEvidence,
       }));
+    } else if (event.type === 'ai-action-proposal') {
+      this.updateActionProposal(event.proposal);
     }
+  }
+
+  updateActionProposal(proposal: AiActionProposal): void {
+    this.actionProposalsState.update((proposals) => {
+      const exists = proposals.some((candidate) => candidate.proposalId === proposal.proposalId);
+      return exists
+        ? proposals.map((candidate) => candidate.proposalId === proposal.proposalId ? proposal : candidate)
+        : [...proposals, proposal];
+    });
   }
 
   private updateMessage(
@@ -268,6 +288,18 @@ export class ChatStore {
       && this.selectedConversationIdState() === conversationId
     ) {
       this.messagesState.set(messages);
+    }
+  }
+
+  private async reloadActionProposals(
+    conversationId: string,
+    version: number,
+  ): Promise<void> {
+    const proposals = this.requireData(
+      await firstValueFrom(this.api.getActionProposals(conversationId)),
+    );
+    if (this.isCurrentSession(version) && this.selectedConversationIdState() === conversationId) {
+      this.actionProposalsState.set(proposals);
     }
   }
 

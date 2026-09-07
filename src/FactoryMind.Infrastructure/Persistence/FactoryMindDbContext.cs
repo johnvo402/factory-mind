@@ -27,6 +27,8 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
     public DbSet<ChatMessage> Messages => Set<ChatMessage>();
     public DbSet<ChatCitation> MessageCitations => Set<ChatCitation>();
     public DbSet<ChatBusinessEvidence> MessageBusinessEvidence => Set<ChatBusinessEvidence>();
+    public DbSet<AiActionProposal> AiActionProposals => Set<AiActionProposal>();
+    public DbSet<AiActionEvent> AiActionEvents => Set<AiActionEvent>();
     public DbSet<KnowledgeDocument> Documents => Set<KnowledgeDocument>();
     public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
     public DbSet<DocumentEmbeddingRecord> DocumentEmbeddings => Set<DocumentEmbeddingRecord>();
@@ -121,6 +123,49 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
                 .WithMany(message => message.BusinessEvidence)
                 .HasForeignKey(evidence => evidence.MessageId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AiActionProposal>(entity => {
+            entity.ToTable("ai_action_proposals", table => {
+                table.HasCheckConstraint("CK_ai_action_proposals_ActionType_valid",
+                    "\"ActionType\" = 'release_production_order'");
+                table.HasCheckConstraint("CK_ai_action_proposals_Status_valid",
+                    "\"Status\" IN ('pending','confirmed','succeeded','failed','cancelled','expired','stale')");
+                table.HasCheckConstraint("CK_ai_action_proposals_Quantity_positive", "\"QuantitySnapshot\" > 0");
+                table.HasCheckConstraint("CK_ai_action_proposals_Expiry_after_creation", "\"ExpiresAt\" > \"CreatedAt\"");
+            });
+            entity.HasIndex(proposal => new { proposal.CompanyId, proposal.CreatedByUserId, proposal.Status });
+            entity.HasIndex(proposal => new { proposal.ConversationId, proposal.CreatedAt });
+            entity.HasIndex(proposal => proposal.ExpiresAt);
+            entity.Property(proposal => proposal.ActionType).HasMaxLength(50).IsRequired();
+            entity.Property(proposal => proposal.TargetEntityType).HasMaxLength(50).IsRequired();
+            entity.Property(proposal => proposal.TargetDisplay).HasMaxLength(120).IsRequired();
+            entity.Property(proposal => proposal.Status).HasMaxLength(20).IsRequired();
+            entity.Property(proposal => proposal.ProductionOrderNumberSnapshot).HasMaxLength(50).IsRequired();
+            entity.Property(proposal => proposal.ProductionOrderStatusSnapshot).HasMaxLength(30).IsRequired();
+            entity.Property(proposal => proposal.ProductCodeSnapshot).HasMaxLength(50).IsRequired();
+            entity.Property(proposal => proposal.ProductNameSnapshot).HasMaxLength(200).IsRequired();
+            entity.Property(proposal => proposal.QuantitySnapshot).HasPrecision(18, 3);
+            entity.Property(proposal => proposal.FailureCode).HasMaxLength(80);
+            entity.HasOne(proposal => proposal.Company).WithMany()
+                .HasForeignKey(proposal => proposal.CompanyId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(proposal => proposal.CreatedByUser).WithMany()
+                .HasForeignKey(proposal => proposal.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(proposal => proposal.Conversation).WithMany()
+                .HasForeignKey(proposal => proposal.ConversationId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(proposal => proposal.SourceUserMessage).WithMany()
+                .HasForeignKey(proposal => proposal.SourceUserMessageId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AiActionEvent>(entity => {
+            entity.ToTable("ai_action_events");
+            entity.HasIndex(actionEvent => new { actionEvent.CompanyId, actionEvent.ProposalId, actionEvent.CreatedAt });
+            entity.Property(actionEvent => actionEvent.EventType).HasMaxLength(40).IsRequired();
+            entity.Property(actionEvent => actionEvent.FailureCode).HasMaxLength(80);
+            entity.Property(actionEvent => actionEvent.CorrelationId).HasMaxLength(100);
+            entity.Property(actionEvent => actionEvent.TraceId).HasMaxLength(64);
+            entity.HasOne(actionEvent => actionEvent.Proposal).WithMany(proposal => proposal.Events)
+                .HasForeignKey(actionEvent => actionEvent.ProposalId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<KnowledgeDocument>(entity => {

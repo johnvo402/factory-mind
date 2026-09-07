@@ -14,10 +14,12 @@ import { AuthService } from '../../core/auth/auth.service';
 import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { ChatMessageComponent } from './chat-message.component';
 import { ChatStore } from './chat.store';
+import { AiActionProposalCardComponent } from './ai-action-proposal-card.component';
 
 @Component({
   selector: 'app-chat-workspace',
-  imports: [ReactiveFormsModule, ChatMessageComponent, DashboardSummaryComponent, UiIconComponent],
+  imports: [ReactiveFormsModule, ChatMessageComponent, AiActionProposalCardComponent,
+    DashboardSummaryComponent, UiIconComponent],
   templateUrl: './chat-workspace.component.html',
   styleUrl: './chat-workspace.component.scss',
 })

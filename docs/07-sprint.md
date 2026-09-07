@@ -616,5 +616,19 @@ Mỗi file chỉ khoảng 5–10 dòng:
 * [x] Thêm deterministic AI tool evaluation thành Backend CI quality gate.
 * [x] Không migration, không thay đổi SSE/frontend contract.
 
+# Step 11 — Controlled AI release action
+
+* [x] Tách action planner/registry khỏi 7 read-only tools; allowlist chỉ có `propose_release_production_order`.
+* [x] Dùng conservative explicit-intent gate; reject question, natural-language confirm, unsupported và multi-order.
+* [x] Persist pending proposal 10 phút + server snapshot + append-only lifecycle audit.
+* [x] Enforce tenant, same-user và canonical Manager policy cả lúc propose lẫn confirm.
+* [x] Confirm/cancel/detail/reload endpoints chỉ nhận proposal ID; frontend card inert cho tới click.
+* [x] Revalidate PO/BOM/Routing/Work Centers và dùng lại `ReleaseProductionOrderCommand` với locked snapshot guard.
+* [x] Idempotent retry, concurrent confirmation reconciliation, stale/expired/cancelled terminal handling.
+* [x] Thêm `ai-action-proposal` SSE, finite telemetry và deterministic action evaluation (25 cases) vào CI.
+
+AI vẫn không thể start/complete/cancel order, start/complete operation, assign/change Machine, consume/adjust
+inventory hoặc activate BOM/Routing. Release proposal luôn cần explicit UI/API confirmation.
+
 ---
 

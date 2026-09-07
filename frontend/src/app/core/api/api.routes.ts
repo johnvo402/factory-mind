@@ -12,6 +12,13 @@ export const API_ROUTES = {
       `${API_BASE}/conversations/${conversationId}/messages`,
     streamMessage: (conversationId: string) =>
       `${API_BASE}/conversations/${conversationId}/messages/stream`,
+    actions: (conversationId: string) =>
+      `${API_BASE}/conversations/${conversationId}/actions`,
+  },
+  aiActions: {
+    byId: (proposalId: string) => `${API_BASE}/ai/actions/${proposalId}`,
+    confirm: (proposalId: string) => `${API_BASE}/ai/actions/${proposalId}/confirm`,
+    cancel: (proposalId: string) => `${API_BASE}/ai/actions/${proposalId}/cancel`,
   },
   dashboard: {
     summary: `${API_BASE}/dashboard/summary`,

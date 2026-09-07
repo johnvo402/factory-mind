@@ -77,6 +77,13 @@ jobs:
           --no-build
           --no-restore
 
+      - name: Run deterministic AI action evaluation
+        run: >-
+          dotnet run --project tests/FactoryMind.AiActionEval/FactoryMind.AiActionEval.csproj
+          --configuration Release
+          --no-build
+          --no-restore
+
       - name: Publish API artifact
         run: >-
           dotnet publish src/FactoryMind.Api/FactoryMind.Api.csproj

@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using FactoryMind.Api.Routing;
 using FactoryMind.Application.Features.Chat;
+using FactoryMind.Application.Features.AiActions;
 using FactoryMind.Application.Features.Knowledge;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -33,11 +34,13 @@ public sealed class FactoryMindApiFactory(string connectionString) : WebApplicat
         builder.ConfigureTestServices(services => {
             services.RemoveAll<IChatCompletionClient>();
             services.RemoveAll<IAiToolPlanner>();
+            services.RemoveAll<IAiActionPlanner>();
             services.RemoveAll<IEmbeddingClient>();
             services.RemoveAll<IFileStorage>();
             services.RemoveAll<IDocumentProcessingQueue>();
             services.AddSingleton<IChatCompletionClient, TestChatCompletionClient>();
             services.AddSingleton<IAiToolPlanner, ZeroToolPlanner>();
+            services.AddSingleton<IAiActionPlanner, TestActionPlanner>();
             services.AddSingleton<IEmbeddingClient, TestEmbeddingClient>();
             services.AddSingleton<IFileStorage, TestFileStorage>();
             services.AddSingleton<IDocumentProcessingQueue, TestDocumentProcessingQueue>();
@@ -60,6 +63,23 @@ public sealed class FactoryMindApiFactory(string connectionString) : WebApplicat
             IReadOnlyList<AiToolDefinition> tools,
             CancellationToken cancellationToken) =>
             Task.FromResult(new AiToolPlan([]));
+    }
+
+    private sealed class TestActionPlanner : IAiActionPlanner {
+        public Task<AiActionPlan> PlanAsync(
+            IReadOnlyList<ChatPromptMessage> messages,
+            IReadOnlyList<AiActionDefinition> actions,
+            CancellationToken cancellationToken) {
+            var text = messages.LastOrDefault()?.Content ?? string.Empty;
+            var match = System.Text.RegularExpressions.Regex.Match(
+                text, @"\bPO-[A-Za-z0-9-]+\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!match.Success) return Task.FromResult(new AiActionPlan([]));
+            using var document = System.Text.Json.JsonDocument.Parse(
+                System.Text.Json.JsonSerializer.Serialize(new { number = match.Value }));
+            return Task.FromResult(new AiActionPlan([
+                new AiActionCall(AiActionProposalRegistry.ProposalName, document.RootElement.Clone())
+            ]));
+        }
     }
 
     private sealed class TestEmbeddingClient : IEmbeddingClient {

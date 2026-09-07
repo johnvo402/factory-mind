@@ -18,6 +18,7 @@ public sealed class ApiRoutesTests {
         Assert.Equal("/api/materials", ApiRoutes.Materials.Group);
         Assert.Equal("/api/products", ApiRoutes.Products.Group);
         Assert.Equal("/api/production-orders", ApiRoutes.ProductionOrders.Group);
+        Assert.Equal("/api/ai/actions", ApiRoutes.AiActions.Group);
     }
 
     [Fact]
@@ -26,6 +27,15 @@ public sealed class ApiRoutesTests {
         Assert.Equal(
             "/api/conversations/{conversationId:guid}/messages/stream",
             ApiRoutes.Conversations.Group + ApiRoutes.Conversations.StreamMessage);
+        Assert.Equal(
+            "/api/conversations/{conversationId:guid}/actions",
+            ApiRoutes.Conversations.Group + ApiRoutes.Conversations.Actions);
+        Assert.Equal(
+            "/api/ai/actions/{proposalId:guid}/confirm",
+            ApiRoutes.AiActions.Group + ApiRoutes.AiActions.Confirm);
+        Assert.Equal(
+            "/api/ai/actions/{proposalId:guid}/cancel",
+            ApiRoutes.AiActions.Group + ApiRoutes.AiActions.Cancel);
         Assert.Equal(
             "/api/documents/{documentId:guid}/process",
             ApiRoutes.Documents.Group + ApiRoutes.Documents.Process);

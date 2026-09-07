@@ -3,6 +3,7 @@ using FactoryMind.Application.Features.Chat.CreateConversation;
 using FactoryMind.Application.Features.Chat.GetConversations;
 using FactoryMind.Application.Features.Chat.GetMessages;
 using FactoryMind.Application.Features.Chat.SendMessage;
+using FactoryMind.Application.Features.AiActions;
 using FactoryMind.Api.Routing;
 using Mediator;
 
@@ -31,6 +32,13 @@ public static class ChatEndpoints {
                 var query = new GetMessagesQuery(conversationId);
                 return (await sender.Send(query, cancellationToken)).ToHttpResult();
             });
+
+        group.MapGet(ApiRoutes.Conversations.Actions, async (
+            Guid conversationId,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+            (await sender.Send(
+                new GetConversationAiActionProposalsQuery(conversationId), cancellationToken)).ToHttpResult());
 
         group.MapPost(ApiRoutes.Conversations.StreamMessage, async (
             Guid conversationId,

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FactoryMind.Domain.Chat;
+using FactoryMind.Application.Features.AiActions;
 using FactoryMind.Shared.Contracts;
 
 namespace FactoryMind.Application.Features.Chat;
@@ -45,6 +46,8 @@ public sealed record ChatCitationsUpdate(IReadOnlyList<CitationResponse> Citatio
 
 public sealed record ChatBusinessEvidenceUpdate(
     IReadOnlyList<BusinessEvidenceResponse> BusinessEvidence) : ChatStreamUpdate;
+
+public sealed record AiActionProposalUpdate(AiActionProposalResponse Proposal) : ChatStreamUpdate;
 
 public sealed record ChatStream(Guid ConversationId, IAsyncEnumerable<ChatStreamUpdate> Updates);
 
