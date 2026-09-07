@@ -397,7 +397,7 @@ Demo
 
 Khách hàng đầu tiên.
 
-Implementation status: production API/frontend images, internal PostgreSQL/MinIO topology, health checks, required secrets, and GHCR image delivery are implemented. VPS/TLS rollout remains environment-specific and requires an approved target, credentials, backup, and rollback procedure. Redis remains deferred because no running cache or session use case requires it.
+Implementation status: production API/frontend images, internal PostgreSQL/MinIO topology, health checks, required secrets, and GHCR image delivery are implemented. Production Compose is registry-only, requires an immutable commit-SHA image tag, hard-codes the Production runtime, and never builds application images on the deployment host. VPS/TLS rollout remains environment-specific and requires an approved target, credentials, backup, and rollback procedure. Redis remains deferred because no running cache or session use case requires it.
 
 ---
 

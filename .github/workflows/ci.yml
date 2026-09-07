@@ -152,6 +152,8 @@ jobs:
       BOOTSTRAP_ADMIN_NAME: CI Admin
       BOOTSTRAP_ADMIN_EMAIL: ci@example.com
       BOOTSTRAP_ADMIN_PASSWORD: ci-bootstrap-password
+      IMAGE_TAG: ${{ github.sha }}
+      GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
 
     steps:
       - name: Checkout repository

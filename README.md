@@ -677,10 +677,10 @@ giá trị cardinality thấp; question, prompt, evidence, content, vector, secr
 
 ## Production containers
 
-Tạo file secrets riêng cho môi trường triển khai:
+Tạo file secrets riêng từ template dành riêng cho Production:
 
 ```powershell
-Copy-Item .env.example .env.production
+Copy-Item .env.production.example .env.production
 ```
 
 Cấu hình tối thiểu trong `.env.production`:
@@ -691,23 +691,33 @@ Cấu hình tối thiểu trong `.env.production`:
 - `JWT_KEY` mạnh, tối thiểu 32 ký tự và không dùng development key
 - `GEMINI_API_KEY`
 - `BOOTSTRAP_COMPANY_NAME`, `BOOTSTRAP_ADMIN_NAME`, `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` khi database còn trống
+- `IMAGE_TAG` là full 40-character commit SHA đã được job `Production images` publish lên GHCR
 
-Validate và chạy production topology:
+Nếu GHCR package không public, đăng nhập registry bằng token chỉ có quyền `read:packages`:
 
 ```powershell
-docker compose --env-file .env.production -f compose.prod.yaml config
-docker compose --env-file .env.production -f compose.prod.yaml up -d --build
+$env:CR_PAT | docker login ghcr.io -u <github-user> --password-stdin
+```
+
+Validate, pull đúng artifact đã qua CI, rồi chạy production topology mà không build source trên deployment host:
+
+```powershell
+docker compose --env-file .env.production -f compose.prod.yaml config --quiet
+docker compose --env-file .env.production -f compose.prod.yaml pull api frontend
+docker compose --env-file .env.production -f compose.prod.yaml up -d --no-build --wait --wait-timeout 180
 docker compose --env-file .env.production -f compose.prod.yaml ps
 ```
 
-Production topology chỉ publish cổng Nginx frontend. Nginx phục vụ Angular và reverse proxy `/api` tới API private; PostgreSQL và MinIO chỉ nằm trong internal network.
+Production Compose không chứa `build:` cho API/frontend và hard-code `ASPNETCORE_ENVIRONMENT=Production`. Production topology chỉ publish cổng Nginx frontend. Nginx phục vụ Angular và reverse proxy `/api` tới API private; PostgreSQL và MinIO chỉ nằm trong internal network.
+
+Để rollback, đổi `IMAGE_TAG` sang full commit SHA tốt trước đó, chạy lại `pull api frontend`, rồi `up -d --no-build --wait`. Tag `prod` vẫn được CI publish như con trỏ release mới nhất, nhưng deployment thông thường luôn ghim commit SHA để có thể audit và rollback chính xác.
 
 Sau lần khởi tạo database đầu tiên, xóa các biến `BOOTSTRAP_*` khỏi deployment environment. API không đọc lại bootstrap credentials khi Company và User đã tồn tại.
 
 Trước mỗi lần nâng cấp:
 
 - Sao lưu PostgreSQL và MinIO volumes.
-- Chọn image tag bất biến theo commit SHA thay vì chỉ dùng `dev`.
+- Chọn image tag bất biến theo full commit SHA thay vì dùng tag di động `prod`.
 - Xác nhận health checks trước khi chuyển traffic.
 - Chuẩn bị rollback image và người chịu trách nhiệm rollback.
 
@@ -715,17 +725,17 @@ TLS, domain và VPS deployment chưa được tự động hóa vì phụ thuộ
 
 ## CI/CD
 
-GitHub Actions chạy trên mọi push và pull request vào `dev`:
+GitHub Actions chạy trên mọi push và pull request vào `main`:
 
 - Verify .NET formatting.
 - Release build với warnings là errors.
 - Chạy backend và frontend tests.
 - Audit production npm dependencies.
 - Publish API và frontend build artifacts.
-- Với push vào `dev`, build và publish hai Docker images lên GHCR:
-  - `ghcr.io/johnvo402/factory-mind-api:dev`
-  - `ghcr.io/johnvo402/factory-mind-frontend:dev`
-  - Hai image cũng có immutable tag theo commit SHA.
+- Với push vào `main`, sau khi backend và frontend đều xanh, build và publish hai Docker images lên GHCR:
+  - `ghcr.io/johnvo402/factory-mind-api:prod`
+  - `ghcr.io/johnvo402/factory-mind-frontend:prod`
+  - Cả hai image đồng thời có immutable full commit-SHA tag dùng cho deployment.
 
 ## Bảo mật
 
