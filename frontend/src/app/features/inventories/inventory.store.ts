@@ -9,6 +9,7 @@ import {
   InventoryAdjustmentInput,
   InventoryMovementInput,
   InventoryTransaction,
+  InventoryTransactionFilters,
   InventoryTransferInput,
   Warehouse,
   WarehouseCreateInput,
@@ -24,6 +25,8 @@ export class InventoryStore {
   private readonly warehouseItems = signal<Warehouse[]>([]);
   private readonly transactionItems = signal<InventoryTransaction[]>([]);
   private readonly transactionCountState = signal(0);
+  private readonly transactionPageState = signal(1);
+  private readonly transactionPageSizeState = signal(25);
   private readonly loadingState = signal(false);
   private readonly savingState = signal(false);
   private readonly errorState = signal('');
@@ -34,6 +37,8 @@ export class InventoryStore {
   readonly warehouses = this.warehouseItems.asReadonly();
   readonly transactions = this.transactionItems.asReadonly();
   readonly transactionCount = this.transactionCountState.asReadonly();
+  readonly transactionPage = this.transactionPageState.asReadonly();
+  readonly transactionPageSize = this.transactionPageSizeState.asReadonly();
   readonly isLoading = this.loadingState.asReadonly();
   readonly isSaving = this.savingState.asReadonly();
   readonly error = this.errorState.asReadonly();
@@ -72,13 +77,17 @@ export class InventoryStore {
     }
   }
 
-  async loadHistory(): Promise<boolean> {
+  async loadHistory(
+    filters: InventoryTransactionFilters = { page: 1, pageSize: 25 },
+  ): Promise<boolean> {
     this.loadingState.set(true);
     this.errorState.set('');
     try {
-      const response = await firstValueFrom(this.api.getTransactions());
+      const response = await firstValueFrom(this.api.getTransactions(filters));
       this.transactionItems.set(response.data?.items ?? []);
       this.transactionCountState.set(response.data?.totalCount ?? 0);
+      this.transactionPageState.set(response.data?.page ?? filters.page);
+      this.transactionPageSizeState.set(response.data?.pageSize ?? filters.pageSize);
       return true;
     } catch (error: unknown) {
       this.errorState.set(businessDataErrorMessage(error));
@@ -112,9 +121,7 @@ export class InventoryStore {
     this.errorState.set('');
     try {
       if (warehouseId) {
-        await firstValueFrom(
-          this.api.updateWarehouse(warehouseId, input as WarehouseUpdateInput),
-        );
+        await firstValueFrom(this.api.updateWarehouse(warehouseId, input as WarehouseUpdateInput));
       } else {
         await firstValueFrom(this.api.createWarehouse(input));
       }

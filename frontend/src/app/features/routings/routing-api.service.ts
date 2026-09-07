@@ -11,17 +11,28 @@ export class RoutingApiService {
   list(productId: string): Observable<ApiResponse<Routing[]>> {
     return this.http.get<ApiResponse<Routing[]>>(API_ROUTES.products.routings(productId));
   }
+  getById(productId: string, routingId: string): Observable<ApiResponse<Routing>> {
+    return this.http.get<ApiResponse<Routing>>(
+      API_ROUTES.products.routingById(productId, routingId),
+    );
+  }
   create(productId: string, input: RoutingInput): Observable<ApiResponse<Routing>> {
     return this.http.post<ApiResponse<Routing>>(API_ROUTES.products.routings(productId), input);
   }
-  update(productId: string, routingId: string, input: RoutingInput): Observable<ApiResponse<Routing>> {
+  update(
+    productId: string,
+    routingId: string,
+    input: RoutingInput,
+  ): Observable<ApiResponse<Routing>> {
     return this.http.put<ApiResponse<Routing>>(
-      API_ROUTES.products.routingById(productId, routingId), input,
+      API_ROUTES.products.routingById(productId, routingId),
+      input,
     );
   }
   activate(productId: string, routingId: string): Observable<ApiResponse<Routing>> {
     return this.http.post<ApiResponse<Routing>>(
-      API_ROUTES.products.activateRouting(productId, routingId), null,
+      API_ROUTES.products.activateRouting(productId, routingId),
+      null,
     );
   }
 }

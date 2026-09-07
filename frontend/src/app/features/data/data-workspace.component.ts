@@ -13,11 +13,27 @@ import { ProductWorkspaceComponent } from '../products/product-workspace.compone
 import { ProductStore } from '../products/product.store';
 import { ProductionOrderWorkspaceComponent } from '../production-orders/production-order-workspace.component';
 import { ProductionOrderStore } from '../production-orders/production-order.store';
+import { ProductInventoryWorkspaceComponent } from '../product-inventories/product-inventory-workspace.component';
 import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { WorkCenterWorkspaceComponent } from '../work-centers/work-center-workspace.component';
 
-type DataView = 'machines' | 'work-centers' | 'materials' | 'inventories' | 'products' | 'production-orders';
-const DATA_VIEWS: readonly DataView[] = ['machines', 'work-centers', 'materials', 'inventories', 'products', 'production-orders'];
+type DataView =
+  | 'machines'
+  | 'work-centers'
+  | 'materials'
+  | 'inventories'
+  | 'products'
+  | 'production-orders'
+  | 'product-inventories';
+const DATA_VIEWS: readonly DataView[] = [
+  'machines',
+  'work-centers',
+  'materials',
+  'inventories',
+  'products',
+  'production-orders',
+  'product-inventories',
+];
 
 @Component({
   selector: 'app-data-workspace',
@@ -27,6 +43,7 @@ const DATA_VIEWS: readonly DataView[] = ['machines', 'work-centers', 'materials'
     InventoryWorkspaceComponent,
     ProductWorkspaceComponent,
     ProductionOrderWorkspaceComponent,
+    ProductInventoryWorkspaceComponent,
     ExcelImportWizardComponent,
     RouterLink,
     UiIconComponent,
@@ -42,7 +59,9 @@ export class DataWorkspaceComponent {
   private readonly inventories = inject(InventoryStore);
   private readonly products = inject(ProductStore);
   private readonly orders = inject(ProductionOrderStore);
-  private readonly routeParams = toSignal(this.route.paramMap, { initialValue: this.route.snapshot.paramMap });
+  private readonly routeParams = toSignal(this.route.paramMap, {
+    initialValue: this.route.snapshot.paramMap,
+  });
   protected readonly activeView = computed<DataView>(() => {
     const view = this.routeParams().get('view') as DataView | null;
     return view && DATA_VIEWS.includes(view) ? view : 'machines';
@@ -59,11 +78,16 @@ export class DataWorkspaceComponent {
 
   protected importEntityType(): ExcelImportEntityType {
     switch (this.activeView()) {
-      case 'materials': return 'material';
-      case 'inventories': return 'inventory';
-      case 'products': return 'product';
-      case 'production-orders': return 'production_order';
-      default: return 'machine';
+      case 'materials':
+        return 'material';
+      case 'inventories':
+        return 'inventory';
+      case 'products':
+        return 'product';
+      case 'production-orders':
+        return 'production_order';
+      default:
+        return 'machine';
     }
   }
 
@@ -71,11 +95,20 @@ export class DataWorkspaceComponent {
     this.importMessage.set(`Đã import ${count} dòng thành công.`);
     this.importOpen.set(false);
     switch (this.activeView()) {
-      case 'materials': await this.materials.load(); break;
-      case 'inventories': await this.inventories.initialize(); break;
-      case 'products': await this.products.load(); break;
-      case 'production-orders': await this.orders.initialize(); break;
-      default: await this.machines.load();
+      case 'materials':
+        await this.materials.load();
+        break;
+      case 'inventories':
+        await this.inventories.initialize();
+        break;
+      case 'products':
+        await this.products.load();
+        break;
+      case 'production-orders':
+        await this.orders.initialize();
+        break;
+      default:
+        await this.machines.load();
     }
   }
 }

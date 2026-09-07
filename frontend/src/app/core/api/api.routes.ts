@@ -8,12 +8,10 @@ export const API_ROUTES = {
   },
   conversations: {
     root: `${API_BASE}/conversations`,
-    messages: (conversationId: string) =>
-      `${API_BASE}/conversations/${conversationId}/messages`,
+    messages: (conversationId: string) => `${API_BASE}/conversations/${conversationId}/messages`,
     streamMessage: (conversationId: string) =>
       `${API_BASE}/conversations/${conversationId}/messages/stream`,
-    actions: (conversationId: string) =>
-      `${API_BASE}/conversations/${conversationId}/actions`,
+    actions: (conversationId: string) => `${API_BASE}/conversations/${conversationId}/actions`,
   },
   aiActions: {
     byId: (proposalId: string) => `${API_BASE}/ai/actions/${proposalId}`,
@@ -75,6 +73,10 @@ export const API_ROUTES = {
     adjust: `${API_BASE}/inventories/adjust`,
     transfer: `${API_BASE}/inventories/transfer`,
   },
+  productInventories: {
+    root: `${API_BASE}/product-inventories`,
+    transactions: `${API_BASE}/product-inventories/transactions`,
+  },
   warehouses: {
     root: `${API_BASE}/warehouses`,
     byId: (warehouseId: string) => `${API_BASE}/warehouses/${warehouseId}`,
@@ -89,6 +91,14 @@ export const API_ROUTES = {
     byId: (productionOrderId: string) => `${API_BASE}/production-orders/${productionOrderId}`,
     materialRequirements: (productionOrderId: string) =>
       `${API_BASE}/production-orders/${productionOrderId}/material-requirements`,
+    release: (productionOrderId: string) =>
+      `${API_BASE}/production-orders/${productionOrderId}/release`,
+    start: (productionOrderId: string) =>
+      `${API_BASE}/production-orders/${productionOrderId}/start`,
+    complete: (productionOrderId: string) =>
+      `${API_BASE}/production-orders/${productionOrderId}/complete`,
+    cancel: (productionOrderId: string) =>
+      `${API_BASE}/production-orders/${productionOrderId}/cancel`,
     operations: (productionOrderId: string) =>
       `${API_BASE}/production-orders/${productionOrderId}/operations`,
     startOperation: (productionOrderId: string, operationId: string) =>

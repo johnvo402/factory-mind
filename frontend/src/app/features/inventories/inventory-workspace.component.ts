@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
 import { UiIconComponent } from '../../shared/ui/ui-icon.component';
@@ -29,6 +29,16 @@ export class InventoryWorkspaceComponent implements OnInit {
   protected readonly warehouseEditorOpen = signal(false);
   protected readonly editingWarehouseId = signal<string | null>(null);
   protected readonly searchControl = new FormControl('', { nonNullable: true });
+  protected readonly historyForm = new FormGroup({
+    warehouseId: new FormControl('', { nonNullable: true }),
+    materialId: new FormControl('', { nonNullable: true }),
+    transactionType: new FormControl<InventoryTransactionType | ''>('', { nonNullable: true }),
+    from: new FormControl('', { nonNullable: true }),
+    to: new FormControl('', { nonNullable: true }),
+  });
+  protected readonly historyTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.store.transactionCount() / this.store.transactionPageSize())),
+  );
   protected readonly operationForm = new FormGroup({
     sourceWarehouseId: new FormControl('', {
       nonNullable: true,
@@ -158,7 +168,37 @@ export class InventoryWorkspaceComponent implements OnInit {
   }
 
   protected async showHistory(): Promise<void> {
-    if (await this.store.loadHistory()) this.historyOpen.set(true);
+    this.historyOpen.set(true);
+    await this.loadHistoryPage(1);
+  }
+
+  protected applyHistoryFilters(event: Event): void {
+    event.preventDefault();
+    void this.loadHistoryPage(1);
+  }
+
+  protected clearHistoryFilters(): void {
+    this.historyForm.reset({
+      warehouseId: '',
+      materialId: '',
+      transactionType: '',
+      from: '',
+      to: '',
+    });
+    void this.loadHistoryPage(1);
+  }
+
+  protected loadHistoryPage(page: number): Promise<boolean> {
+    const value = this.historyForm.getRawValue();
+    return this.store.loadHistory({
+      warehouseId: value.warehouseId || undefined,
+      materialId: value.materialId || undefined,
+      transactionType: value.transactionType || undefined,
+      from: value.from ? new Date(`${value.from}T00:00:00`).toISOString() : undefined,
+      to: value.to ? new Date(`${value.to}T23:59:59.999`).toISOString() : undefined,
+      page,
+      pageSize: this.store.transactionPageSize(),
+    });
   }
 
   protected operationLabel(type: InventoryTransactionType): string {
@@ -170,7 +210,6 @@ export class InventoryWorkspaceComponent implements OnInit {
       TransferIn: 'Chuyển vào',
       TransferOut: 'Chuyển ra',
       ProductionConsume: 'Sản xuất tiêu thụ',
-      ProductionOutput: 'Sản xuất hoàn thành',
     }[type];
   }
 

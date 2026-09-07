@@ -8,6 +8,7 @@ import {
   InventoryAdjustmentInput,
   InventoryMovementInput,
   InventoryTransaction,
+  InventoryTransactionFilters,
   InventoryTransactionPage,
   InventoryTransferInput,
   Warehouse,
@@ -24,8 +25,15 @@ export class InventoryApiService {
     return this.http.get<ApiResponse<Inventory[]>>(API_ROUTES.inventories.root, { params });
   }
 
-  getTransactions(page = 1, pageSize = 50): Observable<ApiResponse<InventoryTransactionPage>> {
-    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+  getTransactions(
+    filters: InventoryTransactionFilters = { page: 1, pageSize: 50 },
+  ): Observable<ApiResponse<InventoryTransactionPage>> {
+    let params = new HttpParams().set('page', filters.page).set('pageSize', filters.pageSize);
+    if (filters.warehouseId) params = params.set('warehouseId', filters.warehouseId);
+    if (filters.materialId) params = params.set('materialId', filters.materialId);
+    if (filters.transactionType) params = params.set('transactionType', filters.transactionType);
+    if (filters.from) params = params.set('from', filters.from);
+    if (filters.to) params = params.set('to', filters.to);
     return this.http.get<ApiResponse<InventoryTransactionPage>>(
       API_ROUTES.inventories.transactions,
       { params },

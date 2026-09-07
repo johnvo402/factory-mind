@@ -80,12 +80,36 @@ Ngoài phạm vi hiện tại:
 | Products | Quản lý danh mục sản phẩm | Manager/Admin |
 | Bill of Materials | Quản lý BOM theo revision và xem trước nhu cầu/thiếu hụt nguyên liệu mà không thay đổi tồn kho | Manager/Admin |
 | Work Centers & Routing | Quản lý nơi thực hiện, Routing theo revision và chuỗi công đoạn tuần tự cho từng Product | Manager/Admin |
-| Inventory | Warehouse master data, immutable raw-material and finished-goods ledgers, current balances và receive/issue/adjust/transfer | Manager/Admin |
-| Production Orders | Release khóa BOM + Routing, tạo operation snapshot bất biến, thực thi tuần tự và hoàn thành thành phẩm atomically | Manager/Admin |
+| Raw Material Inventory | Warehouse master data, `InventoryBalance`/`InventoryTransaction`, current material balances, filtered history và receive/issue/adjust/transfer | Manager/Admin |
+| Production Orders | UI manual đầy đủ: kiểm tra vật tư, Release, cấp phát nhiều kho, Start, thực thi công đoạn, Cancel và Complete vào kho thành phẩm | Manager/Admin |
+| Finished Goods Inventory | Read-only `ProductInventoryBalance` và lịch sử `ProductInventoryTransaction` được tạo bởi Production Order Complete | Manager/Admin |
 | Excel Import | Preview header/rows, gợi ý mapping, validate toàn file và import transaction | Manager/Admin |
 | Dashboard | Active orders, inventory balances, available/total machines và alerts | Mọi user đã đăng nhập |
 | Settings | Company, tenant users, roles và AI metadata không lộ key | Admin |
 | Production delivery | API image, Angular/Nginx image, internal PostgreSQL/MinIO và health checks | Vận hành hệ thống |
+
+Luồng sản xuất thủ công được vận hành trọn vẹn trong Angular:
+
+```text
+Planned
+  -> Release (khóa BOM + Routing)
+Released
+  -> Start (cấp phát kho chính xác + backend tiêu thụ vật tư)
+InProgress
+  -> thực thi tuần tự các công đoạn với Machine được chọn rõ ràng
+  -> Complete (backend nhập thành phẩm vào kho đích)
+Completed
+  -> ProductInventory ProductionOutput
+```
+
+Cancel chỉ xuất hiện cho trạng thái `Planned` và `Released`, đúng với command backend. Kho vật tư
+(`Material`, `InventoryBalance`, `InventoryTransaction`) và kho thành phẩm (`Product`,
+`ProductInventoryBalance`, `ProductInventoryTransaction`) là hai ledger riêng, không có thao tác sửa
+thành phẩm trực tiếp từ frontend.
+
+Release thủ công bắt đầu từ nút xác nhận trong Production Order UI. Release qua AI vẫn là luồng độc
+lập `Chat -> proposal -> human confirmation`; cả hai đều gọi business command chuẩn của backend. AI
+không được Start, Complete, Cancel hoặc điều khiển công đoạn.
 
 ## Kiến trúc
 

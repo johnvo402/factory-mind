@@ -13,6 +13,10 @@ export class BomApiService {
     return this.http.get<ApiResponse<Bom[]>>(API_ROUTES.products.boms(productId));
   }
 
+  getBom(productId: string, bomId: string): Observable<ApiResponse<Bom>> {
+    return this.http.get<ApiResponse<Bom>>(API_ROUTES.products.bomById(productId, bomId));
+  }
+
   createBom(productId: string, input: BomInput): Observable<ApiResponse<Bom>> {
     return this.http.post<ApiResponse<Bom>>(API_ROUTES.products.boms(productId), input);
   }
@@ -22,17 +26,11 @@ export class BomApiService {
   }
 
   activateBom(productId: string, bomId: string): Observable<ApiResponse<Bom>> {
-    return this.http.post<ApiResponse<Bom>>(
-      API_ROUTES.products.activateBom(productId, bomId),
-      {},
-    );
+    return this.http.post<ApiResponse<Bom>>(API_ROUTES.products.activateBom(productId, bomId), {});
   }
 
   archiveBom(productId: string, bomId: string): Observable<ApiResponse<Bom>> {
-    return this.http.post<ApiResponse<Bom>>(
-      API_ROUTES.products.archiveBom(productId, bomId),
-      {},
-    );
+    return this.http.post<ApiResponse<Bom>>(API_ROUTES.products.archiveBom(productId, bomId), {});
   }
 
   getProductRequirements(

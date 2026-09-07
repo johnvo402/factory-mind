@@ -28,8 +28,7 @@ export type InventoryTransactionType =
   | 'AdjustmentDecrease'
   | 'TransferIn'
   | 'TransferOut'
-  | 'ProductionConsume'
-  | 'ProductionOutput';
+  | 'ProductionConsume';
 
 export interface InventoryTransaction {
   id: string;
@@ -54,6 +53,16 @@ export interface InventoryTransactionPage {
   page: number;
   pageSize: number;
   totalCount: number;
+}
+
+export interface InventoryTransactionFilters {
+  warehouseId?: string;
+  materialId?: string;
+  transactionType?: InventoryTransactionType;
+  from?: string;
+  to?: string;
+  page: number;
+  pageSize: number;
 }
 
 export interface InventoryMovementInput {

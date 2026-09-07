@@ -1,0 +1,228 @@
+<section class="content">
+  <section class="toolbar">
+    <div>
+      <h2>Kho thành phẩm</h2>
+      <p>{{ store.balances().length }} số dư thành phẩm trong kết quả hiện tại</p>
+    </div>
+    <div class="toolbar-actions">
+      <form [formGroup]="balanceForm" (ngSubmit)="searchBalances($event)" class="inventory-filters">
+        <label>
+          <span>Tìm kiếm</span>
+          <input
+            type="search"
+            formControlName="search"
+            maxlength="200"
+            placeholder="Mã hoặc tên sản phẩm"
+          />
+        </label>
+        <label>
+          <span>Kho</span>
+          <select formControlName="warehouseId">
+            <option value="">Tất cả kho</option>
+            @for (warehouse of store.warehouses(); track warehouse.id) {
+              <option [value]="warehouse.id">{{ warehouse.code }} — {{ warehouse.name }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          <span>Sản phẩm</span>
+          <select formControlName="productId">
+            <option value="">Tất cả sản phẩm</option>
+            @for (product of store.products(); track product.id) {
+              <option [value]="product.id">{{ product.code }} — {{ product.name }}</option>
+            }
+          </select>
+        </label>
+        <button type="button" class="ghost" (click)="clearBalanceFilters()">Xóa lọc</button>
+        <button type="submit" class="secondary">
+          <app-ui-icon name="search" [size]="17" /> Tìm kiếm
+        </button>
+      </form>
+      <button type="button" class="secondary" (click)="showHistory()">Lịch sử thành phẩm</button>
+    </div>
+  </section>
+
+  @if (store.error() && !historyOpen()) {
+    <div class="error" role="alert">{{ store.error() }}</div>
+  }
+
+  @if (store.isLoading()) {
+    <div class="state" aria-live="polite">Đang tải kho thành phẩm...</div>
+  } @else if (store.balances().length === 0) {
+    <div class="state empty">
+      <strong>Chưa có thành phẩm trong kho.</strong>
+      <span>Thành phẩm sẽ xuất hiện sau khi lệnh sản xuất được hoàn thành.</span>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sản phẩm</th>
+            <th>Kho</th>
+            <th>Số lượng</th>
+            <th>Cập nhật cuối</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (balance of store.balances(); track balance.id) {
+            <tr>
+              <td>
+                <strong>{{ balance.productCode }}</strong
+                ><br />{{ balance.productName }}
+              </td>
+              <td>
+                <strong>{{ balance.warehouseCode }}</strong
+                ><br />{{ balance.warehouseName }}
+              </td>
+              <td>
+                <strong>{{ balance.quantity | number: '1.0-3' }}</strong>
+              </td>
+              <td>{{ balance.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (historyOpen()) {
+    <div class="editor-backdrop" (click)="historyOpen.set(false)">
+      <section
+        class="editor history-panel"
+        appDialogFocus
+        (dialogDismissed)="historyOpen.set(false)"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-inventory-history-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header>
+          <div>
+            <span class="eyebrow">SỔ GIAO DỊCH THÀNH PHẨM</span>
+            <h2 id="product-inventory-history-title">Lịch sử kho thành phẩm</h2>
+            <p>{{ store.transactionCount() }} giao dịch</p>
+          </div>
+          <button
+            type="button"
+            class="close"
+            aria-label="Đóng lịch sử kho thành phẩm"
+            (click)="historyOpen.set(false)"
+          >
+            <app-ui-icon name="x" />
+          </button>
+        </header>
+
+        <form
+          [formGroup]="historyForm"
+          (ngSubmit)="applyHistoryFilters($event)"
+          class="history-filters"
+        >
+          <label
+            >Kho
+            <select formControlName="warehouseId">
+              <option value="">Tất cả kho</option>
+              @for (warehouse of store.warehouses(); track warehouse.id) {
+                <option [value]="warehouse.id">{{ warehouse.code }} — {{ warehouse.name }}</option>
+              }
+            </select>
+          </label>
+          <label
+            >Sản phẩm
+            <select formControlName="productId">
+              <option value="">Tất cả sản phẩm</option>
+              @for (product of store.products(); track product.id) {
+                <option [value]="product.id">{{ product.code }} — {{ product.name }}</option>
+              }
+            </select>
+          </label>
+          <label
+            >Loại giao dịch
+            <select formControlName="transactionType">
+              <option value="">Tất cả loại</option>
+              <option value="ProductionOutput">Nhập thành phẩm từ sản xuất</option>
+            </select>
+          </label>
+          <label>Từ ngày<input type="date" formControlName="from" /></label>
+          <label>Đến ngày<input type="date" formControlName="to" /></label>
+          <div class="filter-actions">
+            <button type="button" class="ghost" (click)="clearHistoryFilters()">Xóa lọc</button
+            ><button type="submit" class="secondary">Áp dụng</button>
+          </div>
+        </form>
+
+        @if (store.error()) {
+          <div class="error" role="alert">{{ store.error() }}</div>
+        }
+        @if (store.isLoadingHistory()) {
+          <div class="state" aria-live="polite">Đang tải lịch sử thành phẩm...</div>
+        } @else if (store.transactions().length === 0) {
+          <div class="state empty compact">
+            <strong>Chưa có giao dịch thành phẩm.</strong
+            ><span>Giao dịch sẽ được tạo khi hoàn thành lệnh sản xuất.</span>
+          </div>
+        } @else {
+          <div class="table-wrap history-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Thời gian</th>
+                  <th>Sản phẩm</th>
+                  <th>Kho</th>
+                  <th>Loại</th>
+                  <th>Số lượng</th>
+                  <th>Tham chiếu / Ghi chú</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (transaction of store.transactions(); track transaction.id) {
+                  <tr>
+                    <td>{{ transaction.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                      <strong>{{ transaction.productCode }}</strong
+                      ><br />{{ transaction.productName }}
+                    </td>
+                    <td>
+                      <strong>{{ transaction.warehouseCode }}</strong
+                      ><br />{{ transaction.warehouseName }}
+                    </td>
+                    <td>{{ transactionTypeLabel(transaction.type) }}</td>
+                    <td>
+                      <span class="quantity-positive"
+                        >+{{ transaction.signedQuantity | number: '1.0-3' }}</span
+                      >
+                    </td>
+                    <td>
+                      {{ transaction.referenceType || '—' }}<br /><span class="muted">{{
+                        transaction.note || 'Không có ghi chú'
+                      }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <nav class="pagination" aria-label="Phân trang lịch sử thành phẩm">
+            <button
+              type="button"
+              class="secondary"
+              [disabled]="store.transactionPage() <= 1 || store.isLoadingHistory()"
+              (click)="loadHistoryPage(store.transactionPage() - 1)"
+            >
+              Trang trước
+            </button>
+            <span>Trang {{ store.transactionPage() }} / {{ totalPages() }}</span>
+            <button
+              type="button"
+              class="secondary"
+              [disabled]="store.transactionPage() >= totalPages() || store.isLoadingHistory()"
+              (click)="loadHistoryPage(store.transactionPage() + 1)"
+            >
+              Trang sau
+            </button>
+          </nav>
+        }
+      </section>
+    </div>
+  }
+</section>

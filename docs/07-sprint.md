@@ -630,5 +630,31 @@ Mỗi file chỉ khoảng 5–10 dòng:
 AI vẫn không thể start/complete/cancel order, start/complete operation, assign/change Machine, consume/adjust
 inventory hoặc activate BOM/Routing. Release proposal luôn cần explicit UI/API confirmation.
 
+# Manual manufacturing frontend completion
+
+Done.
+
+* [x] Planned Production Order có material preview, confirmed manual Release, Edit/Delete và confirmed Cancel.
+* [x] Released Production Order hiển thị BOM/Routing đã khóa, cho phép cấp phát một Material qua nhiều Warehouse và chỉ Start sau bước xác nhận thứ hai.
+* [x] Allocation dùng đúng DTO backend, yêu cầu Warehouse, số lượng dương và tổng chính xác theo requirement sáu chữ số thập phân.
+* [x] Execution panel tải lại dedicated operations endpoint và Machines; Start/Complete Operation refresh cả ba state Orders/Operations/Machines.
+* [x] InProgress Production Order có Complete dialog với active destination Warehouse; backend vẫn quyết định operations đã hoàn tất và tạo ProductionOutput.
+* [x] `/data/product-inventories` cung cấp Kho thành phẩm read-only với balance filters, transaction filters và pagination.
+* [x] Kho vật tư và Kho thành phẩm được tách rõ theo Material/Inventory ledger và Product/ProductInventory ledger.
+* [x] Raw inventory history hỗ trợ các filter Warehouse, Material, transaction type, from/to và pagination đã có ở backend.
+* [x] Route, service, store và component tests bảo vệ manual lifecycle; không thêm AI mutation mới hoặc thay đổi backend business rule.
+
+Lifecycle UI:
+
+```text
+Planned -> Release -> Released -> Start + raw material consumption
+         \-> Cancel      \-> Cancel
+InProgress -> sequential operations -> Complete -> ProductInventory ProductionOutput
+```
+
+Manual Release và AI-confirmed Release là hai entry point có xác nhận riêng nhưng cùng giữ backend
+làm authority. Frontend không optimistic-update status, không tự issue raw inventory và không ghi
+ProductInventory trực tiếp.
+
 ---
 

@@ -267,6 +267,7 @@ Mỗi workspace có URL riêng để reload, deep link và browser Back hoạt �
 /data/inventories
 /data/products
 /data/production-orders
+/data/product-inventories
 /settings
 ```
 
@@ -458,6 +459,32 @@ The Data workspace includes an Excel import wizard for Machine, Material, Produc
 The Inventory workspace is a warehouse ledger view rather than balance CRUD. It lists current material/warehouse quantities and last update time, provides Receive, Issue, Adjust, and Transfer forms, manages active/deactivated warehouses, and opens a paged transaction history. Positive and negative changes use both a sign and accessible color treatment. Forms keep visible labels, inline validation, focus indicators, and disabled/loading feedback consistent with the existing workspace styling.
 
 The Production Order workspace treats status as a business state instead of an editable field. Planned rows expose material preview, edit, Release, and Cancel; Released rows expose the locked BOM revision, material preview, explicit multi-warehouse allocation, Start, and Cancel; InProgress rows show execution timestamps and remain frozen. Allocation inputs keep per-Material totals visible, use inline validation, and enable Start only when every server-calculated requirement is matched. Server validation remains authoritative.
+
+Production execution uses dedicated dialog state for material preview, Release confirmation, Start
+allocation, Cancel confirmation, operation execution, and final completion. Opening execution always
+reloads `/api/production-orders/{id}/operations` and Machines instead of trusting the list snapshot.
+Starting an operation still requires an explicitly selected Available Machine in the required Work
+Center. Completing an operation refreshes orders, operations, and Machines; completing the order is a
+separate confirmed action that requires a destination Warehouse.
+
+The Start dialog loads the latest locked-BOM requirements and active Warehouses. Each Material can be
+split across multiple Warehouse rows; every row requires a Warehouse and positive quantity, and the
+rounded six-decimal total must equal the server-calculated requirement. The dialog uses a second,
+high-impact confirmation before the POST. Failed API validation stays inside the dialog and preserves
+the allocation draft.
+
+Raw and finished inventory remain separate by design:
+
+| Workspace | Domain records | UI mutations |
+| --- | --- | --- |
+| Kho vật tư | `Material`, `InventoryBalance`, `InventoryTransaction` | Receive, Issue, Adjust, Transfer |
+| Kho thành phẩm | `Product`, `ProductInventoryBalance`, `ProductInventoryTransaction` | None; read-only balances and filtered/paged history |
+
+`ProductionOutput` appears only after the backend completes a Production Order. The frontend never
+calls inventory issue endpoints for production consumption and never creates finished-goods records.
+Manual Release uses a Production Order confirmation dialog; AI Release remains
+`proposal -> explicit human confirmation -> canonical Release command`. No other AI write action is
+exposed.
 
 Knowledge is a first-class workspace for PDF upload, asynchronous processing status, retry after parsing failure, and semantic-search inspection with document, page, excerpt, and score. While documents are uploaded or processing, the list polls quietly without blocking the rest of the UI.
 

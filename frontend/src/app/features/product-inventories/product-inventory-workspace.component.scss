@@ -1,0 +1,97 @@
+.inventory-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.inventory-filters label {
+  display: grid;
+  gap: 5px;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.inventory-filters input,
+.inventory-filters select {
+  min-height: 42px;
+}
+
+.history-panel {
+  width: min(1080px, 96vw);
+  height: 100dvh;
+}
+
+.history-panel > header p {
+  margin-top: 6px;
+  color: var(--color-muted);
+}
+
+.history-filters {
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  align-items: end;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.history-table table {
+  min-width: 940px;
+}
+.quantity-positive {
+  color: var(--color-success);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+.muted {
+  color: var(--color-muted);
+}
+.state.compact {
+  min-height: 180px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.pagination span {
+  color: var(--color-muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .inventory-filters {
+    justify-content: flex-end;
+  }
+  .history-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .inventory-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  .inventory-filters label:first-child {
+    grid-column: 1 / -1;
+  }
+  .history-filters {
+    grid-template-columns: 1fr;
+  }
+  .filter-actions {
+    justify-content: stretch;
+  }
+  .filter-actions button {
+    flex: 1;
+  }
+}

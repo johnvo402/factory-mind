@@ -1,4 +1,5 @@
-export type ProductionOrderStatus = 'planned' | 'released' | 'in_progress' | 'completed' | 'cancelled';
+export type ProductionOrderStatus =
+  'planned' | 'released' | 'in_progress' | 'completed' | 'cancelled';
 export type ProductionOperationStatus = 'pending' | 'in_progress' | 'completed';
 
 export interface ProductionOrderOperation {
@@ -47,4 +48,18 @@ export interface ProductionOrderInput {
   number: string;
   productId: string;
   quantity: number;
+}
+
+export interface ProductionMaterialAllocationInput {
+  materialId: string;
+  warehouseId: string;
+  quantity: number;
+}
+
+export interface StartProductionOrderInput {
+  allocations: ProductionMaterialAllocationInput[];
+}
+
+export interface CompleteProductionOrderInput {
+  warehouseId: string;
 }

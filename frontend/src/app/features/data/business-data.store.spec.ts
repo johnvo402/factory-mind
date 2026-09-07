@@ -90,18 +90,28 @@ describe('Business data stores', () => {
   });
 
   it('initializes production orders together with product options', async () => {
-    const orderApi = jasmine.createSpyObj<ProductionOrderApiService>(
-      'ProductionOrderApiService',
-      ['getProductionOrders', 'createProductionOrder', 'updateProductionOrder', 'deleteProductionOrder'],
-    );
-    const productApi = jasmine.createSpyObj<ProductApiService>('ProductApiService', ['getProducts']);
+    const orderApi = jasmine.createSpyObj<ProductionOrderApiService>('ProductionOrderApiService', [
+      'getProductionOrders',
+      'createProductionOrder',
+      'updateProductionOrder',
+      'deleteProductionOrder',
+    ]);
+    const productApi = jasmine.createSpyObj<ProductApiService>('ProductApiService', [
+      'getProducts',
+    ]);
     const bomApi = jasmine.createSpyObj<BomApiService>('BomApiService', [
       'getProductionOrderRequirements',
     ]);
-    const machineApi = jasmine.createSpyObj<MachineApiService>('MachineApiService', ['getMachines']);
+    const machineApi = jasmine.createSpyObj<MachineApiService>('MachineApiService', [
+      'getMachines',
+    ]);
+    const inventoryApi = jasmine.createSpyObj<InventoryApiService>('InventoryApiService', [
+      'getWarehouses',
+    ]);
     orderApi.getProductionOrders.and.returnValue(success([productionOrder()]));
     productApi.getProducts.and.returnValue(success([product()]));
     machineApi.getMachines.and.returnValue(success([]));
+    inventoryApi.getWarehouses.and.returnValue(success([warehouse()]));
     TestBed.configureTestingModule({
       providers: [
         ProductionOrderStore,
@@ -109,6 +119,7 @@ describe('Business data stores', () => {
         { provide: ProductApiService, useValue: productApi },
         { provide: BomApiService, useValue: bomApi },
         { provide: MachineApiService, useValue: machineApi },
+        { provide: InventoryApiService, useValue: inventoryApi },
       ],
     });
     const store = TestBed.inject(ProductionOrderStore);

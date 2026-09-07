@@ -1,55 +1,176 @@
 <section class="content">
   <section class="toolbar">
-    <div><h2>Lệnh sản xuất</h2><p>{{ store.orders().length }} lệnh trong kết quả hiện tại</p></div>
+    <div>
+      <h2>Lệnh sản xuất</h2>
+      <p>{{ store.orders().length }} lệnh trong kết quả hiện tại</p>
+    </div>
     <div class="toolbar-actions">
       <form (submit)="search($event)" class="search-form">
-        <input type="search" [formControl]="searchControl" maxlength="200" aria-label="Tìm lệnh sản xuất" placeholder="Tìm theo số lệnh, sản phẩm hoặc trạng thái">
-        @if (store.search()) { <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button> }
-        <button type="submit" class="secondary"><app-ui-icon name="search" [size]="17" /> Tìm kiếm</button>
+        <input
+          type="search"
+          [formControl]="searchControl"
+          maxlength="200"
+          aria-label="Tìm lệnh sản xuất"
+          placeholder="Tìm theo số lệnh, sản phẩm hoặc trạng thái"
+        />
+        @if (store.search()) {
+          <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button>
+        }
+        <button type="submit" class="secondary">
+          <app-ui-icon name="search" [size]="17" /> Tìm kiếm
+        </button>
       </form>
-      <button type="button" class="primary" [disabled]="store.products().length === 0" (click)="startCreate()"><app-ui-icon name="plus" /> Thêm lệnh</button>
+      <button
+        type="button"
+        class="primary"
+        [disabled]="store.products().length === 0"
+        (click)="startCreate()"
+      >
+        <app-ui-icon name="plus" /> Thêm lệnh
+      </button>
     </div>
   </section>
 
-  @if (store.error()) { <div class="error" role="alert">{{ store.error() }}</div> }
+  @if (
+    store.error() &&
+    !releaseConfirmOrder() &&
+    !startOrder() &&
+    !cancelConfirmOrder() &&
+    !completeOrder() &&
+    !executionOrder()
+  ) {
+    <div class="error" role="alert">{{ store.error() }}</div>
+  }
 
   @if (store.isLoading()) {
-    <div class="state">Đang tải lệnh sản xuất...</div>
+    <div class="state" aria-live="polite">Đang tải lệnh sản xuất...</div>
   } @else if (store.products().length === 0) {
-    <div class="state empty"><strong>Chưa có sản phẩm.</strong><span>Hãy tạo sản phẩm trước khi lập lệnh sản xuất.</span></div>
+    <div class="state empty">
+      <strong>Chưa có sản phẩm.</strong><span>Hãy tạo sản phẩm trước khi lập lệnh sản xuất.</span>
+    </div>
   } @else if (store.orders().length === 0) {
     <div class="state empty">
-      <strong>Chưa có lệnh sản xuất.</strong>
-      <span>Tạo lệnh đầu tiên để theo dõi tiến độ sản xuất.</span>
-      <button type="button" class="primary" (click)="startCreate()">Thêm lệnh sản xuất</button>
+      <strong>Chưa có lệnh sản xuất.</strong
+      ><span>Tạo lệnh đầu tiên để theo dõi tiến độ sản xuất.</span
+      ><button type="button" class="primary" (click)="startCreate()">Thêm lệnh sản xuất</button>
     </div>
   } @else {
     <div class="table-wrap">
-      <table>
-        <thead><tr><th>Số lệnh</th><th>Sản phẩm</th><th>Số lượng</th><th>Trạng thái</th><th></th></tr></thead>
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Số lệnh</th>
+            <th>Sản phẩm</th>
+            <th>Số lượng</th>
+            <th>Phiên bản đã khóa</th>
+            <th>Trạng thái</th>
+            <th></th>
+          </tr>
+        </thead>
         <tbody>
           @for (order of store.orders(); track order.id) {
             <tr>
-              <td><strong>{{ order.number }}</strong></td>
+              <td>
+                <strong>{{ order.number }}</strong>
+              </td>
               <td>{{ order.productCode }} — {{ order.productName }}</td>
               <td>{{ order.quantity | number: '1.0-3' }}</td>
-              <td><span class="order-status" [class.released]="order.status === 'released'" [class.in_progress]="order.status === 'in_progress'" [class.completed]="order.status === 'completed'" [class.cancelled]="order.status === 'cancelled'">{{ statusLabel(order.status) }}</span></td>
+              <td class="locked-revisions">
+                <span
+                  >BOM:
+                  {{ order.bomRevision === null ? 'Chưa khóa' : 'rev ' + order.bomRevision }}</span
+                ><span
+                  >Routing:
+                  {{
+                    order.routingRevision === null ? 'Chưa khóa' : 'rev ' + order.routingRevision
+                  }}</span
+                >
+              </td>
+              <td>
+                <span
+                  class="order-status"
+                  [class.released]="order.status === 'released'"
+                  [class.in_progress]="order.status === 'in_progress'"
+                  [class.completed]="order.status === 'completed'"
+                  [class.cancelled]="order.status === 'cancelled'"
+                  >{{ statusLabel(order.status) }}</span
+                >
+              </td>
               <td class="actions">
                 @if (confirmDeleteId() === order.id) {
-                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(order.id)"><app-ui-icon name="trash-2" [size]="16" /> Xác nhận</button>
-                  <button type="button" class="ghost" (click)="confirmDeleteId.set(null)">Hủy</button>
-                } @else {
+                  <button
+                    type="button"
+                    class="danger"
+                    [disabled]="store.isSaving()"
+                    (click)="confirmDelete(order.id)"
+                  >
+                    <app-ui-icon name="trash-2" [size]="16" /> Xác nhận xóa
+                  </button>
+                  <button
+                    type="button"
+                    class="ghost"
+                    [disabled]="store.isSaving()"
+                    (click)="confirmDeleteId.set(null)"
+                  >
+                    Quay lại
+                  </button>
+                } @else if (order.status !== 'cancelled') {
                   <details class="row-actions">
-                    <summary [attr.aria-label]="'Thao tác với ' + order.number"><app-ui-icon name="more-horizontal" /></summary>
+                    <summary [attr.aria-label]="'Thao tác với ' + order.number">
+                      <app-ui-icon name="more-horizontal" />
+                    </summary>
                     <div class="row-menu">
-                      <button type="button" class="ghost" (click)="checkMaterials(order)">Kiểm tra vật tư</button>
-                      @if (order.routingId) { <button type="button" class="ghost" (click)="openExecution(order)">Công đoạn thực thi</button> }
+                      @if (order.status === 'planned' || order.status === 'released') {
+                        <button type="button" class="ghost" (click)="checkMaterials(order)">
+                          Kiểm tra vật tư
+                        </button>
+                      }
                       @if (order.status === 'planned') {
-                        <button type="button" class="ghost" (click)="startEdit(order)"><app-ui-icon name="pencil" [size]="16" /> Sửa</button>
-                        <button type="button" class="ghost danger-text" (click)="requestDelete(order.id)"><app-ui-icon name="trash-2" [size]="16" /> Xóa</button>
+                        <button type="button" class="ghost" (click)="openRelease(order)">
+                          Phát hành lệnh
+                        </button>
+                        <button type="button" class="ghost" (click)="startEdit(order)">
+                          <app-ui-icon name="pencil" [size]="16" /> Sửa
+                        </button>
+                        <button
+                          type="button"
+                          class="ghost danger-text"
+                          (click)="requestDelete(order.id)"
+                        >
+                          <app-ui-icon name="trash-2" [size]="16" /> Xóa
+                        </button>
+                        <button type="button" class="ghost danger-text" (click)="openCancel(order)">
+                          Hủy lệnh
+                        </button>
+                      }
+                      @if (order.status === 'released') {
+                        <button type="button" class="ghost" (click)="openStart(order)">
+                          Bắt đầu sản xuất
+                        </button>
+                        <button type="button" class="ghost" (click)="openExecution(order)">
+                          Công đoạn thực thi
+                        </button>
+                        <button type="button" class="ghost danger-text" (click)="openCancel(order)">
+                          Hủy lệnh
+                        </button>
+                      }
+                      @if (order.status === 'in_progress') {
+                        <button type="button" class="ghost" (click)="openExecution(order)">
+                          Công đoạn thực thi
+                        </button>
+                        <button type="button" class="ghost" (click)="openComplete(order)">
+                          Hoàn thành lệnh
+                        </button>
+                      }
+                      @if (order.status === 'completed') {
+                        <button type="button" class="ghost" (click)="openExecution(order)">
+                          Công đoạn thực thi
+                        </button>
                       }
                     </div>
                   </details>
+                } @else {
+                  <span class="read-only-label">Chỉ đọc</span>
                 }
               </td>
             </tr>
@@ -61,30 +182,56 @@
 
   @if (editorOpen()) {
     <div class="editor-backdrop" (click)="cancelEdit()">
-      <section class="editor" appDialogFocus (dialogDismissed)="cancelEdit()" role="dialog" aria-modal="true" aria-labelledby="order-editor-title" (click)="$event.stopPropagation()">
+      <section
+        class="editor"
+        appDialogFocus
+        (dialogDismissed)="cancelEdit()"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="order-editor-title"
+        (click)="$event.stopPropagation()"
+      >
         <header>
-          <div><span class="eyebrow">LỆNH SẢN XUẤT</span><h2 id="order-editor-title">{{ editingId() ? 'Cập nhật lệnh sản xuất' : 'Thêm lệnh sản xuất mới' }}</h2></div>
-          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()"><app-ui-icon name="x" /></button>
+          <div>
+            <span class="eyebrow">LỆNH SẢN XUẤT</span>
+            <h2 id="order-editor-title">
+              {{ editingId() ? 'Cập nhật lệnh sản xuất' : 'Thêm lệnh sản xuất mới' }}
+            </h2>
+          </div>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">
+            <app-ui-icon name="x" />
+          </button>
         </header>
         <form [formGroup]="orderForm" (ngSubmit)="save()">
-          <label>Số lệnh
-            <input type="text" formControlName="number" maxlength="50" placeholder="Ví dụ: PO-2026-001">
-            @if (orderForm.controls.number.touched && orderForm.controls.number.invalid) { <small>Số lệnh là bắt buộc và không quá 50 ký tự.</small> }
+          <label
+            >Số lệnh<input
+              type="text"
+              formControlName="number"
+              maxlength="50"
+              placeholder="Ví dụ: PO-2026-001"
+            />
+            @if (orderForm.controls.number.touched && orderForm.controls.number.invalid) {
+              <small>Số lệnh là bắt buộc và không quá 50 ký tự.</small>
+            }
           </label>
-          <label>Sản phẩm
-            <select formControlName="productId" aria-label="Sản phẩm">
+          <label
+            >Sản phẩm<select formControlName="productId">
               @for (product of store.products(); track product.id) {
                 <option [value]="product.id">{{ product.code }} — {{ product.name }}</option>
               }
-            </select>
-          </label>
-          <label>Số lượng
-            <input type="number" formControlName="quantity" min="0.001" step="0.001" placeholder="Ví dụ: 500">
-            @if (orderForm.controls.quantity.touched && orderForm.controls.quantity.invalid) { <small>Số lượng phải lớn hơn 0.</small> }
+            </select></label
+          >
+          <label
+            >Số lượng<input type="number" formControlName="quantity" min="0.001" step="0.001" />
+            @if (orderForm.controls.quantity.touched && orderForm.controls.quantity.invalid) {
+              <small>Số lượng phải lớn hơn 0.</small>
+            }
           </label>
           <footer>
-            <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button>
-            <button type="submit" class="primary" [disabled]="store.isSaving()">{{ store.isSaving() ? 'Đang lưu...' : 'Lưu lệnh sản xuất' }}</button>
+            <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button
+            ><button type="submit" class="primary" [disabled]="store.isSaving()">
+              {{ store.isSaving() ? 'Đang lưu...' : 'Lưu lệnh sản xuất' }}
+            </button>
           </footer>
         </form>
       </section>
@@ -93,41 +240,84 @@
 
   @if (requirementsOpen() && requirementOrder(); as order) {
     <div class="editor-backdrop" (click)="closeRequirements()">
-      <section class="editor requirements-panel" appDialogFocus (dialogDismissed)="closeRequirements()" role="dialog" aria-modal="true" aria-labelledby="order-requirements-title" (click)="$event.stopPropagation()">
+      <section
+        class="editor requirements-panel"
+        appDialogFocus
+        (dialogDismissed)="closeRequirements()"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="order-requirements-title"
+        (click)="$event.stopPropagation()"
+      >
         <header>
           <div>
             <span class="eyebrow">KẾ HOẠCH VẬT TƯ</span>
             <h2 id="order-requirements-title">{{ order.number }}</h2>
-            <p>{{ order.productCode }} — {{ order.productName }} · {{ order.quantity | number: '1.0-3' }} sản phẩm</p>
+            <p>
+              {{ order.productCode }} — {{ order.productName }} ·
+              {{ order.quantity | number: '1.0-3' }} sản phẩm
+            </p>
           </div>
-          <button type="button" class="close" aria-label="Đóng kiểm tra vật tư" (click)="closeRequirements()"><app-ui-icon name="x" /></button>
+          <button
+            type="button"
+            class="close"
+            aria-label="Đóng kiểm tra vật tư"
+            (click)="closeRequirements()"
+          >
+            <app-ui-icon name="x" />
+          </button>
         </header>
-
         @if (store.isLoadingRequirements()) {
           <div class="state" role="status">Đang tính nhu cầu và đối chiếu tồn kho...</div>
         } @else if (store.requirementError()) {
           <div class="error" role="alert">
-            {{ store.requirementError() }}
-            <button type="button" class="secondary" (click)="checkMaterials(order)">Thử lại</button>
+            {{ store.requirementError()
+            }}<button type="button" class="secondary" (click)="checkMaterials(order)">
+              Thử lại
+            </button>
           </div>
         } @else if (store.requirements(); as requirements) {
           <div class="order-requirements" role="status" aria-live="polite">
             <div class="requirements-summary" [class.shortage]="!requirements.canProduce">
-              <strong>{{ requirements.canProduce ? 'Đủ vật tư để thực hiện lệnh' : 'Lệnh đang thiếu vật tư' }}</strong>
-              <span>Tính theo active BOM revision {{ requirements.bomRevision }}. Đây là bản xem trước, tồn kho chưa thay đổi.</span>
+              <strong>{{
+                requirements.canProduce ? 'Đủ vật tư để thực hiện lệnh' : 'Lệnh đang thiếu vật tư'
+              }}</strong
+              ><span
+                >{{
+                  order.status === 'planned'
+                    ? 'Tính theo BOM đang hoạt động revision ' + requirements.bomRevision + '.'
+                    : 'Tính theo BOM đã khóa revision ' +
+                      requirements.bomRevision +
+                      ' của lệnh sản xuất.'
+                }}
+                Đây là bản xem trước. Tồn kho chưa thay đổi.</span
+              >
             </div>
-
             <div class="requirements-list">
               @for (material of requirements.materials; track material.materialId) {
                 <article class="material-row" [class.shortage]="!material.isSufficient">
                   <header>
-                    <div><strong>{{ material.materialCode }}</strong><span>{{ material.materialName }}</span></div>
+                    <div>
+                      <strong>{{ material.materialCode }}</strong
+                      ><span>{{ material.materialName }}</span>
+                    </div>
                     <b>{{ material.isSufficient ? 'Đủ' : 'Thiếu' }}</b>
                   </header>
                   <dl>
-                    <div><dt>Cần</dt><dd>{{ material.requiredQuantity | number: '1.0-6' }} {{ material.unit }}</dd></div>
-                    <div><dt>Hiện có</dt><dd>{{ material.availableQuantity | number: '1.0-6' }} {{ material.unit }}</dd></div>
-                    <div><dt>Thiếu hụt</dt><dd>{{ material.shortageQuantity | number: '1.0-6' }} {{ material.unit }}</dd></div>
+                    <div>
+                      <dt>Cần</dt>
+                      <dd>{{ material.requiredQuantity | number: '1.0-6' }} {{ material.unit }}</dd>
+                    </div>
+                    <div>
+                      <dt>Hiện có</dt>
+                      <dd>
+                        {{ material.availableQuantity | number: '1.0-6' }} {{ material.unit }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Thiếu hụt</dt>
+                      <dd>{{ material.shortageQuantity | number: '1.0-6' }} {{ material.unit }}</dd>
+                    </div>
                   </dl>
                 </article>
               }
@@ -138,38 +328,527 @@
     </div>
   }
 
+  @if (releaseConfirmOrder(); as order) {
+    <div class="editor-backdrop" (click)="releaseConfirmOrder.set(null)">
+      <section
+        class="editor confirmation-panel"
+        appDialogFocus
+        (dialogDismissed)="releaseConfirmOrder.set(null)"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="release-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header>
+          <div>
+            <span class="eyebrow">PHÁT HÀNH LỆNH</span>
+            <h2 id="release-title">Phát hành {{ order.number }}?</h2>
+          </div>
+          <button
+            type="button"
+            class="close"
+            aria-label="Đóng xác nhận phát hành"
+            [disabled]="store.isSaving()"
+            (click)="releaseConfirmOrder.set(null)"
+          >
+            <app-ui-icon name="x" />
+          </button>
+        </header>
+        <p class="confirmation-copy">
+          Khi phát hành, hệ thống sẽ khóa BOM và Routing hiện tại cho lệnh sản xuất này.
+        </p>
+        @if (store.error()) {
+          <div class="error" role="alert">{{ store.error() }}</div>
+        }
+        <footer>
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="store.isSaving()"
+            (click)="releaseConfirmOrder.set(null)"
+          >
+            Quay lại</button
+          ><button
+            type="button"
+            class="primary"
+            [disabled]="store.isSaving()"
+            (click)="confirmRelease(order)"
+          >
+            {{ store.isSaving() ? 'Đang phát hành...' : 'Phát hành lệnh' }}
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
+
+  @if (startOrder(); as order) {
+    <div class="editor-backdrop" (click)="closeStart()">
+      <section
+        class="editor start-panel"
+        appDialogFocus
+        (dialogDismissed)="closeStart()"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="start-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header>
+          <div>
+            <span class="eyebrow">BẮT ĐẦU SẢN XUẤT</span>
+            <h2 id="start-title">{{ order.number }}</h2>
+            <p>
+              {{ order.productCode }} — {{ order.productName }} ·
+              {{ order.quantity | number: '1.0-3' }} sản phẩm
+            </p>
+          </div>
+          <button
+            type="button"
+            class="close"
+            aria-label="Đóng cấp phát vật tư"
+            [disabled]="store.isSaving()"
+            (click)="closeStart()"
+          >
+            <app-ui-icon name="x" />
+          </button>
+        </header>
+        @if (store.isLoadingRequirements()) {
+          <div class="state" role="status">Đang tải nhu cầu vật tư và kho hoạt động...</div>
+        } @else if (store.requirementError()) {
+          <div class="error" role="alert">
+            {{ store.requirementError()
+            }}<button type="button" class="secondary" (click)="openStart(order)">Thử lại</button>
+          </div>
+        } @else if (startConfirmationOpen()) {
+          <section class="impact-confirmation" aria-labelledby="start-confirmation-title">
+            <h3 id="start-confirmation-title">Bắt đầu {{ order.number }}?</h3>
+            <p>
+              Hành động này sẽ chuyển lệnh sang <strong>Đang sản xuất</strong> và tiêu thụ vật tư
+              theo các kho đã chọn.
+            </p>
+            <p>Hành động không thể hoàn tác bằng thao tác Sửa thông thường.</p>
+          </section>
+          @if (store.error()) {
+            <div class="error" role="alert">{{ store.error() }}</div>
+          }
+          <footer>
+            <button
+              type="button"
+              class="secondary"
+              [disabled]="store.isSaving()"
+              (click)="startConfirmationOpen.set(false)"
+            >
+              Quay lại</button
+            ><button
+              type="button"
+              class="primary"
+              [disabled]="store.isSaving()"
+              (click)="confirmStart(order)"
+            >
+              {{ store.isSaving() ? 'Đang bắt đầu...' : 'Bắt đầu sản xuất' }}
+            </button>
+          </footer>
+        } @else if (store.requirements(); as requirements) {
+          <p class="preview-note">
+            Cấp phát đúng nhu cầu theo BOM đã khóa revision {{ requirements.bomRevision }}. Backend
+            sẽ kiểm tra tồn kho thực tế của từng kho khi bắt đầu.
+          </p>
+          @if (activeWarehouses().length === 0) {
+            <div class="error" role="alert">Không có kho đang hoạt động để cấp phát vật tư.</div>
+          }
+          <div class="allocation-list">
+            @for (material of requirements.materials; track material.materialId) {
+              <fieldset class="allocation-card">
+                <legend>{{ material.materialCode }} — {{ material.materialName }}</legend>
+                <p>
+                  Cần:
+                  <strong
+                    >{{ material.requiredQuantity | number: '1.0-6' }} {{ material.unit }}</strong
+                  >
+                </p>
+                @for (allocation of allocationsFor(material.materialId); track $index) {
+                  <div class="allocation-row">
+                    <label
+                      >Kho cấp phát<select
+                        [value]="allocation.warehouseId"
+                        (change)="updateAllocationWarehouse(material.materialId, $index, $event)"
+                      >
+                        <option value="" [selected]="allocation.warehouseId === ''">
+                          Chọn kho
+                        </option>
+                        @for (warehouse of activeWarehouses(); track warehouse.id) {
+                          <option
+                            [value]="warehouse.id"
+                            [selected]="allocation.warehouseId === warehouse.id"
+                          >
+                            {{ warehouseLabel(warehouse) }}
+                          </option>
+                        }
+                      </select></label
+                    >
+                    <label
+                      >Số lượng<input
+                        type="number"
+                        min="0.000001"
+                        step="0.000001"
+                        [value]="allocation.quantity"
+                        (input)="updateAllocationQuantity(material.materialId, $index, $event)"
+                    /></label>
+                    <button
+                      type="button"
+                      class="ghost danger-text remove-allocation"
+                      [disabled]="allocationsFor(material.materialId).length === 1"
+                      [attr.aria-label]="'Xóa dòng cấp phát cho ' + material.materialCode"
+                      (click)="removeAllocation(material.materialId, $index)"
+                    >
+                      <app-ui-icon name="trash-2" [size]="16" /> Xóa
+                    </button>
+                  </div>
+                  @if (startSubmitted() && (!allocation.warehouseId || allocation.quantity <= 0)) {
+                    <small class="allocation-error" role="alert"
+                      >Mỗi dòng cần có kho và số lượng lớn hơn 0.</small
+                    >
+                  }
+                }
+                <div
+                  class="allocation-summary"
+                  [class.invalid]="
+                    roundQuantity(allocationTotal(material.materialId)) !==
+                    roundQuantity(material.requiredQuantity)
+                  "
+                >
+                  <span
+                    >Đã phân bổ:
+                    <strong
+                      >{{ allocationTotal(material.materialId) | number: '1.0-6' }} /
+                      {{ material.requiredQuantity | number: '1.0-6' }} {{ material.unit }}</strong
+                    ></span
+                  ><button
+                    type="button"
+                    class="secondary"
+                    (click)="addAllocation(material.materialId)"
+                  >
+                    <app-ui-icon name="plus" [size]="16" /> Thêm kho cấp phát
+                  </button>
+                </div>
+              </fieldset>
+            }
+          </div>
+          @if (store.error()) {
+            <div class="error" role="alert">{{ store.error() }}</div>
+          }
+          @if (startSubmitted() && !startReady()) {
+            <p class="form-error" role="alert">
+              Hãy chọn kho, nhập số lượng dương và phân bổ đúng tổng nhu cầu cho từng vật tư.
+            </p>
+          }
+          <footer>
+            <button type="button" class="secondary" (click)="closeStart()">Hủy</button
+            ><button
+              type="button"
+              class="primary"
+              [disabled]="store.isSaving() || activeWarehouses().length === 0"
+              (click)="requestStartConfirmation()"
+            >
+              Tiếp tục
+            </button>
+          </footer>
+        }
+      </section>
+    </div>
+  }
+
+  @if (cancelConfirmOrder(); as order) {
+    <div class="editor-backdrop" (click)="cancelConfirmOrder.set(null)">
+      <section
+        class="editor confirmation-panel"
+        appDialogFocus
+        (dialogDismissed)="cancelConfirmOrder.set(null)"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cancel-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header>
+          <div>
+            <span class="eyebrow danger-eyebrow">HỦY LỆNH SẢN XUẤT</span>
+            <h2 id="cancel-title">Hủy {{ order.number }}?</h2>
+          </div>
+          <button
+            type="button"
+            class="close"
+            aria-label="Đóng xác nhận hủy lệnh"
+            [disabled]="store.isSaving()"
+            (click)="cancelConfirmOrder.set(null)"
+          >
+            <app-ui-icon name="x" />
+          </button>
+        </header>
+        <p class="confirmation-copy">Lệnh sản xuất sau khi hủy sẽ không thể tiếp tục thực thi.</p>
+        @if (store.error()) {
+          <div class="error" role="alert">{{ store.error() }}</div>
+        }
+        <footer>
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="store.isSaving()"
+            (click)="cancelConfirmOrder.set(null)"
+          >
+            Quay lại</button
+          ><button
+            type="button"
+            class="danger"
+            [disabled]="store.isSaving()"
+            (click)="confirmCancel(order)"
+          >
+            {{ store.isSaving() ? 'Đang hủy...' : 'Xác nhận hủy' }}
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
+
+  @if (completeOrder(); as order) {
+    <div class="editor-backdrop" (click)="completeOrder.set(null)">
+      <section
+        class="editor confirmation-panel"
+        appDialogFocus
+        (dialogDismissed)="completeOrder.set(null)"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="complete-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header>
+          <div>
+            <span class="eyebrow">HOÀN THÀNH LỆNH SẢN XUẤT</span>
+            <h2 id="complete-title">{{ order.number }}</h2>
+            <p>
+              {{ order.productCode }} — {{ order.productName }} ·
+              {{ order.quantity | number: '1.0-3' }} sản phẩm
+            </p>
+          </div>
+          <button
+            type="button"
+            class="close"
+            aria-label="Đóng hoàn thành lệnh"
+            [disabled]="store.isSaving()"
+            (click)="completeOrder.set(null)"
+          >
+            <app-ui-icon name="x" />
+          </button>
+        </header>
+        <form [formGroup]="completeForm" (ngSubmit)="confirmComplete(order)">
+          <label
+            >Kho nhập thành phẩm<select formControlName="warehouseId">
+              <option value="">Chọn kho đích</option>
+              @for (warehouse of activeWarehouses(); track warehouse.id) {
+                <option [value]="warehouse.id">{{ warehouseLabel(warehouse) }}</option>
+              }
+            </select>
+            @if (
+              completeForm.controls.warehouseId.touched && completeForm.controls.warehouseId.invalid
+            ) {
+              <small>Hãy chọn kho nhập thành phẩm.</small>
+            }
+          </label>
+          <p class="preview-note">
+            Backend sẽ kiểm tra tất cả công đoạn đã hoàn thành và tạo giao dịch nhập thành phẩm.
+          </p>
+          @if (store.error()) {
+            <div class="error" role="alert">{{ store.error() }}</div>
+          }
+          <footer>
+            <button
+              type="button"
+              class="secondary"
+              [disabled]="store.isSaving()"
+              (click)="completeOrder.set(null)"
+            >
+              Hủy</button
+            ><button type="submit" class="primary" [disabled]="store.isSaving()">
+              {{ store.isSaving() ? 'Đang hoàn thành...' : 'Hoàn thành lệnh' }}
+            </button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  }
+
   @if (executionOrder(); as order) {
     <div class="editor-backdrop" (click)="closeExecution()">
-      <section class="editor execution-panel" appDialogFocus (dialogDismissed)="closeExecution()" role="dialog" aria-modal="true" aria-labelledby="execution-title" (click)="$event.stopPropagation()">
-        <header><div><span class="eyebrow">ROUTING REVISION {{ order.routingRevision }}</span><h2 id="execution-title">{{ order.number }} · Công đoạn thực thi</h2><p>{{ order.productCode }} — {{ order.productName }}</p></div><button type="button" class="close" aria-label="Đóng công đoạn thực thi" (click)="closeExecution()"><app-ui-icon name="x" /></button></header>
-        @if (store.error()) { <div class="error" role="alert">{{ store.error() }}</div> }
-        <div class="execution-list">
-          @for (operation of order.operations; track operation.id) {
-            <article class="execution-operation" [class.running]="operation.status === 'in_progress'" [class.done]="operation.status === 'completed'">
-              <div class="operation-sequence">{{ operation.sequence }}</div>
-              <div class="operation-copy"><strong>{{ operation.name }}</strong><span>{{ operation.workCenterCode }} — {{ operation.workCenterName }}</span><small>Machine: {{ operation.machineCode ? operation.machineCode + ' — ' + operation.machineName : 'Chưa gán' }}</small><small>Setup {{ operation.setupTimeMinutes }} phút · Run {{ operation.runTimeMinutes }} phút</small></div>
-              <div class="operation-timing"><span>{{ operationStatusLabel(operation.status) }}</span><small>Bắt đầu: {{ operation.startedAt ? (operation.startedAt | date: 'short') : '—' }}</small><small>Hoàn thành: {{ operation.completedAt ? (operation.completedAt | date: 'short') : '—' }}</small></div>
-              <div class="operation-actions">
-                @if (canStartOperation(order, operation)) {
-                  <label class="machine-picker">
-                    Machine
-                    <select [value]="selectedMachineId(operation.id)" (change)="selectMachine(operation.id, $event)">
-                      <option value="" disabled>Chọn Machine</option>
-                      @for (machine of eligibleMachines(operation); track machine.id) {
-                        <option [value]="machine.id">{{ machine.code }} — {{ machine.name }}</option>
-                      }
-                    </select>
-                  </label>
-                  <button type="button" class="primary" [disabled]="store.isSaving() || !selectedMachineId(operation.id)" (click)="startOperation(order, operation)">Start Operation</button>
-                  @if (eligibleMachines(operation).length === 0) { <small>Không có Machine Available trong Work Center này.</small> }
-                }
-                @if (order.status === 'in_progress' && operation.status === 'in_progress') { <button type="button" class="primary" [disabled]="store.isSaving()" (click)="completeOperation(order, operation)">Complete Operation</button> }
-              </div>
-            </article>
-          }
+      <section
+        class="editor execution-panel"
+        appDialogFocus
+        (dialogDismissed)="closeExecution()"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="execution-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header>
+          <div>
+            <span class="eyebrow">{{
+              order.routingRevision === null
+                ? 'ROUTING CHƯA KHÓA'
+                : 'ROUTING REVISION ' + order.routingRevision
+            }}</span>
+            <h2 id="execution-title">{{ order.number }} · Công đoạn thực thi</h2>
+            <p>{{ order.productCode }} — {{ order.productName }}</p>
+          </div>
+          <button
+            type="button"
+            class="close"
+            aria-label="Đóng công đoạn thực thi"
+            (click)="closeExecution()"
+          >
+            <app-ui-icon name="x" />
+          </button>
+        </header>
+        <div
+          class="lifecycle-progress"
+          [attr.data-status]="order.status"
+          aria-label="Tiến trình lệnh sản xuất"
+        >
+          <span>Kế hoạch</span><span>Phát hành</span><span>Đang sản xuất</span
+          ><span>Hoàn thành</span>
         </div>
-        @if (order.status === 'released') { <p class="execution-note">Khởi động Production Order và tiêu thụ vật tư trước khi thực hiện công đoạn.</p> }
-        @if (order.status === 'completed') { <p class="execution-note">Production Order đã hoàn thành; các công đoạn được khóa chỉ đọc.</p> }
+        <dl class="lifecycle-times">
+          <div>
+            <dt>Phát hành</dt>
+            <dd>{{ order.releasedAt ? (order.releasedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}</dd>
+          </div>
+          <div>
+            <dt>Bắt đầu</dt>
+            <dd>{{ order.startedAt ? (order.startedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}</dd>
+          </div>
+          <div>
+            <dt>Hoàn thành</dt>
+            <dd>{{ order.completedAt ? (order.completedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}</dd>
+          </div>
+          <div>
+            <dt>Đã hủy</dt>
+            <dd>{{ order.cancelledAt ? (order.cancelledAt | date: 'dd/MM/yyyy HH:mm') : '—' }}</dd>
+          </div>
+        </dl>
+        @if (store.error()) {
+          <div class="error" role="alert">{{ store.error() }}</div>
+        }
+        @if (store.isLoadingOperations()) {
+          <div class="state" aria-live="polite">Đang tải công đoạn mới nhất...</div>
+        } @else if (store.operationError()) {
+          <div class="error" role="alert">
+            {{ store.operationError()
+            }}<button type="button" class="secondary" (click)="openExecution(order)">
+              Thử lại
+            </button>
+          </div>
+        } @else {
+          <div class="execution-list">
+            @for (operation of store.operations(); track operation.id) {
+              <article
+                class="execution-operation"
+                [class.running]="operation.status === 'in_progress'"
+                [class.done]="operation.status === 'completed'"
+              >
+                <div class="operation-sequence">{{ operation.sequence }}</div>
+                <div class="operation-copy">
+                  <strong>{{ operation.name }}</strong
+                  ><span>{{ operation.workCenterCode }} — {{ operation.workCenterName }}</span
+                  ><small
+                    >Máy:
+                    {{
+                      operation.machineCode
+                        ? operation.machineCode + ' — ' + operation.machineName
+                        : 'Chưa gán'
+                    }}</small
+                  ><small
+                    >Chuẩn: setup {{ operation.setupTimeMinutes }} phút · run
+                    {{ operation.runTimeMinutes }} phút</small
+                  >
+                </div>
+                <div class="operation-timing">
+                  <span>{{ operationStatusLabel(operation.status) }}</span
+                  ><small
+                    >Bắt đầu:
+                    {{ operation.startedAt ? (operation.startedAt | date: 'short') : '—' }}</small
+                  ><small
+                    >Hoàn thành:
+                    {{
+                      operation.completedAt ? (operation.completedAt | date: 'short') : '—'
+                    }}</small
+                  >
+                </div>
+                <div class="operation-actions">
+                  @if (canStartOperation(order, operation)) {
+                    <label class="machine-picker"
+                      >Máy<select
+                        [value]="selectedMachineId(operation.id)"
+                        (change)="selectMachine(operation.id, $event)"
+                      >
+                        <option value="" disabled>Chọn máy</option>
+                        @for (machine of eligibleMachines(operation); track machine.id) {
+                          <option [value]="machine.id">
+                            {{ machine.code }} — {{ machine.name }}
+                          </option>
+                        }
+                      </select></label
+                    ><button
+                      type="button"
+                      class="primary"
+                      [disabled]="store.isSaving() || !selectedMachineId(operation.id)"
+                      (click)="startOperation(order, operation)"
+                    >
+                      Bắt đầu công đoạn
+                    </button>
+                    @if (eligibleMachines(operation).length === 0) {
+                      <small>Không có máy sẵn sàng trong trung tâm làm việc này.</small>
+                    }
+                  }
+                  @if (order.status === 'in_progress' && operation.status === 'in_progress') {
+                    <button
+                      type="button"
+                      class="primary"
+                      [disabled]="store.isSaving()"
+                      (click)="completeOperation(order, operation)"
+                    >
+                      Hoàn thành công đoạn
+                    </button>
+                  }
+                </div>
+              </article>
+            } @empty {
+              <div class="state">Lệnh này không có công đoạn routing.</div>
+            }
+          </div>
+        }
+        @if (order.status === 'released') {
+          <div class="execution-callout">
+            <p>
+              <strong>Lệnh đã phát hành nhưng chưa bắt đầu sản xuất.</strong><br />Hãy cấp phát vật
+              tư và bắt đầu lệnh trước khi chạy công đoạn.
+            </p>
+            <button type="button" class="primary" (click)="closeExecution(); openStart(order)">
+              Bắt đầu sản xuất
+            </button>
+          </div>
+        }
+        @if (order.status === 'in_progress' && allExecutionOperationsComplete()) {
+          <div class="execution-callout success">
+            <p>
+              <strong>Tất cả công đoạn đã hoàn thành.</strong><br />Bạn có thể hoàn thành lệnh sản
+              xuất và nhập thành phẩm vào kho.
+            </p>
+            <button type="button" class="primary" (click)="closeExecution(); openComplete(order)">
+              Hoàn thành lệnh
+            </button>
+          </div>
+        }
+        @if (order.status === 'completed') {
+          <p class="execution-note">
+            Lệnh sản xuất đã hoàn thành; các công đoạn được khóa chỉ đọc.
+          </p>
+        }
       </section>
     </div>
   }
