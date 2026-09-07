@@ -124,6 +124,27 @@ public sealed class GeminiAiToolPlannerTests {
         Assert.Equal("AI service returned an invalid response.", exception.Message);
     }
 
+    [Fact]
+    public async Task Planner_timeout_degrades_to_zero_tool_evidence_in_orchestrator() {
+        var handler = new StubHttpMessageHandler(
+            """{"candidates":[]}""",
+            TimeSpan.FromSeconds(5));
+        var registry = new RecordingRegistry();
+        var orchestrator = new AiToolOrchestrator(
+            new IntentRouter(),
+            CreatePlanner(handler, timeoutSeconds: 1),
+            registry);
+
+        var records = await orchestrator.CollectAsync(
+            Guid.NewGuid(),
+            "Máy CNC-02 đang chạy gì?",
+            [],
+            CancellationToken.None);
+
+        Assert.Empty(records);
+        Assert.Empty(registry.ExecutedCodes);
+    }
+
     private static AiToolDefinition Definition(string name) {
         using var document = JsonDocument.Parse("""
             {"type":"object","properties":{"code":{"type":"string"}},"required":["code"],"additionalProperties":false}
@@ -131,23 +152,29 @@ public sealed class GeminiAiToolPlannerTests {
         return new AiToolDefinition(name, "Read-only test tool.", document.RootElement.Clone());
     }
 
-    private static GeminiAiToolPlanner CreatePlanner(HttpMessageHandler handler) => new(
+    private static GeminiAiToolPlanner CreatePlanner(HttpMessageHandler handler, int timeoutSeconds = 15) => new(
         new HttpClient(handler),
         Options.Create(new GeminiSettings {
             BaseUrl = "https://provider.example/v1beta/",
             ApiKey = "test-key",
             ChatModel = "test-model",
-            ToolPlanningTimeoutSeconds = 15
+            ToolPlanningTimeoutSeconds = timeoutSeconds
         }),
         NullLogger<GeminiAiToolPlanner>.Instance);
 
-    private sealed class StubHttpMessageHandler(string responseBody) : HttpMessageHandler {
+    private sealed class StubHttpMessageHandler(
+        string responseBody,
+        TimeSpan? delay = null) : HttpMessageHandler {
         public string RequestBody { get; private set; } = string.Empty;
         public Uri? RequestUri { get; private set; }
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken) {
+            if (delay.HasValue) {
+                await Task.Delay(delay.Value, cancellationToken);
+            }
+
             RequestUri = request.RequestUri;
             RequestBody = await request.Content!.ReadAsStringAsync(cancellationToken);
             return new HttpResponseMessage(HttpStatusCode.OK) {

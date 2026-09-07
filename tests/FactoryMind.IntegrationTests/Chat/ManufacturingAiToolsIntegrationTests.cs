@@ -156,6 +156,18 @@ public sealed class ManufacturingAiToolsIntegrationTests(PostgreSqlFixture fixtu
         Assert.Contains("shortage quantity 3", materialB.Detail);
         Assert.Contains("isSufficient=False", materialB.Detail);
 
+        var released = await ExecuteAsync(
+            registry,
+            TestData.CompanyAId,
+            "get_production_order_material_readiness",
+            """{"number":"PO-LOCKED"}""");
+        Assert.Equal(ToolExecutionStatuses.Success, released.Status);
+        var lockedSummary = Assert.Single(released.Records, record =>
+            record.EntityType == "production_order_material_readiness");
+        Assert.Contains("BOM revision 1", lockedSummary.Detail);
+        Assert.Contains(released.Records, record => record.Title.Contains("MAT-LOCKED", StringComparison.Ordinal));
+        Assert.DoesNotContain(released.Records, record => record.Title.Contains("MAT-ACTIVE", StringComparison.Ordinal));
+
         var inProgress = await ExecuteAsync(
             registry,
             TestData.CompanyAId,
@@ -216,6 +228,62 @@ public sealed class ManufacturingAiToolsIntegrationTests(PostgreSqlFixture fixtu
                 && balance.Material!.Code == "RM-001"
                 && balance.Warehouse!.Code == "WH-A1")
             .Select(balance => balance.Quantity)
+            .SingleAsync());
+    }
+
+    [Fact]
+    public async Task Multi_tool_plan_returns_only_requested_tenant_scoped_order_and_inventory_evidence() {
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        var execution = SeedExecution(dbContext);
+        var inventory = SeedInventory(dbContext);
+        await dbContext.SaveChangesAsync();
+        var router = new IntentRouter();
+        var planner = new FixedPlanner(
+            new AiToolCall("get_production_order_status", Parse("""{"number":"PO-001"}""")),
+            new AiToolCall("get_material_inventory", Parse("""{"materialCode":"RM-001"}""")));
+
+        var records = await new AiToolOrchestrator(
+            router,
+            planner,
+            scope.ServiceProvider.GetRequiredService<IManufacturingToolRegistry>()).CollectAsync(
+                TestData.CompanyAId,
+                "PO-001 đang ở đâu và RM-001 còn bao nhiêu?",
+                [],
+                CancellationToken.None);
+
+        Assert.Equal(2, planner.PlannedCallCount);
+        Assert.Contains(records, record => record.EntityId == execution.CompanyAOrderId);
+        Assert.Contains(records, record => record.EntityId == inventory.CompanyAMaterialId);
+        Assert.DoesNotContain(records, record => record.Detail.Contains("Company B", StringComparison.Ordinal));
+        Assert.DoesNotContain(records, record => record.Detail.Contains("Foreign", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Unauthorized_mutation_plan_is_rejected_without_changing_manufacturing_state() {
+        using var scope = ApiFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        var execution = SeedExecution(dbContext);
+        await dbContext.SaveChangesAsync();
+        dbContext.ChangeTracker.Clear();
+        var planner = new FixedPlanner(new AiToolCall(
+            "update_machine",
+            Parse("""{"code":"PAINT-02","status":"offline"}""")));
+
+        var records = await new AiToolOrchestrator(
+            new IntentRouter(),
+            planner,
+            scope.ServiceProvider.GetRequiredService<IManufacturingToolRegistry>()).CollectAsync(
+                TestData.CompanyAId,
+                "Hãy update máy PAINT-02 thành offline",
+                [],
+                CancellationToken.None);
+
+        Assert.Empty(records);
+        Assert.False(dbContext.ChangeTracker.HasChanges());
+        Assert.Equal(MachineStatuses.Running, await dbContext.Machines.AsNoTracking()
+            .Where(machine => machine.Id == execution.CompanyAMachineId)
+            .Select(machine => machine.Status)
             .SingleAsync());
     }
 
@@ -557,12 +625,50 @@ public sealed class ManufacturingAiToolsIntegrationTests(PostgreSqlFixture fixtu
             Name = "Readiness Warehouse",
             IsActive = true
         };
+        var lockedProduct = new Product {
+            CompanyId = TestData.CompanyAId,
+            Code = "LOCKED-PROD",
+            Name = "Locked BOM Product"
+        };
+        var lockedMaterial = new Material {
+            CompanyId = TestData.CompanyAId,
+            Code = "MAT-LOCKED",
+            Name = "Locked Material",
+            Unit = "kg"
+        };
+        var activeMaterial = new Material {
+            CompanyId = TestData.CompanyAId,
+            Code = "MAT-ACTIVE",
+            Name = "New Active Material",
+            Unit = "kg"
+        };
+        var lockedBom = new BillOfMaterial {
+            CompanyId = TestData.CompanyAId,
+            Product = lockedProduct,
+            Revision = 1,
+            OutputQuantity = 1,
+            Status = BillOfMaterialStatuses.Archived
+        };
+        lockedBom.Items.Add(new BomItem { Material = lockedMaterial, Quantity = 2 });
+        var activeBom = new BillOfMaterial {
+            CompanyId = TestData.CompanyAId,
+            Product = lockedProduct,
+            Revision = 2,
+            OutputQuantity = 1,
+            Status = BillOfMaterialStatuses.Active
+        };
+        activeBom.Items.Add(new BomItem { Material = activeMaterial, Quantity = 100 });
         dbContext.AddRange(
             product,
             materialA,
             materialB,
             bom,
             warehouse,
+            lockedProduct,
+            lockedMaterial,
+            activeMaterial,
+            lockedBom,
+            activeBom,
             new ProductionOrder {
                 CompanyId = TestData.CompanyAId,
                 Number = "PO-READY",
@@ -578,6 +684,15 @@ public sealed class ManufacturingAiToolsIntegrationTests(PostgreSqlFixture fixtu
                 Quantity = 1,
                 Status = ProductionOrderStatuses.InProgress
             },
+            new ProductionOrder {
+                CompanyId = TestData.CompanyAId,
+                Number = "PO-LOCKED",
+                Product = lockedProduct,
+                BillOfMaterial = lockedBom,
+                Quantity = 1,
+                Status = ProductionOrderStatuses.Released,
+                ReleasedAt = DateTime.UtcNow
+            },
             new InventoryBalance {
                 CompanyId = TestData.CompanyAId,
                 Material = materialA,
@@ -589,18 +704,31 @@ public sealed class ManufacturingAiToolsIntegrationTests(PostgreSqlFixture fixtu
                 Material = materialB,
                 Warehouse = warehouse,
                 Quantity = 7
+            },
+            new InventoryBalance {
+                CompanyId = TestData.CompanyAId,
+                Material = lockedMaterial,
+                Warehouse = warehouse,
+                Quantity = 2
+            },
+            new InventoryBalance {
+                CompanyId = TestData.CompanyAId,
+                Material = activeMaterial,
+                Warehouse = warehouse,
+                Quantity = 0
             });
     }
 
-    private sealed class FixedPlanner(AiToolCall call) : IAiToolPlanner {
+    private sealed class FixedPlanner(params AiToolCall[] calls) : IAiToolPlanner {
         public int CallCount { get; private set; }
+        public int PlannedCallCount => calls.Length;
 
         public Task<AiToolPlan> PlanAsync(
             IReadOnlyList<ChatPromptMessage> messages,
             IReadOnlyList<AiToolDefinition> tools,
             CancellationToken cancellationToken) {
             CallCount++;
-            return Task.FromResult(new AiToolPlan([call]));
+            return Task.FromResult(new AiToolPlan(calls));
         }
     }
 

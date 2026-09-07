@@ -16,7 +16,8 @@ public sealed class IntentRouter : IIntentRouter {
     private static readonly IReadOnlyDictionary<BusinessDataScope, string[]> BusinessKeywords =
         new Dictionary<BusinessDataScope, string[]> {
             [BusinessDataScope.Machines] = [
-                "may", "machine", "thiet bi", "bao tri", "maintenance", "available", "running"
+                "may", "machine", "machines", "thiet bi", "bao tri", "maintenance", "available", "running",
+                "hong", "broken", "failure"
             ],
             [BusinessDataScope.Materials] = [
                 "nguyen lieu", "vat lieu", "vat tu", "material", "bom", "dinh muc"
@@ -28,7 +29,7 @@ public sealed class IntentRouter : IIntentRouter {
                 "san pham", "product", "bom", "dinh muc", "cau tao", "lam tu"
             ],
             [BusinessDataScope.ProductionOrders] = [
-                "lenh san xuat", "don hang", "production order", "order", "tien do", "po"
+                "lenh san xuat", "lenh", "don hang", "production order", "order", "tien do", "po"
             ],
             [BusinessDataScope.WorkCenters] = [
                 "work center", "workcenter", "trung tam gia cong", "station", "line"

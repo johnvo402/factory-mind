@@ -259,6 +259,12 @@ trong tương lai.
 AI tools không thể đổi Machine status, start/complete order hoặc operation, assign Machine, thay đổi
 inventory, activate BOM/Routing, tạo record hay xóa dữ liệu. Yêu cầu hành động vẫn không gây mutation.
 
+Tool planning được kiểm tra offline trong CI bởi `FactoryMind.AiToolEval`. Bộ 50 fixture đa ngôn ngữ đo
+tool selection, exact tool + arguments, no-tool precision, exact identifier, unauthorized-tool rejection,
+call bounds, duplicate rate và average calls. Điểm của bộ này mô tả deterministic policy fixture cùng
+server enforcement, không phải tuyên bố độ chính xác của live Gemini. FactoryMind hiện chỉ hỗ trợ bounded
+read-only manufacturing tools; không có AI mutation/write action.
+
 SSE stream có các event semantic sau:
 
 | Event | Nội dung |
@@ -600,6 +606,8 @@ dotnet restore FactoryMind.sln
 dotnet format FactoryMind.sln --verify-no-changes --no-restore
 dotnet build FactoryMind.sln --configuration Release --no-restore --warnaserror
 dotnet test FactoryMind.sln --configuration Release --no-build --no-restore
+dotnet run --project tests/FactoryMind.RagEval/FactoryMind.RagEval.csproj --configuration Release
+dotnet run --project tests/FactoryMind.AiToolEval/FactoryMind.AiToolEval.csproj --configuration Release
 ```
 
 ### Frontend
@@ -609,7 +617,7 @@ Set-Location frontend
 npm ci
 npm audit --omit=dev
 npm run build
-npm test -- --watch=false --browsers=ChromeHeadless
+npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
 ## Integration tests

@@ -305,8 +305,7 @@ Done.
 * Unit, real PostgreSQL integration, hybrid/evidence persistence, read-only regression, RAG evaluation,
   frontend, release build, and production-image checks cover the milestone without a migration.
 
-Next: Step 10 - AI tool safety/evaluation and carefully bounded decision support. Unrestricted writes
-and all mutation tools remain deferred.
+Step 10 is completed below. Unrestricted writes and all mutation tools remain deferred.
 
 ---
 
@@ -599,6 +598,23 @@ Mỗi file chỉ khoảng 5–10 dòng:
 * **Ngày:** 2026-07-24.
 
 Điều này rất hữu ích sau vài tháng khi bạn nhìn lại và tự hỏi: *"Tại sao mình lại làm như vậy?"*
+
+---
+
+# Step 10 — AI tool safety, evaluation và decision support
+
+* [x] Giữ one-round native Gemini planner và tối đa ba tool.
+* [x] Giữ registry đúng bảy manufacturing tool read-only, không thêm mutation/SQL tool.
+* [x] Thêm 50 deterministic evaluation cases đa ngôn ngữ.
+* [x] Đo selection, exact arguments, no-tool, exact identifier, unauthorized rejection và bounds.
+* [x] Kiểm tra minimal sufficient và multi-tool planning.
+* [x] Kiểm tra unknown tool, identity fields, wrong types, invalid limits, duplicate và call cap.
+* [x] Giữ Planned/Released BOM semantics và InProgress readiness not applicable.
+* [x] Tăng instruction cho fact/inference/unknown; cấm ETA, bottleneck và root-cause suy diễn.
+* [x] Kiểm tra timeout/malformed planner fallback và caller cancellation.
+* [x] Kiểm tra tenant collision và no-mutation bằng PostgreSQL integration tests.
+* [x] Thêm deterministic AI tool evaluation thành Backend CI quality gate.
+* [x] Không migration, không thay đổi SSE/frontend contract.
 
 ---
 

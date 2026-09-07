@@ -47,6 +47,48 @@ public sealed class ManufacturingToolRegistryTests {
     }
 
     [Theory]
+    [InlineData("execute_sql")]
+    [InlineData("query_database")]
+    [InlineData("update_machine")]
+    [InlineData("start_operation")]
+    [InlineData("complete_operation")]
+    [InlineData("release_order")]
+    [InlineData("adjust_inventory")]
+    public async Task Mutation_dynamic_and_internal_tool_names_are_rejected(string toolName) {
+        await using var dbContext = CreateDbContext();
+        var registry = CreateRegistry(dbContext);
+
+        var result = await registry.ExecuteAsync(
+            Guid.NewGuid(),
+            new AiToolCall(toolName, Parse("{}")),
+            CancellationToken.None);
+
+        Assert.Equal(ToolExecutionStatuses.UnknownTool, result.Status);
+        Assert.Empty(result.Records);
+    }
+
+    [Theory]
+    [InlineData("get_production_order_status", "{\"number\":\"PO-001\",\"companyId\":\"foreign\"}")]
+    [InlineData("get_machine_status", "{\"code\":\"CNC-02\",\"companyId\":\"foreign\"}")]
+    [InlineData("list_machines", "{\"tenantId\":\"foreign\"}")]
+    [InlineData("get_work_center_status", "{\"code\":\"PAINT\",\"userId\":\"foreign\"}")]
+    [InlineData("get_material_inventory", "{\"materialCode\":\"RM-001\",\"companyId\":\"foreign\"}")]
+    [InlineData("get_production_order_material_readiness", "{\"number\":\"PO-001\",\"tenantId\":\"foreign\"}")]
+    [InlineData("list_production_orders", "{\"companyId\":\"foreign\"}")]
+    public async Task Every_registered_tool_rejects_model_supplied_identity_fields(string toolName, string json) {
+        await using var dbContext = CreateDbContext();
+        var registry = CreateRegistry(dbContext);
+
+        var result = await registry.ExecuteAsync(
+            Guid.NewGuid(),
+            new AiToolCall(toolName, Parse(json)),
+            CancellationToken.None);
+
+        Assert.Equal(ToolExecutionStatuses.InvalidArguments, result.Status);
+        Assert.Empty(result.Records);
+    }
+
+    [Theory]
     [InlineData("{\"code\":123}")]
     [InlineData("{\"code\":\"CNC-02\",\"companyId\":\"foreign-company\"}")]
     [InlineData("{\"code\":\"CNC-02\",\"tenantId\":\"foreign-tenant\"}")]

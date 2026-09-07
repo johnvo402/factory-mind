@@ -70,6 +70,13 @@ jobs:
           --no-build
           --no-restore
 
+      - name: Run deterministic AI tool evaluation
+        run: >-
+          dotnet run --project tests/FactoryMind.AiToolEval/FactoryMind.AiToolEval.csproj
+          --configuration Release
+          --no-build
+          --no-restore
+
       - name: Publish API artifact
         run: >-
           dotnet publish src/FactoryMind.Api/FactoryMind.Api.csproj
@@ -124,7 +131,7 @@ jobs:
         run: npm run build
 
       - name: Run frontend tests
-        run: npm test -- --watch=false --browsers=ChromeHeadless
+        run: npx ng test --watch=false --browsers=ChromeHeadless
         env:
           CI: true
 

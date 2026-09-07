@@ -64,6 +64,15 @@ public static class FactoryMindTelemetry {
     public static readonly Counter<long> AiToolRejected = Meter.CreateCounter<long>(
         "factorymind.ai.tool.rejected",
         description: "Rejected AI tool calls by finite reason.");
+    public static readonly Counter<long> AiToolPlanCallsRequested = Meter.CreateCounter<long>(
+        "factorymind.ai.tool.plan.calls_requested",
+        description: "Tool calls requested by the one-round planner.");
+    public static readonly Counter<long> AiToolPlanCallsExecuted = Meter.CreateCounter<long>(
+        "factorymind.ai.tool.plan.calls_executed",
+        description: "Bounded planner calls passed to the read-only registry.");
+    public static readonly Counter<long> AiToolPlanCallsRejected = Meter.CreateCounter<long>(
+        "factorymind.ai.tool.plan.calls_rejected",
+        description: "Planner calls rejected by finite safety outcome.");
 
     public static readonly Counter<long> RagRequests = Meter.CreateCounter<long>(
         "factorymind.rag.requests",

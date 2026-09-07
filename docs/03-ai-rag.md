@@ -325,6 +325,23 @@ AI KHÔNG
 
 Luôn ghi rõ khi thiếu thông tin.
 
+## Step 10 — Tool safety và manufacturing decision support
+
+Tool planner chỉ chạy một vòng và chọn tập nhỏ nhất đủ trả lời, tối đa ba tool read-only. Tool result
+được đưa vào final generation dưới dạng `[B#]`; output của tool hoặc tài liệu chỉ là untrusted evidence,
+không thể kích hoạt thêm planner/tool. Planner timeout, provider error, malformed response hoặc zero-call
+plan không làm hỏng Business/Knowledge RAG fallback; caller cancellation vẫn được propagate.
+
+Final generation phải phân biệt fact có citation, cautious inference và unknown. Không được suy ETA từ
+Routing runtime, bottleneck từ số máy, nguyên nhân hỏng từ trạng thái maintenance, delay hoặc hiệu suất
+khi thiếu schedule/capacity/telemetry/cause evidence.
+
+`tests/FactoryMind.AiToolEval` chạy offline trong CI với 50 case tiếng Việt, tiếng Việt không dấu và
+tiếng Anh. Metrics gồm tool selection, exact tool+arguments, no-tool accuracy/precision, argument và
+identifier accuracy, unauthorized rejection, bounded-call compliance, precision/recall, duplicate rate
+và average calls. Đây là deterministic policy + server-enforcement evaluation, không phải live Gemini
+benchmark. Bảy tool hiện tại vẫn read-only; không có tool mutation.
+
 ---
 
 # 📌 Kiến trúc AI cuối cùng

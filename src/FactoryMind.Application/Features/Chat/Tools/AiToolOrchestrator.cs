@@ -13,6 +13,7 @@ public sealed class AiToolOrchestrator(
     private const int MaximumHistoryMessages = 20;
     private const string PlannerInstructions =
         "Select only the provided read-only manufacturing tools needed to answer the current user question. "
+        + "Use the smallest sufficient tool set and never request redundant or duplicate evidence. "
         + "Do not answer the user and do not emit prose. Choose zero tools when live manufacturing data is not needed. "
         + "Request at most three tools in this single planning round. Use exact identifiers supplied by the user. "
         + "Never invent tool names, request mutations, or supply company, tenant, user, role, permission, or authorization identity.";
@@ -42,14 +43,21 @@ public sealed class AiToolOrchestrator(
             return [];
         }
 
+        FactoryMindTelemetry.AiToolPlanCallsRequested.Add(
+            plan.Calls.Count,
+            FactoryMindTelemetry.Tags(("outcome", "planned")));
+
         var distinctCalls = plan.Calls
             .DistinctBy(call => $"{call.Name}\n{Canonicalize(call.Arguments)}", StringComparer.Ordinal)
             .ToList();
+        var duplicateCalls = plan.Calls.Count - distinctCalls.Count;
+        if (duplicateCalls > 0) {
+            RecordRejected(duplicateCalls, "bounded", "duplicate");
+        }
+
         var droppedCalls = Math.Max(distinctCalls.Count - MaximumToolCallsPerRequest, 0);
         if (droppedCalls > 0) {
-            FactoryMindTelemetry.AiToolRejected.Add(
-                droppedCalls,
-                FactoryMindTelemetry.Tags(("tool", "bounded"), ("reason", "limit_exceeded")));
+            RecordRejected(droppedCalls, "bounded", "limit_exceeded");
         }
 
         var records = new List<BusinessDataRecord>();
@@ -72,11 +80,7 @@ public sealed class AiToolOrchestrator(
                     or ToolExecutionStatuses.InvalidArguments
                     or ToolExecutionStatuses.NotFound
                     or ToolExecutionStatuses.NotApplicable) {
-                    FactoryMindTelemetry.AiToolRejected.Add(
-                        1,
-                        FactoryMindTelemetry.Tags(
-                            ("tool", safeToolName),
-                            ("reason", result.Status)));
+                    RecordRejected(1, safeToolName, result.Status);
                 }
             } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
                 outcome = "cancelled";
@@ -85,6 +89,7 @@ public sealed class AiToolOrchestrator(
             } finally {
                 var tags = FactoryMindTelemetry.Tags(("tool", safeToolName), ("outcome", outcome));
                 FactoryMindTelemetry.AiToolCalls.Add(1, tags);
+                FactoryMindTelemetry.AiToolPlanCallsExecuted.Add(1, tags);
                 FactoryMindTelemetry.AiToolDuration.Record(
                     Stopwatch.GetElapsedTime(startedTimestamp).TotalMilliseconds,
                     tags);
@@ -101,6 +106,12 @@ public sealed class AiToolOrchestrator(
     public static bool IsEligible(IntentRoute route) =>
         route.Intent == ChatIntent.Business
         || route.Intent == ChatIntent.Hybrid && !route.IsFallback;
+
+    private static void RecordRejected(long count, string tool, string reason) {
+        var tags = FactoryMindTelemetry.Tags(("tool", tool), ("reason", reason));
+        FactoryMindTelemetry.AiToolRejected.Add(count, tags);
+        FactoryMindTelemetry.AiToolPlanCallsRejected.Add(count, tags);
+    }
 
     private static string Canonicalize(JsonElement element) {
         var builder = new StringBuilder();
