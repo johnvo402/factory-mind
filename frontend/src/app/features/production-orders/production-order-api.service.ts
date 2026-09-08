@@ -6,8 +6,10 @@ import { API_ROUTES } from '../../core/api/api.routes';
 import {
   CompleteProductionOrderInput,
   ProductionOrder,
+  ProductionOrderFilters,
   ProductionOrderInput,
   ProductionOrderOperation,
+  ProductionOrderPage,
   StartProductionOrderInput,
 } from './production-order.models';
 
@@ -15,9 +17,24 @@ import {
 export class ProductionOrderApiService {
   private readonly http = inject(HttpClient);
 
-  getProductionOrders(search?: string): Observable<ApiResponse<ProductionOrder[]>> {
-    const params = search ? new HttpParams().set('search', search) : undefined;
-    return this.http.get<ApiResponse<ProductionOrder[]>>(API_ROUTES.productionOrders.root, {
+  getProductionOrders(
+    filters: ProductionOrderFilters,
+    planning = false,
+  ): Observable<ApiResponse<ProductionOrderPage>> {
+    let params = new HttpParams()
+      .set('page', filters.page)
+      .set('pageSize', filters.pageSize)
+      .set('sortBy', filters.sortBy)
+      .set('sortDirection', filters.sortDirection);
+    if (filters.search) params = params.set('search', filters.search);
+    if (filters.status) params = params.set('status', filters.status);
+    if (filters.priority) params = params.set('priority', filters.priority);
+    if (filters.deliveryStatus) params = params.set('deliveryStatus', filters.deliveryStatus);
+    if (filters.dueFrom) params = params.set('dueFrom', filters.dueFrom);
+    if (filters.dueTo) params = params.set('dueTo', filters.dueTo);
+    if (filters.productId) params = params.set('productId', filters.productId);
+    const route = planning ? API_ROUTES.productionOrders.planning : API_ROUTES.productionOrders.root;
+    return this.http.get<ApiResponse<ProductionOrderPage>>(route, {
       params,
     });
   }

@@ -413,5 +413,197 @@
     "expectedCalls": [{ "name": "get_machine_status", "arguments": { "code": "PAINT-02" } }],
     "category": "unknown_insufficient_data",
     "exactIdentifier": true
+  },
+  {
+    "id": "delivery-overdue-vi-1",
+    "question": "Liệt kê lệnh sản xuất quá hạn",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "deliveryStatus": "overdue" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": false
+  },
+  {
+    "id": "delivery-overdue-en-2",
+    "question": "Show overdue production orders",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "deliveryStatus": "overdue" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": false
+  },
+  {
+    "id": "delivery-due-soon-vi-3",
+    "question": "Các lệnh sắp đến hạn là gì?",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "deliveryStatus": "due_soon" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": false
+  },
+  {
+    "id": "delivery-due-soon-en-4",
+    "question": "List production orders due soon",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "deliveryStatus": "due_soon" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": false
+  },
+  {
+    "id": "delivery-no-date-vi-5",
+    "question": "Liệt kê lệnh chưa có hạn giao",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "deliveryStatus": "no_due_date" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": false
+  },
+  {
+    "id": "delivery-no-date-en-6",
+    "question": "Show production orders without due date",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "deliveryStatus": "no_due_date" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": false
+  },
+  {
+    "id": "delivery-completed-late-vi-7",
+    "question": "Liệt kê lệnh hoàn thành trễ",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "deliveryStatus": "completed_late", "status": "completed" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": false
+  },
+  {
+    "id": "delivery-completed-late-en-8",
+    "question": "Show completed late production orders",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "deliveryStatus": "completed_late", "status": "completed" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": false
+  },
+  {
+    "id": "delivery-overdue-product-9",
+    "question": "List overdue production orders for PROD-001",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "deliveryStatus": "overdue", "productCode": "PROD-001" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": true
+  },
+  {
+    "id": "delivery-overdue-no-accent-10",
+    "question": "Lenh san xuat nao qua han?",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "deliveryStatus": "overdue" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": false
+  },
+  {
+    "id": "priority-urgent-vi-1",
+    "question": "Liệt kê lệnh khẩn cấp chưa hoàn thành",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "priority": "urgent", "status": "active" } }],
+    "category": "priority_planning",
+    "exactIdentifier": false
+  },
+  {
+    "id": "priority-urgent-en-2",
+    "question": "Show urgent active production orders",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "priority": "urgent", "status": "active" } }],
+    "category": "priority_planning",
+    "exactIdentifier": false
+  },
+  {
+    "id": "priority-high-vi-3",
+    "question": "Liệt kê lệnh ưu tiên cao",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "priority": "high" } }],
+    "category": "priority_planning",
+    "exactIdentifier": false
+  },
+  {
+    "id": "priority-high-en-4",
+    "question": "List high priority production orders",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "priority": "high" } }],
+    "category": "priority_planning",
+    "exactIdentifier": false
+  },
+  {
+    "id": "priority-urgent-overdue-5",
+    "question": "Show urgent overdue production orders",
+    "history": [],
+    "expectedCalls": [{ "name": "list_production_orders", "arguments": { "deliveryStatus": "overdue", "priority": "urgent" } }],
+    "category": "priority_planning",
+    "exactIdentifier": false
+  },
+  {
+    "id": "unsupported-eta-exact-1",
+    "question": "ETA của PO-001 là khi nào?",
+    "history": [],
+    "expectedCalls": [{ "name": "get_production_order_status", "arguments": { "number": "PO-001" } }],
+    "category": "unsupported_scheduling",
+    "exactIdentifier": true
+  },
+  {
+    "id": "delivery-exact-due-vi-11",
+    "question": "PO-001 khi nào tới hạn?",
+    "history": [],
+    "expectedCalls": [{ "name": "get_production_order_status", "arguments": { "number": "PO-001" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": true
+  },
+  {
+    "id": "delivery-exact-overdue-vi-12",
+    "question": "PO-001 có quá hạn chưa?",
+    "history": [],
+    "expectedCalls": [{ "name": "get_production_order_status", "arguments": { "number": "PO-001" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": true
+  },
+  {
+    "id": "delivery-exact-days-no-accent-13",
+    "question": "PO-001 con may ngay nua toi han",
+    "history": [],
+    "expectedCalls": [{ "name": "get_production_order_status", "arguments": { "number": "PO-001" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": true
+  },
+  {
+    "id": "delivery-exact-due-en-14",
+    "question": "When is PO-001 due?",
+    "history": [],
+    "expectedCalls": [{ "name": "get_production_order_status", "arguments": { "number": "PO-001" } }],
+    "category": "delivery_risk",
+    "exactIdentifier": true
+  },
+  {
+    "id": "unsupported-finish-exact-2",
+    "question": "When will PO-2026-001 finish?",
+    "history": [],
+    "expectedCalls": [{ "name": "get_production_order_status", "arguments": { "number": "PO-2026-001" } }],
+    "category": "unsupported_scheduling",
+    "exactIdentifier": true
+  },
+  {
+    "id": "unsupported-auto-reschedule-3",
+    "question": "Tự động xếp lại lịch sản xuất để hết trễ",
+    "history": [],
+    "expectedCalls": [],
+    "category": "unsupported_scheduling",
+    "exactIdentifier": false
+  },
+  {
+    "id": "unsupported-capacity-4",
+    "question": "Calculate line capacity and promise delivery dates",
+    "history": [],
+    "expectedCalls": [],
+    "category": "unsupported_scheduling",
+    "exactIdentifier": false
+  },
+  {
+    "id": "unsupported-bottleneck-5",
+    "question": "Which production order will miss delivery because of the bottleneck?",
+    "history": [],
+    "expectedCalls": [],
+    "category": "unsupported_scheduling",
+    "exactIdentifier": false
   }
 ]

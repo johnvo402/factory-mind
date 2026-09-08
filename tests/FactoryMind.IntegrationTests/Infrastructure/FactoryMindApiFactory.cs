@@ -38,12 +38,15 @@ public sealed class FactoryMindApiFactory(string connectionString) : WebApplicat
             services.RemoveAll<IEmbeddingClient>();
             services.RemoveAll<IFileStorage>();
             services.RemoveAll<IDocumentProcessingQueue>();
+            services.RemoveAll<TimeProvider>();
             services.AddSingleton<IChatCompletionClient, TestChatCompletionClient>();
             services.AddSingleton<IAiToolPlanner, ZeroToolPlanner>();
             services.AddSingleton<IAiActionPlanner, TestActionPlanner>();
             services.AddSingleton<IEmbeddingClient, TestEmbeddingClient>();
             services.AddSingleton<IFileStorage, TestFileStorage>();
             services.AddSingleton<IDocumentProcessingQueue, TestDocumentProcessingQueue>();
+            services.AddSingleton<TimeProvider>(new FixedTimeProvider(
+                new DateTimeOffset(2026, 9, 8, 12, 0, 0, TimeSpan.Zero)));
         });
     }
 
@@ -55,6 +58,10 @@ public sealed class FactoryMindApiFactory(string connectionString) : WebApplicat
             await Task.Yield();
             yield return "Deterministic integration test response.";
         }
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider {
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 
     private sealed class ZeroToolPlanner : IAiToolPlanner {

@@ -7,7 +7,8 @@ namespace FactoryMind.Application.Features.ProductionOrders.CancelProductionOrde
 
 public sealed class CancelProductionOrderCommandHandler(
     IProductionExecutionRepository repository,
-    ICurrentUser currentUser)
+    ICurrentUser currentUser,
+    IProductionOrderDeliveryRiskCalculator riskCalculator)
     : IRequestHandler<CancelProductionOrderCommand, Result<ProductionOrderResponse>> {
     public async ValueTask<Result<ProductionOrderResponse>> Handle(
         CancelProductionOrderCommand command,
@@ -26,10 +27,10 @@ public sealed class CancelProductionOrderCommandHandler(
         var outcome = await repository.TryCancelAsync(
             order.Id,
             currentUser.CompanyId,
-            DateTime.UtcNow,
+            riskCalculator.UtcNow,
             cancellationToken);
         return outcome.Status == ProductionExecutionStatus.Success
-            ? Result<ProductionOrderResponse>.Success(ProductionOrderResponse.From(outcome.Order!))
+            ? Result<ProductionOrderResponse>.Success(ProductionOrderResponse.From(outcome.Order!, riskCalculator))
             : Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.InvalidTransition);
     }
 }

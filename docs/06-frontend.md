@@ -505,4 +505,15 @@ Lý do:
 
 Điều này cũng giúp sản phẩm khác biệt với ERP truyền thống, vốn luôn bắt đầu bằng một dashboard đầy biểu đồ.
 
+## Step 12A planning UX
+
+Production Orders có form `Hạn giao` và `Mức ưu tiên`, bộ lọc Status/Priority/Delivery Status, sort và
+pagination dùng Angular Signals. Date input là ngày kinh doanh và được gửi ở cuối ngày UTC. Table
+hiển thị ngày Việt Nam, “Chưa đặt” cho null, và badge có icon + text cho urgency/risk; frontend chỉ
+format `deliveryStatus`/`daysUntilDue` từ backend, không tự tính overdue.
+
+Khối “Rủi ro giao hàng” cung cấp shortcut Quá hạn, Sắp đến hạn và Khẩn cấp rồi tải endpoint planning
+đã sort/paginate phía server. Dashboard thêm năm KPI planning. Nội dung UI nói rõ đây là phân loại hạn
+giao, không phải ETA hay phân tích năng lực; layout table cuộn ngang trong card ở màn hình hẹp.
+
 ---

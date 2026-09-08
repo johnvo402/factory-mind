@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.Chat;
+using FactoryMind.Application.Features.ProductionOrders;
 using FactoryMind.Infrastructure.AI;
 using FactoryMind.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -115,14 +116,47 @@ public sealed class ManufacturingToolRegistryTests {
         Assert.Equal(ToolExecutionStatuses.InvalidArguments, result.Status);
     }
 
+    [Theory]
+    [InlineData("{\"priority\":\"critical\"}")]
+    [InlineData("{\"deliveryStatus\":\"likely_late\"}")]
+    [InlineData("{\"status\":\"queued\"}")]
+    [InlineData("{\"limit\":21}")]
+    [InlineData("{\"sortBy\":\"DueDate; DROP TABLE production_orders\"}")]
+    public async Task List_production_order_tool_rejects_unbounded_or_unapproved_planning_filters(string json) {
+        await using var dbContext = CreateDbContext();
+        var tool = new ListProductionOrdersTool(dbContext, RiskCalculator());
+
+        var result = await tool.ExecuteAsync(Guid.NewGuid(), Parse(json), CancellationToken.None);
+
+        Assert.Equal(ToolExecutionStatuses.InvalidArguments, result.Status);
+        Assert.Empty(result.Records);
+    }
+
+    [Fact]
+    public void Production_order_list_schema_exposes_only_bounded_planning_filters() {
+        using var dbContext = CreateDbContext();
+        var definition = CreateRegistry(dbContext).Definitions.Single(item =>
+            item.Name == "list_production_orders");
+        var properties = definition.Parameters.GetProperty("properties");
+
+        Assert.Contains("active", properties.GetProperty("status").GetProperty("enum")
+            .EnumerateArray().Select(item => item.GetString()));
+        Assert.Equal(4, properties.GetProperty("priority").GetProperty("enum").GetArrayLength());
+        Assert.Equal(7, properties.GetProperty("deliveryStatus").GetProperty("enum").GetArrayLength());
+        Assert.Equal(20, properties.GetProperty("limit").GetProperty("maximum").GetInt32());
+    }
+
     private static ManufacturingToolRegistry CreateRegistry(FactoryMindDbContext dbContext) => new(
-        new GetProductionOrderStatusTool(dbContext),
+        new GetProductionOrderStatusTool(dbContext, RiskCalculator()),
         new GetMachineStatusTool(dbContext),
         new ListMachinesTool(dbContext),
         new GetWorkCenterStatusTool(dbContext),
         new GetMaterialInventoryTool(dbContext),
         new GetProductionOrderMaterialReadinessTool(dbContext, new MaterialRequirementCalculator()),
-        new ListProductionOrdersTool(dbContext));
+        new ListProductionOrdersTool(dbContext, RiskCalculator()));
+
+    private static IProductionOrderDeliveryRiskCalculator RiskCalculator() =>
+        new ProductionOrderDeliveryRiskCalculator(TimeProvider.System, new PlanningSettings());
 
     private static FactoryMindDbContext CreateDbContext() => new(
         new DbContextOptionsBuilder<FactoryMindDbContext>()

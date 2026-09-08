@@ -636,14 +636,22 @@ public sealed class ProductionExecutionIntegrationTests(PostgreSqlFixture fixtur
         Assert.Equal(expectedStatus, response.StatusCode);
     }
 
-    private static async Task<ProductionOrderResponse> GetOrderAsync(HttpClient client, Guid orderId) =>
-        (await GetOrdersAsync(client)).Single(order => order.Id == orderId);
+    private static async Task<ProductionOrderResponse> GetOrderAsync(HttpClient client, Guid orderId) {
+        var order = (await GetOrdersAsync(client)).Single(candidate => candidate.Id == orderId);
+        var operations = await client.GetFromJsonAsync<ApiResponse<IReadOnlyList<ProductionOrderOperationResponse>>>(
+            OperationsRoute(orderId));
+        return order with { Operations = operations!.Data! };
+    }
 
     private static async Task<IReadOnlyList<ProductionOrderResponse>> GetOrdersAsync(HttpClient client) {
-        var envelope = await client.GetFromJsonAsync<ApiResponse<IReadOnlyList<ProductionOrderResponse>>>(
+        var envelope = await client.GetFromJsonAsync<ApiResponse<ProductionOrderPageResponse>>(
             ProductionOrdersRoute);
-        return envelope?.Data ?? [];
+        return envelope?.Data?.Items ?? [];
     }
+
+    private static string OperationsRoute(Guid orderId) => ApiRoutes.ProductionOrders.Group +
+        ApiRoutes.ProductionOrders.Operations.Replace(
+            "{productionOrderId:guid}", orderId.ToString(), StringComparison.Ordinal);
 
     private static async Task<MaterialRequirementsResponse> GetOrderRequirementsAsync(
         HttpClient client,

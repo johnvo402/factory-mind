@@ -49,6 +49,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required}
       Observability__Otlp__Enabled: ${OTLP_ENABLED:-false}
       Observability__Otlp__Endpoint: ${OTLP_ENDPOINT:-}
+      Planning__DueSoonDays: ${PLANNING_DUE_SOON_DAYS:-3}
       BootstrapAdmin__CompanyName: ${BOOTSTRAP_COMPANY_NAME:-}
       BootstrapAdmin__Name: ${BOOTSTRAP_ADMIN_NAME:-}
       BootstrapAdmin__Email: ${BOOTSTRAP_ADMIN_EMAIL:-}

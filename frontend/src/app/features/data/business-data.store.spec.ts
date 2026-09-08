@@ -108,7 +108,7 @@ describe('Business data stores', () => {
     const inventoryApi = jasmine.createSpyObj<InventoryApiService>('InventoryApiService', [
       'getWarehouses',
     ]);
-    orderApi.getProductionOrders.and.returnValue(success([productionOrder()]));
+    orderApi.getProductionOrders.and.returnValue(success(orderPage([productionOrder()])));
     productApi.getProducts.and.returnValue(success([product()]));
     machineApi.getMachines.and.returnValue(success([]));
     inventoryApi.getWarehouses.and.returnValue(success([warehouse()]));
@@ -187,6 +187,13 @@ describe('Business data stores', () => {
       productName: 'Storage Box',
       quantity: 500,
       status: 'planned',
+      dueDate: null,
+      priority: 'normal',
+      deliveryStatus: 'no_due_date',
+      daysUntilDue: null,
+      isOverdue: false,
+      isDueSoon: false,
+      isCompletedLate: false,
       billOfMaterialId: null,
       bomRevision: null,
       routingId: null,
@@ -203,5 +210,9 @@ describe('Business data stores', () => {
 
   function success<T>(data: T): Observable<ApiResponse<T>> {
     return of({ success: true, message: 'OK', data });
+  }
+
+  function orderPage(items: ProductionOrder[]) {
+    return { items, page: 1, pageSize: 50, totalCount: items.length };
   }
 });

@@ -5,11 +5,13 @@ export type UiIconName =
   | 'arrow-up-right'
   | 'book-open'
   | 'bot'
+  | 'clock-3'
   | 'database'
   | 'download'
   | 'eye'
   | 'eye-off'
   | 'factory'
+  | 'flag'
   | 'file-text'
   | 'log-out'
   | 'message-square'
@@ -47,11 +49,13 @@ export type UiIconName =
         @case ('arrow-up-right') { <path d="M7 17 17 7"/><path d="M7 7h10v10"/> }
         @case ('book-open') { <path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2Z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7Z"/> }
         @case ('bot') { <rect width="18" height="12" x="3" y="8" rx="2"/><path d="M12 4v4"/><path d="M8 12h.01"/><path d="M16 12h.01"/><path d="M9 16h6"/> }
+        @case ('clock-3') { <circle cx="12" cy="12" r="9"/><path d="M12 7v5H8"/> }
         @case ('database') { <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/> }
         @case ('download') { <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/> }
         @case ('eye') { <path d="M2.1 12a10.8 10.8 0 0 1 19.8 0 10.8 10.8 0 0 1-19.8 0"/><circle cx="12" cy="12" r="3"/> }
         @case ('eye-off') { <path d="m3 3 18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.2A10.7 10.7 0 0 1 21.9 12a11.8 11.8 0 0 1-2.4 3.5"/><path d="M6.6 6.6A11.8 11.8 0 0 0 2.1 12a10.8 10.8 0 0 0 14 6"/> }
         @case ('factory') { <path d="M2 20V9l6 3V9l6 3V4h8v16Z"/><path d="M6 20v-3"/><path d="M10 20v-3"/><path d="M14 20v-3"/><path d="M18 8h.01"/> }
+        @case ('flag') { <path d="M5 22V4"/><path d="M5 4h11l-2 4 2 4H5"/> }
         @case ('file-text') { <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8"/><path d="M8 17h5"/> }
         @case ('log-out') { <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/> }
         @case ('message-square') { <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/> }

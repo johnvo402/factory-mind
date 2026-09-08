@@ -661,3 +661,13 @@ ProductInventory trực tiếp.
 
 ---
 
+# Step 12A — Production planning & delivery risk
+
+* [x] DueDate UTC nullable và typed Priority với migration tương thích dữ liệu cũ.
+* [x] Central deterministic risk calculator, fixed-clock boundaries và Due Soon 3 ngày cấu hình được.
+* [x] Tenant-scoped filters, allowlisted sort, stable server pagination và planning endpoint không load Operations.
+* [x] Dashboard planning aggregates và Angular form/table/filter/risk shortcuts.
+* [x] Bảy AI read tools được giữ nguyên; hai PO tools mở rộng delivery facts/filter, không thêm mutation.
+* [x] Business RAG, 74-case AI Tool Eval, RAG Eval và PostgreSQL tenant/migration/dashboard tests.
+* [x] Scheduling, Gantt, capacity calendar, bottleneck prediction, ETA, rescheduling và auto-priority vẫn deferred sang 12B+.
+

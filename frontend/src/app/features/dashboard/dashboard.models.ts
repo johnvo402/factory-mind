@@ -4,4 +4,9 @@ export interface DashboardSummary {
   availableMachines: number;
   totalMachines: number;
   alerts: number;
+  overdueOrders: number;
+  dueSoonOrders: number;
+  urgentActiveOrders: number;
+  completedLateOrders: number;
+  ordersWithoutDueDate: number;
 }

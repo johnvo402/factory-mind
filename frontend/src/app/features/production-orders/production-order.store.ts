@@ -13,6 +13,7 @@ import { ProductionOrderApiService } from './production-order-api.service';
 import {
   CompleteProductionOrderInput,
   ProductionOrder,
+  ProductionOrderFilters,
   ProductionOrderInput,
   ProductionOrderOperation,
   StartProductionOrderInput,
@@ -35,6 +36,13 @@ export class ProductionOrderStore {
   private readonly errorState = signal('');
   private readonly refreshWarningState = signal('');
   private readonly searchState = signal('');
+  private readonly filtersState = signal<ProductionOrderFilters>({
+    page: 1,
+    pageSize: 50,
+    sortBy: 'deliveryRisk',
+    sortDirection: 'asc',
+  });
+  private readonly totalCountState = signal(0);
   private readonly requirementState = signal<MaterialRequirements | null>(null);
   private readonly requirementLoadingState = signal(false);
   private readonly requirementErrorState = signal('');
@@ -51,6 +59,8 @@ export class ProductionOrderStore {
   readonly error = this.errorState.asReadonly();
   readonly refreshWarning = this.refreshWarningState.asReadonly();
   readonly search = this.searchState.asReadonly();
+  readonly filters = this.filtersState.asReadonly();
+  readonly totalCount = this.totalCountState.asReadonly();
   readonly requirements = this.requirementState.asReadonly();
   readonly isLoadingRequirements = this.requirementLoadingState.asReadonly();
   readonly requirementError = this.requirementErrorState.asReadonly();
@@ -64,12 +74,12 @@ export class ProductionOrderStore {
     try {
       const [orderResponse, productResponse, machineResponse, warehouseResponse] =
         await Promise.all([
-          firstValueFrom(this.api.getProductionOrders()),
+          firstValueFrom(this.api.getProductionOrders(this.filtersState())),
           firstValueFrom(this.productApi.getProducts()),
           firstValueFrom(this.machineApi.getMachines()),
           firstValueFrom(this.inventoryApi.getWarehouses()),
         ]);
-      this.orderItems.set(orderResponse.data ?? []);
+      this.applyPage(orderResponse.data);
       this.productItems.set(productResponse.data ?? []);
       this.machineItems.set(machineResponse.data ?? []);
       this.warehouseItems.set(warehouseResponse.data ?? []);
@@ -82,12 +92,31 @@ export class ProductionOrderStore {
 
   async load(search = this.searchState()): Promise<void> {
     this.searchState.set(search.trim());
+    this.filtersState.update((filters) => ({
+      ...filters,
+      search: this.searchState() || undefined,
+      page: 1,
+    }));
+    await this.loadCurrentPage();
+  }
+
+  async applyFilters(filters: Partial<ProductionOrderFilters>): Promise<void> {
+    this.filtersState.update((current) => ({ ...current, ...filters, page: 1 }));
+    await this.loadCurrentPage();
+  }
+
+  async goToPage(page: number): Promise<void> {
+    this.filtersState.update((filters) => ({ ...filters, page }));
+    await this.loadCurrentPage();
+  }
+
+  private async loadCurrentPage(): Promise<void> {
     this.loadingState.set(true);
     this.errorState.set('');
     this.refreshWarningState.set('');
     try {
-      const response = await firstValueFrom(this.api.getProductionOrders(this.searchState()));
-      this.orderItems.set(response.data ?? []);
+      const response = await firstValueFrom(this.api.getProductionOrders(this.filtersState(), true));
+      this.applyPage(response.data);
     } catch (error: unknown) {
       this.errorState.set(businessDataErrorMessage(error));
     } finally {
@@ -279,11 +308,11 @@ export class ProductionOrderStore {
 
     try {
       const [orderResponse, machineResponse, operationResponse] = await Promise.all([
-        firstValueFrom(this.api.getProductionOrders(this.searchState())),
+        firstValueFrom(this.api.getProductionOrders(this.filtersState(), true)),
         firstValueFrom(this.machineApi.getMachines()),
         firstValueFrom(this.api.getOperations(orderId)),
       ]);
-      this.orderItems.set(orderResponse.data ?? []);
+      this.applyPage(orderResponse.data);
       this.machineItems.set(machineResponse.data ?? []);
       this.operationItems.set(operationResponse.data ?? []);
     } catch {
@@ -295,8 +324,8 @@ export class ProductionOrderStore {
   }
 
   private async loadOrdersWithoutSpinner(): Promise<void> {
-    const response = await firstValueFrom(this.api.getProductionOrders(this.searchState()));
-    this.orderItems.set(response.data ?? []);
+    const response = await firstValueFrom(this.api.getProductionOrders(this.filtersState(), true));
+    this.applyPage(response.data);
   }
 
   private async loadMachines(): Promise<void> {
@@ -321,5 +350,10 @@ export class ProductionOrderStore {
     this.refreshWarningState.set(
       'Thao tác đã được thực hiện thành công nhưng chưa thể tải lại dữ liệu mới nhất. Vui lòng tải lại màn hình.',
     );
+  }
+
+  private applyPage(page: { items: ProductionOrder[]; totalCount: number } | null | undefined): void {
+    this.orderItems.set(page?.items ?? []);
+    this.totalCountState.set(page?.totalCount ?? 0);
   }
 }

@@ -452,3 +452,17 @@ Settings is Admin-only CQRS. Company and user changes are tenant-scoped through 
 
 Production runs the Angular/Nginx frontend as the only public HTTP service. Nginx proxies same-origin `/api` requests and disables buffering for chat SSE. API, PostgreSQL, and MinIO are private Compose services with health checks and persistent volumes. Production startup rejects the committed development JWT key and requires explicit bootstrap Admin credentials for an empty database; demo business records are seeded only in Development.
 
+## Step 12A delivery-risk backend
+
+`IProductionOrderDeliveryRiskCalculator` owns UTC normalization, date-based `DaysUntilDue`, the
+configurable `Planning:DueSoonDays` window (1–30, default 3), SQL-safe delivery predicates and
+dashboard planning projection. Responses, planning/list filters, dashboard, Business RAG and the two
+existing Production Order read tools use these server facts. Completed orders compare immutable
+`CompletedAt` to `DueDate`; cancelled orders are never overdue.
+
+`GET /api/production-orders` and `/planning` are tenant-scoped and paged (50 default, 100 maximum).
+Filtering occurs before pagination, sorting maps only `deliveryRisk|updatedAt|dueDate|priority|number|status`, and
+stable second keys prevent page overlap. The list query does not include operation collections; the
+dedicated operations endpoint remains authoritative for execution detail. No scheduling/ETA/capacity
+calculation or AI write surface was added.
+

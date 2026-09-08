@@ -7,15 +7,35 @@ namespace FactoryMind.Application.Features.ProductionOrders.GetProductionOrders;
 
 public sealed class GetProductionOrdersQueryHandler(
     IProductionOrderRepository repository,
-    ICurrentUser currentUser) : IRequestHandler<GetProductionOrdersQuery, Result<IReadOnlyList<ProductionOrderResponse>>> {
-    public async ValueTask<Result<IReadOnlyList<ProductionOrderResponse>>> Handle(
+    ICurrentUser currentUser,
+    IProductionOrderDeliveryRiskCalculator riskCalculator)
+    : IRequestHandler<GetProductionOrdersQuery, Result<ProductionOrderPageResponse>> {
+    public async ValueTask<Result<ProductionOrderPageResponse>> Handle(
         GetProductionOrdersQuery query,
         CancellationToken cancellationToken) {
-        var orders = await repository.GetByCompanyAsync(
-            currentUser.CompanyId,
+        var criteria = new ProductionOrderListCriteria(
             BusinessDataNormalization.Search(query.Search),
+            query.Status,
+            query.Priority,
+            query.DeliveryStatus,
+            riskCalculator.NormalizeDueDate(query.DueFrom),
+            riskCalculator.NormalizeDueDate(query.DueTo),
+            query.ProductId,
+            query.Page,
+            query.PageSize,
+            query.SortBy,
+            query.SortDirection,
+            riskCalculator.UtcNow,
+            riskCalculator.DueSoonThrough,
+            query.PlanningOrder);
+        var result = await repository.GetByCompanyAsync(
+            currentUser.CompanyId,
+            criteria,
             cancellationToken);
-        return Result<IReadOnlyList<ProductionOrderResponse>>.Success(
-            orders.Select(ProductionOrderResponse.From).ToList());
+        return Result<ProductionOrderPageResponse>.Success(new ProductionOrderPageResponse(
+            result.Items.Select(order => ProductionOrderResponse.From(order, riskCalculator)).ToList(),
+            query.Page,
+            query.PageSize,
+            result.TotalCount));
     }
 }

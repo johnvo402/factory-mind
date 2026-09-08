@@ -86,7 +86,8 @@ public sealed class ProductionCompletionCommandHandlerTests {
             Execution,
             Products,
             Warehouses,
-            User);
+            User,
+            new ProductionOrderDeliveryRiskCalculator(TimeProvider.System, new PlanningSettings()));
     }
 
     private sealed class FakeCurrentUser : ICurrentUser {

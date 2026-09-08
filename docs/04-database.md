@@ -600,3 +600,15 @@ Lý do:
 * Giữ MVP linh hoạt.
 
 Theo mình, ở giai đoạn hiện tại, **Database Design chỉ nên chốt Entity và nguyên tắc thiết kế**, còn chi tiết cột, khóa ngoại và migration sẽ được hoàn thiện song song khi code. Điều này giúp tài liệu luôn phản ánh đúng hệ thống thay vì trở thành một bản thiết kế cũ không còn khớp với mã nguồn.
+
+## Production Order delivery planning
+
+`production_orders` có `DueDate timestamp with time zone NULL` và `Priority varchar(30) NOT NULL
+DEFAULT 'normal'`. Check constraint giới hạn priority ở `low|normal|high|urgent`. Migration không suy
+diễn hạn giao lịch sử: bản ghi cũ nhận `DueDate = NULL`, `Priority = normal`. UI date-only chuẩn hóa
+ngày chọn thành 23:59:59.999 UTC, vì deadline hiện là ngày giao kinh doanh nhưng schema/API hiện dùng
+UTC `DateTime` nhất quán.
+
+Các index `(CompanyId, Status, DueDate)` và `(CompanyId, Priority)` phục vụ aggregate/filter theo
+tenant. Delivery status và days-to-due không lưu DB; chúng được tính từ DueDate, lifecycle state,
+CompletedAt và clock server. Chi tiết quyết định nằm ở decision log 0041.

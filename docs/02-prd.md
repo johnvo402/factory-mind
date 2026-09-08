@@ -472,4 +472,15 @@ Ví dụ:
 
 Nếu một trong các giả định này sai khi gặp khách hàng, thì **không phải sửa code ngay**, mà phải xem lại PRD và phạm vi MVP.
 
+## FR-012A — Production planning và delivery risk
+
+Manager đặt `DueDate` tùy chọn và `Priority` (`low`, `normal`, `high`, `urgent`) khi tạo/sửa PO
+Planned. Danh sách hỗ trợ filter trạng thái, ưu tiên, delivery status, ngày, sản phẩm; sort allowlist;
+và pagination server 50 dòng mặc định, tối đa 100. Dashboard hiển thị Overdue, Due Soon, Urgent
+Active, Completed Late và Orders Without Due Date mà không thay đổi định nghĩa Alerts.
+
+Delivery status là fact xác định: `no_due_date`, `on_track`, `due_soon`, `overdue`,
+`completed_on_time`, `completed_late`, hoặc `cancelled`. Due Soon mặc định là ba ngày lịch. Không có
+scheduling, capacity promise, dự báo delay, tự đổi priority hay AI mutation mới.
+
 ---

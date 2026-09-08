@@ -362,4 +362,11 @@ Trong suốt quá trình phát triển, FactoryMind tuân theo các nguyên tắ
 5. **Tận dụng dữ liệu hiện có thay vì yêu cầu doanh nghiệp thay đổi quy trình.**
 6. **Mỗi Sprint phải tạo ra giá trị có thể demo được.**
 
+## Step 12A — Ý nghĩa của “trễ”
+
+FactoryMind đã biết hạn giao do người dùng đặt, mức ưu tiên và có thể phân loại lệnh quá hạn/sắp đến
+hạn bằng timestamp thực tế. “Trễ” ở bước này chỉ có nghĩa là đã qua `DueDate` rõ ràng, hoặc
+`CompletedAt > DueDate`; nó không phải dự báo một lệnh tương lai sẽ trễ. Lịch máy, năng lực, ca làm,
+bottleneck, auto-reschedule và ETA vẫn nằm ngoài phạm vi.
+
 ---

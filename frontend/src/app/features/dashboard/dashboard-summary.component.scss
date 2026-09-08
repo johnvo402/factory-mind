@@ -34,6 +34,16 @@ article.has-alerts {
   background: color-mix(in srgb, var(--color-warning-soft) 52%, var(--color-surface));
 }
 article.has-alerts strong { color: var(--color-warning); }
+article.planning-kpi.has-value.warning {
+  border-color: color-mix(in srgb, var(--color-warning) 26%, var(--color-border));
+  background: color-mix(in srgb, var(--color-warning-soft) 58%, var(--color-surface));
+}
+article.planning-kpi.has-value.warning strong { color: var(--color-warning); }
+article.planning-kpi.has-value.danger {
+  border-color: color-mix(in srgb, var(--color-danger) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-danger-soft) 58%, var(--color-surface));
+}
+article.planning-kpi.has-value.danger strong { color: var(--color-danger); }
 
 .dashboard-status {
   grid-column: 1 / -1;

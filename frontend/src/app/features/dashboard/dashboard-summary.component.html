@@ -27,5 +27,30 @@
       <strong>{{ summary.alerts }}</strong>
       <small>Máy và tài liệu cần xử lý</small>
     </article>
+    <article class="planning-kpi danger" [class.has-value]="summary.overdueOrders > 0">
+      <span>Quá hạn</span>
+      <strong>{{ summary.overdueOrders }}</strong>
+      <small>Lệnh đang hoạt động đã qua hạn giao</small>
+    </article>
+    <article class="planning-kpi warning" [class.has-value]="summary.dueSoonOrders > 0">
+      <span>Sắp đến hạn</span>
+      <strong>{{ summary.dueSoonOrders }}</strong>
+      <small>Trong cửa sổ sắp đến hạn đã cấu hình</small>
+    </article>
+    <article class="planning-kpi danger" [class.has-value]="summary.urgentActiveOrders > 0">
+      <span>Lệnh khẩn cấp</span>
+      <strong>{{ summary.urgentActiveOrders }}</strong>
+      <small>Khẩn cấp và chưa hoàn thành</small>
+    </article>
+    <article class="planning-kpi warning" [class.has-value]="summary.completedLateOrders > 0">
+      <span>Hoàn thành trễ</span>
+      <strong>{{ summary.completedLateOrders }}</strong>
+      <small>CompletedAt sau hạn giao</small>
+    </article>
+    <article class="planning-kpi">
+      <span>Chưa có hạn giao</span>
+      <strong>{{ summary.ordersWithoutDueDate }}</strong>
+      <small>Lệnh hoạt động cần bổ sung hạn</small>
+    </article>
   }
 </section>

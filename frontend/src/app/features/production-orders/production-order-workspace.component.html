@@ -2,7 +2,7 @@
   <section class="toolbar">
     <div>
       <h2>Lệnh sản xuất</h2>
-      <p>{{ store.orders().length }} lệnh trong kết quả hiện tại</p>
+      <p>{{ store.totalCount() }} lệnh phù hợp</p>
     </div>
     <div class="toolbar-actions">
       <form (submit)="search($event)" class="search-form">
@@ -30,6 +30,75 @@
       </button>
     </div>
   </section>
+
+  <section class="planning-strip" aria-labelledby="planning-title">
+    <div>
+      <span class="eyebrow">RỦI RO GIAO HÀNG</span>
+      <h3 id="planning-title">Theo dõi hạn giao xác định</h3>
+      <p>Phân loại theo hạn giao do người dùng đặt, không phải dự báo ETA hay năng lực.</p>
+    </div>
+    <div class="planning-shortcuts" aria-label="Bộ lọc nhanh rủi ro giao hàng">
+      <button type="button" class="risk-button overdue" (click)="showRisk('overdue')">
+        <app-ui-icon name="triangle-alert" [size]="17" /> Quá hạn
+      </button>
+      <button type="button" class="risk-button due-soon" (click)="showRisk('due_soon')">
+        <app-ui-icon name="clock-3" [size]="17" /> Sắp đến hạn
+      </button>
+      <button type="button" class="risk-button urgent" (click)="showUrgent()">
+        <app-ui-icon name="flag" [size]="17" /> Khẩn cấp
+      </button>
+      <button type="button" class="ghost" (click)="showRisk()">Tất cả</button>
+    </div>
+  </section>
+
+  <form class="planning-filters" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+    <label
+      >Trạng thái<select formControlName="status">
+        <option value="">Tất cả</option>
+        <option value="planned">Đã lên kế hoạch</option>
+        <option value="released">Đã phát hành</option>
+        <option value="in_progress">Đang sản xuất</option>
+        <option value="completed">Hoàn thành</option>
+        <option value="cancelled">Đã hủy</option>
+      </select></label
+    >
+    <label
+      >Mức ưu tiên<select formControlName="priority">
+        <option value="">Tất cả</option>
+        <option value="urgent">Khẩn cấp</option>
+        <option value="high">Cao</option>
+        <option value="normal">Bình thường</option>
+        <option value="low">Thấp</option>
+      </select></label
+    >
+    <label
+      >Hạn giao<select formControlName="deliveryStatus">
+        <option value="">Tất cả</option>
+        <option value="overdue">Quá hạn</option>
+        <option value="due_soon">Sắp đến hạn</option>
+        <option value="on_track">Chưa đến hạn</option>
+        <option value="no_due_date">Chưa có hạn giao</option>
+        <option value="completed_late">Hoàn thành trễ</option>
+      </select></label
+    >
+    <label
+      >Sắp xếp<select formControlName="sortBy">
+        <option value="deliveryRisk">Rủi ro giao hàng</option>
+        <option value="updatedAt">Cập nhật</option>
+        <option value="dueDate">Hạn giao</option>
+        <option value="priority">Ưu tiên</option>
+        <option value="number">Số lệnh</option>
+        <option value="status">Trạng thái</option>
+      </select></label
+    >
+    <label
+      >Thứ tự<select formControlName="sortDirection">
+        <option value="desc">Giảm dần</option>
+        <option value="asc">Tăng dần</option>
+      </select></label
+    >
+    <button type="submit" class="secondary" [disabled]="store.isLoading()">Áp dụng</button>
+  </form>
 
   @if (
     store.error() &&
@@ -68,6 +137,9 @@
             <th>Số lệnh</th>
             <th>Sản phẩm</th>
             <th>Số lượng</th>
+            <th>Ưu tiên</th>
+            <th>Hạn giao</th>
+            <th>Rủi ro giao hàng</th>
             <th>Phiên bản đã khóa</th>
             <th>Trạng thái</th>
             <th></th>
@@ -81,6 +153,23 @@
               </td>
               <td>{{ order.productCode }} — {{ order.productName }}</td>
               <td>{{ order.quantity | number: '1.0-3' }}</td>
+              <td>
+                <span class="priority-badge" [class.urgent]="order.priority === 'urgent'" [class.high]="order.priority === 'high'">
+                  @if (order.priority === 'urgent') { <app-ui-icon name="flag" [size]="14" /> }
+                  {{ priorityLabel(order.priority) }}
+                </span>
+              </td>
+              <td class="due-date">{{ order.dueDate ? (order.dueDate | date: 'dd/MM/yyyy' : 'UTC') : 'Chưa đặt' }}</td>
+              <td>
+                <span class="delivery-badge" [class.overdue]="order.deliveryStatus === 'overdue'" [class.due-soon]="order.deliveryStatus === 'due_soon'" [class.completed-late]="order.deliveryStatus === 'completed_late'">
+                  @if (order.deliveryStatus === 'overdue' || order.deliveryStatus === 'completed_late') {
+                    <app-ui-icon name="triangle-alert" [size]="14" />
+                  } @else if (order.deliveryStatus === 'due_soon') {
+                    <app-ui-icon name="clock-3" [size]="14" />
+                  }
+                  {{ deliveryStatusLabel(order) }}
+                </span>
+              </td>
               <td class="locked-revisions">
                 <span
                   >BOM:
@@ -184,6 +273,11 @@
         </tbody>
       </table>
     </div>
+    <nav class="pagination" aria-label="Phân trang lệnh sản xuất">
+      <button type="button" class="secondary" [disabled]="store.filters().page <= 1 || store.isLoading()" (click)="store.goToPage(store.filters().page - 1)">Trang trước</button>
+      <span>Trang {{ store.filters().page }} / {{ totalPages() }}</span>
+      <button type="button" class="secondary" [disabled]="store.filters().page >= totalPages() || store.isLoading()" (click)="store.goToPage(store.filters().page + 1)">Trang sau</button>
+    </nav>
   }
 
   @if (editorOpen()) {
@@ -233,6 +327,18 @@
               <small>Số lượng phải lớn hơn 0.</small>
             }
           </label>
+          <label
+            >Hạn giao<input type="date" formControlName="dueDate" />
+            <small>Ngày giao được lưu đến cuối ngày UTC; có thể để trống.</small>
+          </label>
+          <label
+            >Mức ưu tiên<select formControlName="priority">
+              <option value="low">Thấp</option>
+              <option value="normal">Bình thường</option>
+              <option value="high">Cao</option>
+              <option value="urgent">Khẩn cấp</option>
+            </select></label
+          >
           <footer>
             <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button
             ><button type="submit" class="primary" [disabled]="store.isSaving()">

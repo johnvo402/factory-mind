@@ -118,6 +118,7 @@ public static class ApiRoutes {
     public static class ProductionOrders {
         public const string Group = Base + "/production-orders";
         public const string Root = "";
+        public const string Planning = "/planning";
         public const string ById = "/{productionOrderId:guid}";
         public const string Release = ById + "/release";
         public const string Start = ById + "/start";

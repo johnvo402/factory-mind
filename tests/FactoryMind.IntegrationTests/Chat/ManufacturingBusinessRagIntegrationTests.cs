@@ -1,6 +1,7 @@
 using FactoryMind.Application.Features.Chat;
 using FactoryMind.Application.Features.Chat.Rag;
 using FactoryMind.Application.Features.Knowledge;
+using FactoryMind.Application.Features.ProductionOrders;
 using FactoryMind.Domain.Knowledge;
 using FactoryMind.Domain.Manufacturing;
 using FactoryMind.Infrastructure.Persistence;
@@ -47,7 +48,7 @@ public sealed class ManufacturingBusinessRagIntegrationTests(PostgreSqlFixture f
             WorkCenter = workCenter
         }));
         await dbContext.SaveChangesAsync();
-        var repository = new EfBusinessContextRepository(dbContext);
+        var repository = CreateRepository(scope, dbContext);
 
         var records = await repository.RetrieveAsync(
             TestData.CompanyAId,
@@ -69,8 +70,11 @@ public sealed class ManufacturingBusinessRagIntegrationTests(PostgreSqlFixture f
         using var scope = ApiFactory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
         var setup = SeedExecution(dbContext);
+        var seededOrder = dbContext.ProductionOrders.Local.Single(order => order.Number == "PO-001");
+        seededOrder.Priority = ProductionOrderPriorities.Urgent;
+        seededOrder.DueDate = new DateTime(2026, 9, 9, 23, 59, 59, DateTimeKind.Utc);
         await dbContext.SaveChangesAsync();
-        var repository = new EfBusinessContextRepository(dbContext);
+        var repository = CreateRepository(scope, dbContext);
 
         var records = await repository.RetrieveAsync(
             TestData.CompanyAId,
@@ -89,6 +93,10 @@ public sealed class ManufacturingBusinessRagIntegrationTests(PostgreSqlFixture f
         Assert.Contains("PAINT", order.Detail);
         Assert.Contains("PAINT-02", order.Detail);
         Assert.Contains("in_progress", order.Detail);
+        Assert.Contains("Priority: urgent", order.Detail);
+        Assert.Contains("Due Date: 2026-09-09", order.Detail);
+        Assert.Contains("Delivery Status: due_soon", order.Detail);
+        Assert.Contains("Days Until Due: 1", order.Detail);
         var machine = Assert.Single(records, record =>
             record.EntityType == "machine" && record.Title.StartsWith("PAINT-02", StringComparison.Ordinal));
         Assert.Contains("Current operation: Painting", machine.Detail);
@@ -141,7 +149,7 @@ public sealed class ManufacturingBusinessRagIntegrationTests(PostgreSqlFixture f
         var knowledge = new KnowledgeContextBuilder(new KnowledgeRetriever(
             new FixedEmbeddingClient(),
             new EfKnowledgeSearchRepository(dbContext)));
-        var business = new BusinessContextBuilder(new EfBusinessContextRepository(dbContext));
+        var business = new BusinessContextBuilder(CreateRepository(scope, dbContext));
         var builder = new ChatContextBuilder(new IntentRouter(), knowledge, business);
 
         var context = await builder.BuildAsync(
@@ -163,7 +171,7 @@ public sealed class ManufacturingBusinessRagIntegrationTests(PostgreSqlFixture f
         var dbContext = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
         SeedExecution(dbContext);
         await dbContext.SaveChangesAsync();
-        var repository = new EfBusinessContextRepository(dbContext);
+        var repository = CreateRepository(scope, dbContext);
 
         var workCenters = await repository.RetrieveAsync(
             TestData.CompanyAId,
@@ -308,6 +316,12 @@ public sealed class ManufacturingBusinessRagIntegrationTests(PostgreSqlFixture f
         values[0] = 1f;
         return values;
     }
+
+    private static EfBusinessContextRepository CreateRepository(
+        IServiceScope scope,
+        FactoryMindDbContext dbContext) => new(
+            dbContext,
+            scope.ServiceProvider.GetRequiredService<IProductionOrderDeliveryRiskCalculator>());
 
     private sealed class FixedEmbeddingClient : IEmbeddingClient {
         public Task<EmbeddingBatch> CreateAsync(

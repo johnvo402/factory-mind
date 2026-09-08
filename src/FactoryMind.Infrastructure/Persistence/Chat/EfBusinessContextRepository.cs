@@ -2,13 +2,15 @@ using System.Globalization;
 using FactoryMind.Application.Common.Search;
 using FactoryMind.Application.Features.Chat;
 using FactoryMind.Application.Features.Chat.Rag;
+using FactoryMind.Application.Features.ProductionOrders;
 using FactoryMind.Domain.Manufacturing;
 using Microsoft.EntityFrameworkCore;
 
 namespace FactoryMind.Infrastructure.Persistence.Chat;
 
 public sealed class EfBusinessContextRepository(
-    FactoryMindDbContext dbContext) : IBusinessContextRepository {
+    FactoryMindDbContext dbContext,
+    IProductionOrderDeliveryRiskCalculator riskCalculator) : IBusinessContextRepository {
     private const int MinimumCandidateLimit = 40;
 
     public async Task<IReadOnlyList<BusinessDataRecord>> RetrieveAsync(
@@ -273,6 +275,8 @@ public sealed class EfBusinessContextRepository(
                 order.Product.Name,
                 order.Quantity,
                 order.Status,
+                order.Priority,
+                order.DueDate,
                 order.BillOfMaterial == null ? null : order.BillOfMaterial.Revision,
                 order.Routing == null ? null : order.Routing.Revision,
                 order.ReleasedAt,
@@ -308,8 +312,15 @@ public sealed class EfBusinessContextRepository(
                 operation.CompletedAt))
             .ToListAsync(cancellationToken);
         var operationsByOrder = operations.ToLookup(operation => operation.ProductionOrderNumber);
+        var now = riskCalculator.UtcNow;
 
         return selected.Select(order => {
+            var risk = ProductionOrderDeliveryRiskCalculator.Calculate(
+                order.Status,
+                order.DueDate,
+                order.CompletedAt,
+                now,
+                riskCalculator.DueSoonDays);
             var orderOperations = operationsByOrder[order.Number].OrderBy(operation => operation.Sequence).ToList();
             var current = orderOperations.FirstOrDefault(operation =>
                 operation.Status == ProductionOperationStatuses.InProgress);
@@ -325,6 +336,8 @@ public sealed class EfBusinessContextRepository(
                 "production_order",
                 $"{order.Number} - {order.ProductCode} {order.ProductName}",
                 $"Quantity: {Format(order.Quantity)}. Status: {order.Status}. "
+                + $"Priority: {order.Priority}. Due Date: {FormatDate(order.DueDate)}. "
+                + $"Delivery Status: {risk.DeliveryStatus}. Days Until Due: {risk.DaysUntilDue?.ToString(CultureInfo.InvariantCulture) ?? "none"}. "
                 + $"Locked BOM revision: {NullableRevision(order.BomRevision)}. "
                 + $"Locked Routing revision: {NullableRevision(order.RoutingRevision)}. "
                 + $"Released: {FormatTimestamp(order.ReleasedAt)}. "
@@ -571,6 +584,10 @@ public sealed class EfBusinessContextRepository(
         ? value.Value.ToUniversalTime().ToString("dd/MM/yyyy HH:mm 'UTC'", CultureInfo.InvariantCulture)
         : "none";
 
+    private static string FormatDate(DateTime? value) => value.HasValue
+        ? value.Value.ToUniversalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        : "none";
+
     private static string MachineStatusLabel(string status) => status switch {
         MachineStatuses.Available => "Available",
         MachineStatuses.Running => "Running",
@@ -605,6 +622,8 @@ public sealed class EfBusinessContextRepository(
         string ProductName,
         decimal Quantity,
         string Status,
+        string Priority,
+        DateTime? DueDate,
         int? BomRevision,
         int? RoutingRevision,
         DateTime? ReleasedAt,

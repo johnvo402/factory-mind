@@ -20,14 +20,22 @@ public static class ProductionOrderEndpoints {
             .RequireAuthorization(AuthorizationPolicies.Manager);
 
         group.MapGet(ApiRoutes.ProductionOrders.Root, async (
-            [AsParameters] BusinessDataSearchRequest request,
+            [AsParameters] ProductionOrderQueryRequest request,
             ISender sender,
             CancellationToken cancellationToken) => {
                 return (await sender.Send(
-                    new GetProductionOrdersQuery(request.Search),
+                    ToQuery(request),
                     cancellationToken)).ToHttpResult();
             })
-            .WithRequestValidation<BusinessDataSearchRequest>();
+            .WithRequestValidation<ProductionOrderQueryRequest>();
+
+        group.MapGet(ApiRoutes.ProductionOrders.Planning, async (
+            [AsParameters] ProductionOrderQueryRequest request,
+            ISender sender,
+            CancellationToken cancellationToken) => (await sender.Send(
+                ToQuery(request, planningOrder: request.SortBy is null),
+                cancellationToken)).ToHttpResult())
+            .WithRequestValidation<ProductionOrderQueryRequest>();
 
         group.MapPost(ApiRoutes.ProductionOrders.Root, async (
             [FromBody] ProductionOrderRequest request,
@@ -37,7 +45,9 @@ public static class ProductionOrderEndpoints {
                     new CreateProductionOrderCommand(
                         request.Number,
                         request.ProductId,
-                        request.Quantity),
+                        request.Quantity,
+                        request.DueDate,
+                        request.Priority),
                     cancellationToken)).ToHttpResult();
             })
             .WithRequestValidation<ProductionOrderRequest>();
@@ -52,7 +62,9 @@ public static class ProductionOrderEndpoints {
                         productionOrderId,
                         request.Number,
                         request.ProductId,
-                        request.Quantity),
+                        request.Quantity,
+                        request.DueDate,
+                        request.Priority),
                     cancellationToken)).ToHttpResult();
             })
             .WithRequestValidation<ProductionOrderRequest>();
@@ -139,4 +151,20 @@ public static class ProductionOrderEndpoints {
 
         return endpoints;
     }
+
+    private static GetProductionOrdersQuery ToQuery(
+        ProductionOrderQueryRequest request,
+        bool planningOrder = false) => new(
+            request.Search,
+            request.Status,
+            request.Priority,
+            request.DeliveryStatus,
+            request.DueFrom,
+            request.DueTo,
+            request.ProductId,
+            request.Page ?? 1,
+            request.PageSize ?? ProductionOrderConstraints.DefaultPageSize,
+            request.SortBy ?? ProductionOrderSortFields.UpdatedAt,
+            request.SortDirection ?? ProductionOrderSortDirections.Descending,
+            planningOrder);
 }

@@ -5,6 +5,7 @@ using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.Chat;
 using FactoryMind.Application.Features.Chat.Rag;
 using FactoryMind.Application.Features.Chat.Tools;
+using FactoryMind.Application.Features.ProductionOrders;
 using FactoryMind.Infrastructure.AI;
 using FactoryMind.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -22,14 +23,17 @@ await using var dbContext = new FactoryMindDbContext(
     new DbContextOptionsBuilder<FactoryMindDbContext>()
         .UseNpgsql("Host=localhost;Database=ai_tool_eval_unused")
         .Options);
+var riskCalculator = new ProductionOrderDeliveryRiskCalculator(
+    TimeProvider.System,
+    new PlanningSettings());
 var productionRegistry = new ManufacturingToolRegistry(
-    new GetProductionOrderStatusTool(dbContext),
+    new GetProductionOrderStatusTool(dbContext, riskCalculator),
     new GetMachineStatusTool(dbContext),
     new ListMachinesTool(dbContext),
     new GetWorkCenterStatusTool(dbContext),
     new GetMaterialInventoryTool(dbContext),
     new GetProductionOrderMaterialReadinessTool(dbContext, new MaterialRequirementCalculator()),
-    new ListProductionOrdersTool(dbContext));
+    new ListProductionOrdersTool(dbContext, riskCalculator));
 var router = new IntentRouter();
 var planner = new DeterministicManufacturingPlanner();
 var failures = new List<string>();
@@ -39,7 +43,10 @@ var minimumCategoryCounts = new Dictionary<string, int>(StringComparer.Ordinal) 
     ["material_readiness"] = 8,
     ["hybrid_multi_tool"] = 6,
     ["adversarial_no_tool"] = 6,
-    ["unknown_insufficient_data"] = 6
+    ["unknown_insufficient_data"] = 6,
+    ["delivery_risk"] = 10,
+    ["priority_planning"] = 5,
+    ["unsupported_scheduling"] = 5
 };
 var categoryCounts = cases.GroupBy(evalCase => evalCase.Category, StringComparer.Ordinal)
     .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);

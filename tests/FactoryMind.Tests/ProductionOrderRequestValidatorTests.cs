@@ -37,4 +37,25 @@ public sealed class ProductionOrderRequestValidatorTests {
         result.ShouldHaveValidationErrorFor(request => request.MachineId)
             .WithErrorMessage("Machine is required.");
     }
+
+    [Theory]
+    [InlineData(ProductionOrderPriorities.Low)]
+    [InlineData(ProductionOrderPriorities.Normal)]
+    [InlineData(ProductionOrderPriorities.High)]
+    [InlineData(ProductionOrderPriorities.Urgent)]
+    public async Task Accepts_each_typed_priority(string priority) {
+        var result = await _validator.TestValidateAsync(new ProductionOrderRequest(
+            "PO-001", Guid.NewGuid(), 1m, DateTime.UtcNow.AddDays(-1), priority));
+
+        result.ShouldNotHaveValidationErrorFor(request => request.Priority);
+    }
+
+    [Fact]
+    public async Task Rejects_invalid_priority_without_rejecting_overdue_due_date() {
+        var result = await _validator.TestValidateAsync(new ProductionOrderRequest(
+            "PO-001", Guid.NewGuid(), 1m, DateTime.UtcNow.AddYears(-1), "critical"));
+
+        result.ShouldHaveValidationErrorFor(request => request.Priority);
+        result.ShouldNotHaveValidationErrorFor(request => request.DueDate);
+    }
 }

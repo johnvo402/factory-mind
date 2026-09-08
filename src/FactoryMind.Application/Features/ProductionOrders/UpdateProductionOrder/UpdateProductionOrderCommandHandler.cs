@@ -10,7 +10,9 @@ namespace FactoryMind.Application.Features.ProductionOrders.UpdateProductionOrde
 public sealed class UpdateProductionOrderCommandHandler(
     IProductionOrderRepository repository,
     IProductRepository productRepository,
-    ICurrentUser currentUser) : IRequestHandler<UpdateProductionOrderCommand, Result<ProductionOrderResponse>> {
+    ICurrentUser currentUser,
+    IProductionOrderDeliveryRiskCalculator riskCalculator)
+    : IRequestHandler<UpdateProductionOrderCommand, Result<ProductionOrderResponse>> {
     public async ValueTask<Result<ProductionOrderResponse>> Handle(
         UpdateProductionOrderCommand command,
         CancellationToken cancellationToken) {
@@ -46,10 +48,12 @@ public sealed class UpdateProductionOrderCommandHandler(
         order.ProductId = product.Id;
         order.Product = product;
         order.Quantity = command.Quantity;
-        order.UpdatedAt = DateTime.UtcNow;
+        order.DueDate = riskCalculator.NormalizeDueDate(command.DueDate);
+        order.Priority = command.Priority;
+        order.UpdatedAt = riskCalculator.UtcNow;
         if (!await repository.TryUpdatePlannedAsync(order, cancellationToken)) {
             return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.PlannedRequired);
         }
-        return Result<ProductionOrderResponse>.Success(ProductionOrderResponse.From(order));
+        return Result<ProductionOrderResponse>.Success(ProductionOrderResponse.From(order, riskCalculator));
     }
 }

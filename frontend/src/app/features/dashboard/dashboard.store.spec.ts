@@ -24,6 +24,11 @@ describe('DashboardStore', () => {
       availableMachines: 2,
       totalMachines: 4,
       alerts: 1,
+      overdueOrders: 2,
+      dueSoonOrders: 1,
+      urgentActiveOrders: 1,
+      completedLateOrders: 1,
+      ordersWithoutDueDate: 1,
     };
     api.getSummary.and.returnValue(of({ success: true, message: 'OK', data: summary }));
 

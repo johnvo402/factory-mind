@@ -191,6 +191,7 @@ public sealed class EfProductionExecutionRepository(FactoryMindDbContext dbConte
         dbContext.ProductionOrderOperations.AddRange(snapshots);
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+        dbContext.ChangeTracker.Clear();
         return new(ProductionExecutionStatus.Success, await GetAsync(
             productionOrderId, companyId, cancellationToken));
     }

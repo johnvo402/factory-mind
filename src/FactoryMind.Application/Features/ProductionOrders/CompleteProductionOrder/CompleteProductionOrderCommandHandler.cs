@@ -12,7 +12,8 @@ public sealed class CompleteProductionOrderCommandHandler(
     IProductionExecutionRepository executionRepository,
     IProductRepository productRepository,
     IWarehouseRepository warehouseRepository,
-    ICurrentUser currentUser)
+    ICurrentUser currentUser,
+    IProductionOrderDeliveryRiskCalculator riskCalculator)
     : IRequestHandler<CompleteProductionOrderCommand, Result<ProductionOrderResponse>> {
     public async ValueTask<Result<ProductionOrderResponse>> Handle(
         CompleteProductionOrderCommand command,
@@ -52,7 +53,7 @@ public sealed class CompleteProductionOrderCommandHandler(
             return Result<ProductionOrderResponse>.Failure(InventoryErrors.WarehouseNotFound);
         }
 
-        var completedAt = DateTime.UtcNow;
+        var completedAt = riskCalculator.UtcNow;
         var output = new ProductInventoryTransaction {
             CompanyId = currentUser.CompanyId,
             WarehouseId = warehouse.Id,
@@ -76,7 +77,7 @@ public sealed class CompleteProductionOrderCommandHandler(
             cancellationToken);
         return outcome.Status switch {
             ProductionExecutionStatus.Success => Result<ProductionOrderResponse>.Success(
-                ProductionOrderResponse.From(outcome.Order!)),
+                ProductionOrderResponse.From(outcome.Order!, riskCalculator)),
             ProductionExecutionStatus.WarehouseUnavailable =>
                 Result<ProductionOrderResponse>.Failure(InventoryErrors.WarehouseNotFound),
             ProductionExecutionStatus.ProductUnavailable =>

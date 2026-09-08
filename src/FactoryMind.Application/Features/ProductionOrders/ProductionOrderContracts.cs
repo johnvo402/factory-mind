@@ -8,6 +8,10 @@ public static class ProductionOrderConstraints {
     public const int MaximumStatusLength = 30;
     public const int QuantityPrecision = 18;
     public const int QuantityScale = 3;
+    public const int DefaultPageSize = 50;
+    public const int MaximumPageSize = 100;
+    public const int MaximumSortFieldLength = 20;
+    public const int MaximumSortDirectionLength = 4;
 }
 
 public sealed record ProductionOrderResponse(
@@ -18,6 +22,13 @@ public sealed record ProductionOrderResponse(
     string ProductName,
     decimal Quantity,
     string Status,
+    DateTime? DueDate,
+    string Priority,
+    string DeliveryStatus,
+    int? DaysUntilDue,
+    bool IsOverdue,
+    bool IsDueSoon,
+    bool IsCompletedLate,
     Guid? BillOfMaterialId,
     int? BomRevision,
     Guid? RoutingId,
@@ -29,7 +40,11 @@ public sealed record ProductionOrderResponse(
     DateTime? CancelledAt,
     DateTime CreatedAt,
     DateTime UpdatedAt) {
-    public static ProductionOrderResponse From(ProductionOrder order) => new(
+    public static ProductionOrderResponse From(
+        ProductionOrder order,
+        IProductionOrderDeliveryRiskCalculator riskCalculator) {
+        var risk = riskCalculator.Calculate(order);
+        return new(
         order.Id,
         order.Number,
         order.ProductId,
@@ -37,6 +52,13 @@ public sealed record ProductionOrderResponse(
         order.Product?.Name ?? string.Empty,
         order.Quantity,
         order.Status,
+        order.DueDate,
+        order.Priority,
+        risk.DeliveryStatus,
+        risk.DaysUntilDue,
+        risk.IsOverdue,
+        risk.IsDueSoon,
+        risk.IsCompletedLate,
         order.BillOfMaterialId,
         order.BillOfMaterial?.Revision,
         order.RoutingId,
@@ -49,6 +71,57 @@ public sealed record ProductionOrderResponse(
         order.CancelledAt,
         order.CreatedAt,
         order.UpdatedAt);
+    }
+}
+
+public sealed record ProductionOrderPageResponse(
+    IReadOnlyList<ProductionOrderResponse> Items,
+    int Page,
+    int PageSize,
+    int TotalCount);
+
+public sealed record ProductionOrderListCriteria(
+    string? Search,
+    string? Status,
+    string? Priority,
+    string? DeliveryStatus,
+    DateTime? DueFrom,
+    DateTime? DueTo,
+    Guid? ProductId,
+    int Page,
+    int PageSize,
+    string SortBy,
+    string SortDirection,
+    DateTime UtcNow,
+    DateTime DueSoonThrough,
+    bool PlanningOrder = false);
+
+public static class ProductionOrderSortFields {
+    public const string UpdatedAt = "updatedAt";
+    public const string DeliveryRisk = "deliveryRisk";
+    public const string DueDate = "dueDate";
+    public const string Priority = "priority";
+    public const string Number = "number";
+    public const string Status = "status";
+
+    public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal) {
+        UpdatedAt,
+        DeliveryRisk,
+        DueDate,
+        Priority,
+        Number,
+        Status
+    };
+}
+
+public static class ProductionOrderSortDirections {
+    public const string Ascending = "asc";
+    public const string Descending = "desc";
+
+    public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal) {
+        Ascending,
+        Descending
+    };
 }
 
 public sealed record ProductionOrderOperationResponse(
@@ -92,9 +165,9 @@ public sealed record ProductionOrderOperationResponse(
 }
 
 public interface IProductionOrderRepository {
-    Task<IReadOnlyList<ProductionOrder>> GetByCompanyAsync(
+    Task<(IReadOnlyList<ProductionOrder> Items, int TotalCount)> GetByCompanyAsync(
         Guid companyId,
-        string? search,
+        ProductionOrderListCriteria criteria,
         CancellationToken cancellationToken);
 
     Task<ProductionOrder?> GetByIdAsync(

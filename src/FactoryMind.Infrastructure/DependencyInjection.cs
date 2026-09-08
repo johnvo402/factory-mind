@@ -127,6 +127,14 @@ public static class DependencyInjection {
         services.AddHttpClient<IAiActionPlanner, GeminiAiActionPlanner>();
         services.AddHttpClient<IEmbeddingClient, GeminiEmbeddingClient>();
         services.AddSingleton(TimeProvider.System);
+        services.AddOptions<PlanningSettings>()
+            .Bind(configuration.GetSection(PlanningSettings.SectionName))
+            .Validate(settings => settings.DueSoonDays is >= 1 and <= 30,
+                "Planning DueSoonDays must be between 1 and 30.")
+            .ValidateOnStart();
+        services.AddSingleton(serviceProvider =>
+            serviceProvider.GetRequiredService<IOptions<PlanningSettings>>().Value);
+        services.AddSingleton<IProductionOrderDeliveryRiskCalculator, ProductionOrderDeliveryRiskCalculator>();
         services.AddOptions<AiActionSettings>()
             .Bind(configuration.GetSection(AiActionSettings.SectionName))
             .Validate(settings => settings.ProposalExpirationMinutes is >= 1 and <= 60,

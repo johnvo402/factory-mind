@@ -5,7 +5,12 @@ public sealed record DashboardSummary(
     int InventoryBalances,
     int AvailableMachines,
     int TotalMachines,
-    int Alerts);
+    int Alerts,
+    int OverdueOrders,
+    int DueSoonOrders,
+    int UrgentActiveOrders,
+    int CompletedLateOrders,
+    int OrdersWithoutDueDate);
 
 public interface IDashboardRepository {
     Task<DashboardSummary> GetSummaryAsync(

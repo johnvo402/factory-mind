@@ -8,7 +8,9 @@ import {
   ProductionMaterialAllocationInput,
   ProductionOrder,
   ProductionOrderInput,
+  ProductionOrderDeliveryStatus,
   ProductionOrderOperation,
+  ProductionOrderPriority,
   ProductionOrderStatus,
 } from './production-order.models';
 import { ProductionOrderStore } from './production-order.store';
@@ -65,6 +67,13 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
     });
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
+  protected readonly filterForm = new FormGroup({
+    status: new FormControl('', { nonNullable: true }),
+    priority: new FormControl('', { nonNullable: true }),
+    deliveryStatus: new FormControl('', { nonNullable: true }),
+    sortBy: new FormControl('deliveryRisk', { nonNullable: true }),
+    sortDirection: new FormControl('asc', { nonNullable: true }),
+  });
   protected readonly orderForm = new FormGroup({
     number: new FormControl('', {
       nonNullable: true,
@@ -74,6 +83,11 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
     quantity: new FormControl(1, {
       nonNullable: true,
       validators: [Validators.required, Validators.min(0.001)],
+    }),
+    dueDate: new FormControl('', { nonNullable: true }),
+    priority: new FormControl<ProductionOrderPriority>('normal', {
+      nonNullable: true,
+      validators: [Validators.required],
     }),
   });
   protected readonly completeForm = new FormGroup({
@@ -94,6 +108,45 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
     void this.store.load('');
   }
 
+  protected applyFilters(): void {
+    const filters = this.filterForm.getRawValue();
+    void this.store.applyFilters({
+      status: (filters.status || undefined) as ProductionOrderStatus | undefined,
+      priority: (filters.priority || undefined) as ProductionOrderPriority | undefined,
+      deliveryStatus: (filters.deliveryStatus || undefined) as
+        | ProductionOrderDeliveryStatus
+        | undefined,
+      sortBy: filters.sortBy as
+        | 'deliveryRisk'
+        | 'updatedAt'
+        | 'dueDate'
+        | 'priority'
+        | 'number'
+        | 'status',
+      sortDirection: filters.sortDirection as 'asc' | 'desc',
+    });
+  }
+
+  protected showRisk(deliveryStatus?: ProductionOrderDeliveryStatus): void {
+    this.filterForm.patchValue({
+      deliveryStatus: deliveryStatus ?? '',
+      priority: '',
+      sortBy: 'dueDate',
+      sortDirection: 'asc',
+    });
+    this.applyFilters();
+  }
+
+  protected showUrgent(): void {
+    this.filterForm.patchValue({
+      deliveryStatus: '',
+      priority: 'urgent',
+      sortBy: 'priority',
+      sortDirection: 'desc',
+    });
+    this.applyFilters();
+  }
+
   protected startCreate(): void {
     this.store.clearError();
     this.editingId.set(null);
@@ -101,6 +154,8 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
       number: '',
       productId: this.store.products()[0]?.id ?? '',
       quantity: 1,
+      dueDate: '',
+      priority: 'normal',
     });
     this.editorOpen.set(true);
   }
@@ -112,6 +167,8 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
       number: order.number,
       productId: order.productId,
       quantity: order.quantity,
+      dueDate: order.dueDate?.slice(0, 10) ?? '',
+      priority: order.priority,
     });
     this.editorOpen.set(true);
   }
@@ -126,7 +183,11 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
       this.orderForm.markAllAsTouched();
       return;
     }
-    const input: ProductionOrderInput = this.orderForm.getRawValue();
+    const value = this.orderForm.getRawValue();
+    const input: ProductionOrderInput = {
+      ...value,
+      dueDate: value.dueDate ? `${value.dueDate}T23:59:59.999Z` : null,
+    };
     if (await this.store.save(this.editingId(), input)) this.cancelEdit();
   }
 
@@ -147,6 +208,33 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
       cancelled: 'Đã hủy',
     };
     return labels[status];
+  }
+
+  protected priorityLabel(priority: ProductionOrderPriority): string {
+    return { low: 'Thấp', normal: 'Bình thường', high: 'Cao', urgent: 'Khẩn cấp' }[priority];
+  }
+
+  protected deliveryStatusLabel(order: ProductionOrder): string {
+    const labels: Record<ProductionOrderDeliveryStatus, string> = {
+      no_due_date: 'Chưa có hạn giao',
+      on_track: 'Chưa đến hạn',
+      due_soon: 'Sắp đến hạn',
+      overdue: 'Quá hạn',
+      completed_on_time: 'Hoàn thành đúng hạn',
+      completed_late: 'Hoàn thành trễ',
+      cancelled: 'Đã hủy',
+    };
+    if (order.deliveryStatus === 'overdue' && order.daysUntilDue !== null) {
+      return `${labels.overdue} ${Math.abs(order.daysUntilDue)} ngày`;
+    }
+    if (order.deliveryStatus === 'due_soon' && order.daysUntilDue !== null) {
+      return order.daysUntilDue === 0 ? 'Đến hạn hôm nay' : `Còn ${order.daysUntilDue} ngày`;
+    }
+    return labels[order.deliveryStatus];
+  }
+
+  protected totalPages(): number {
+    return Math.max(1, Math.ceil(this.store.totalCount() / this.store.filters().pageSize));
   }
 
   protected async checkMaterials(order: ProductionOrder): Promise<void> {

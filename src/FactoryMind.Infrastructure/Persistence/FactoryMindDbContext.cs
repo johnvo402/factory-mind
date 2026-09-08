@@ -511,14 +511,22 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
         });
 
         modelBuilder.Entity<ProductionOrder>(entity => {
-            entity.ToTable("production_orders");
+            entity.ToTable("production_orders", table => table.HasCheckConstraint(
+                "CK_production_orders_Priority_valid",
+                "\"Priority\" IN ('low', 'normal', 'high', 'urgent')"));
             entity.HasIndex(order => new { order.CompanyId, order.Number }).IsUnique();
             entity.HasIndex(order => new { order.CompanyId, order.Status, order.UpdatedAt });
+            entity.HasIndex(order => new { order.CompanyId, order.Status, order.DueDate });
+            entity.HasIndex(order => new { order.CompanyId, order.Priority });
             entity.Property(order => order.Number)
                 .HasMaxLength(ProductionOrderConstraints.MaximumNumberLength)
                 .IsRequired();
             entity.Property(order => order.Status)
                 .HasMaxLength(ProductionOrderConstraints.MaximumStatusLength)
+                .IsRequired();
+            entity.Property(order => order.Priority)
+                .HasMaxLength(ProductionOrderConstraints.MaximumStatusLength)
+                .HasDefaultValue(ProductionOrderPriorities.Normal)
                 .IsRequired();
             entity.Property(order => order.Quantity)
                 .HasPrecision(ProductionOrderConstraints.QuantityPrecision, ProductionOrderConstraints.QuantityScale);

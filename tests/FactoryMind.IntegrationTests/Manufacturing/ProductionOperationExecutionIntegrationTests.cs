@@ -193,6 +193,12 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         Assert.Equal(new[] { 10, 20, 30 }, releasedOne.Operations.Select(item => item.Sequence));
         Assert.Equal(new[] { "Cutting", "Assembly", "Packaging" },
             releasedOne.Operations.Select(item => item.Name));
+        var listPage = await Client.GetFromJsonAsync<ApiResponse<ProductionOrderPageResponse>>(
+            ApiRoutes.ProductionOrders.Group);
+        Assert.Empty(listPage!.Data!.Items.Single(item => item.Id == orderOne.Id).Operations);
+        var dedicatedOperations = await Client.GetFromJsonAsync<
+            ApiResponse<IReadOnlyList<ProductionOrderOperationResponse>>>(OperationsRoute(orderOne.Id));
+        Assert.Equal(3, dedicatedOperations!.Data!.Count);
 
         var revisionTwo = await CreateRoutingAsync(Client, scenario.Product.Id, [
             new RoutingOperationRequest(10, "Laser cutting", scenario.Cutting.Id, 3, 6, null),
@@ -741,9 +747,12 @@ public sealed class ProductionOperationExecutionIntegrationTests(PostgreSqlFixtu
         client, CompleteOrderRoute(orderId), new CompleteProductionOrderRequest(warehouseId));
 
     private static async Task<ProductionOrderResponse> GetOrderAsync(HttpClient client, Guid orderId) {
-        var response = await client.GetFromJsonAsync<ApiResponse<IReadOnlyList<ProductionOrderResponse>>>(
+        var response = await client.GetFromJsonAsync<ApiResponse<ProductionOrderPageResponse>>(
             ApiRoutes.ProductionOrders.Group);
-        return response!.Data!.Single(order => order.Id == orderId);
+        var order = response!.Data!.Items.Single(order => order.Id == orderId);
+        var operations = await client.GetFromJsonAsync<ApiResponse<IReadOnlyList<ProductionOrderOperationResponse>>>(
+            OperationsRoute(orderId));
+        return order with { Operations = operations!.Data! };
     }
 
     private static MachineResponse MachineFor(

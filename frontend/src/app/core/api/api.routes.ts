@@ -89,6 +89,7 @@ export const API_ROUTES = {
   },
   productionOrders: {
     root: `${API_BASE}/production-orders`,
+    planning: `${API_BASE}/production-orders/planning`,
     byId: (productionOrderId: string) => `${API_BASE}/production-orders/${productionOrderId}`,
     materialRequirements: (productionOrderId: string) =>
       `${API_BASE}/production-orders/${productionOrderId}/material-requirements`,

@@ -133,3 +133,85 @@ summary { cursor: pointer; }
     transition-duration: 0.01ms !important;
   }
 }
+
+app-production-order-workspace {
+  .planning-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+    margin-bottom: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    padding: var(--space-5);
+  }
+  .planning-strip h3 { margin: var(--space-1) 0 0; color: var(--color-foreground); }
+  .planning-strip p { margin: var(--space-2) 0 0; color: var(--color-muted); font-size: 0.82rem; }
+  .planning-shortcuts { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .risk-button,
+  .priority-badge,
+  .delivery-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+    font-weight: 750;
+  }
+  .risk-button { min-height: 42px; padding: 8px 13px; font: inherit; cursor: pointer; }
+  .risk-button.overdue,
+  .delivery-badge.overdue,
+  .delivery-badge.completed-late,
+  .risk-button.urgent,
+  .priority-badge.urgent {
+    border-color: color-mix(in srgb, var(--color-danger) 28%, var(--color-border));
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
+  .risk-button.due-soon,
+  .delivery-badge.due-soon,
+  .priority-badge.high {
+    border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
+    background: var(--color-warning-soft);
+    color: var(--color-warning);
+  }
+  .priority-badge,
+  .delivery-badge { padding: 5px 9px; font-size: 0.72rem; white-space: nowrap; }
+  .planning-filters {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(120px, 1fr)) auto;
+    gap: var(--space-3);
+    align-items: end;
+    margin-bottom: var(--space-5);
+  }
+  .planning-filters label {
+    display: grid;
+    gap: var(--space-1);
+    color: var(--color-muted);
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+  .planning-filters select { min-height: 42px; }
+  .due-date { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (max-width: 760px) {
+  app-production-order-workspace {
+    .planning-strip { align-items: stretch; flex-direction: column; }
+    .planning-filters { grid-template-columns: 1fr; }
+    .pagination { justify-content: space-between; }
+  }
+}

@@ -518,11 +518,18 @@ public sealed class ProductionCompletionIntegrationTests(PostgreSqlFixture fixtu
     }
 
     private static async Task<ProductionOrderResponse> GetOrderAsync(HttpClient client, Guid orderId) {
-        var envelope = await client.GetFromJsonAsync<ApiResponse<IReadOnlyList<ProductionOrderResponse>>>(
+        var envelope = await client.GetFromJsonAsync<ApiResponse<ProductionOrderPageResponse>>(
             ProductionOrdersRoute);
-        return envelope?.Data?.Single(order => order.Id == orderId)
+        var order = envelope?.Data?.Items.Single(candidate => candidate.Id == orderId)
             ?? throw new InvalidOperationException("Production order response did not contain data.");
+        var operations = await client.GetFromJsonAsync<ApiResponse<IReadOnlyList<ProductionOrderOperationResponse>>>(
+            OperationsRoute(orderId));
+        return order with { Operations = operations!.Data! };
     }
+
+    private static string OperationsRoute(Guid orderId) => ApiRoutes.ProductionOrders.Group +
+        ApiRoutes.ProductionOrders.Operations.Replace(
+            "{productionOrderId:guid}", orderId.ToString(), StringComparison.Ordinal);
 
     private static async Task<IReadOnlyList<ProductResponse>> GetProductsAsync(HttpClient client) {
         var envelope = await client.GetFromJsonAsync<ApiResponse<IReadOnlyList<ProductResponse>>>(ProductsRoute);

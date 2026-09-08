@@ -379,5 +379,44 @@
     ],
     "expectedEntity": null,
     "businessCandidates": []
+  },
+  {
+    "id": "business-po-exact-due-date",
+    "query": "PO-001 còn bao nhiêu ngày đến hạn?",
+    "expectedIntent": "Business",
+    "expectedScopes": ["ProductionOrders", "ProductionOperations"],
+    "expectedDocument": null,
+    "expectedChunkContains": [],
+    "exactIdentifier": false,
+    "knowledgeCandidates": [],
+    "expectedEntity": "PO-001",
+    "businessCandidates": [
+      { "code": "PO-010", "name": "Normal order" },
+      { "code": "PO-001", "name": "Urgent order due 2026-09-10" }
+    ]
+  },
+  {
+    "id": "business-urgent-production-orders",
+    "query": "Lệnh sản xuất khẩn cấp nào chưa hoàn thành?",
+    "expectedIntent": "Business",
+    "expectedScopes": ["ProductionOrders"],
+    "expectedDocument": null,
+    "expectedChunkContains": [],
+    "exactIdentifier": false,
+    "knowledgeCandidates": [],
+    "expectedEntity": null,
+    "businessCandidates": []
+  },
+  {
+    "id": "business-overdue-production-orders",
+    "query": "PO nào đang quá hạn?",
+    "expectedIntent": "Business",
+    "expectedScopes": ["ProductionOrders"],
+    "expectedDocument": null,
+    "expectedChunkContains": [],
+    "exactIdentifier": false,
+    "knowledgeCandidates": [],
+    "expectedEntity": null,
+    "businessCandidates": []
   }
 ]

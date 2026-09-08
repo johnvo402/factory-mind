@@ -110,7 +110,7 @@ describe('ProductionOrderWorkspaceComponent', () => {
     expect(buttonTexts(fixture)).toContain('Hoàn thành lệnh');
     fixture.destroy();
 
-    api.getProductionOrders.and.returnValue(success([order('completed')]));
+    api.getProductionOrders.and.returnValue(success(orderPage([order('completed')])));
     fixture = TestBed.createComponent(ProductionOrderWorkspaceComponent);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -119,7 +119,7 @@ describe('ProductionOrderWorkspaceComponent', () => {
     expect(buttonTexts(fixture)).not.toContain('Hoàn thành lệnh');
     fixture.destroy();
 
-    api.getProductionOrders.and.returnValue(success([order('cancelled')]));
+    api.getProductionOrders.and.returnValue(success(orderPage([order('cancelled')])));
     fixture = TestBed.createComponent(ProductionOrderWorkspaceComponent);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -254,10 +254,64 @@ describe('ProductionOrderWorkspaceComponent', () => {
     await fixture.whenStable();
   });
 
+  it('renders deterministic planning facts with text labels', async () => {
+    const fixture = await create('planned');
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Khẩn cấp');
+    expect(text).toContain('Còn 1 ngày');
+    expect(text).toContain('09/09/2026');
+    expect(text).toContain('không phải dự báo ETA');
+  });
+
+  it('uses quick risk filters against the planning endpoint', async () => {
+    const fixture = await create('planned');
+    api.getProductionOrders.calls.reset();
+    clickButton(fixture, 'Quá hạn');
+    await fixture.whenStable();
+
+    expect(api.getProductionOrders).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        deliveryStatus: 'overdue',
+        sortBy: 'dueDate',
+        sortDirection: 'asc',
+        page: 1,
+      }),
+      true,
+    );
+  });
+
+  it('normalizes a business due date to end-of-day UTC when saving', async () => {
+    const fixture = await create('planned');
+    api.updateProductionOrder.and.returnValue(success(order('planned')));
+    clickButton(fixture, 'Sửa');
+    fixture.detectChanges();
+    const dueDate = fixture.nativeElement.querySelector(
+      'input[formcontrolname="dueDate"]',
+    ) as HTMLInputElement;
+    dueDate.value = '2026-09-12';
+    dueDate.dispatchEvent(new Event('input'));
+    const priority = fixture.nativeElement.querySelector(
+      '.editor select[formcontrolname="priority"]',
+    ) as HTMLSelectElement;
+    priority.value = 'high';
+    priority.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    clickButton(fixture, 'Lưu lệnh sản xuất');
+    await fixture.whenStable();
+
+    expect(api.updateProductionOrder).toHaveBeenCalledWith(
+      'po-1',
+      jasmine.objectContaining({
+        dueDate: '2026-09-12T23:59:59.999Z',
+        priority: 'high',
+      }),
+    );
+  });
+
   async function create(
     status: ProductionOrder['status'],
   ): Promise<ComponentFixture<ProductionOrderWorkspaceComponent>> {
-    api.getProductionOrders.and.returnValue(success([order(status)]));
+    api.getProductionOrders.and.returnValue(success(orderPage([order(status)])));
     const fixture = TestBed.createComponent(ProductionOrderWorkspaceComponent);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -331,6 +385,13 @@ describe('ProductionOrderWorkspaceComponent', () => {
       productName: 'Product',
       quantity: 5,
       status,
+      dueDate: '2026-09-09T23:59:59.999Z',
+      priority: 'urgent',
+      deliveryStatus: 'due_soon',
+      daysUntilDue: 1,
+      isOverdue: false,
+      isDueSoon: true,
+      isCompletedLate: false,
       billOfMaterialId: status === 'planned' ? null : 'bom-1',
       bomRevision: status === 'planned' ? null : 2,
       routingId: status === 'planned' ? null : 'routing-1',
@@ -347,5 +408,9 @@ describe('ProductionOrderWorkspaceComponent', () => {
 
   function success<T>(data: T): Observable<ApiResponse<T>> {
     return of({ success: true, message: 'OK', data });
+  }
+
+  function orderPage(items: ProductionOrder[]) {
+    return { items, page: 1, pageSize: 50, totalCount: items.length };
   }
 });

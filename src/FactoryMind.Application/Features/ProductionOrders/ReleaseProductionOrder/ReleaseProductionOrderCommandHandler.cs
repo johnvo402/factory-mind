@@ -9,7 +9,8 @@ namespace FactoryMind.Application.Features.ProductionOrders.ReleaseProductionOrd
 
 public sealed class ReleaseProductionOrderCommandHandler(
     IProductionExecutionRepository repository,
-    ICurrentUser currentUser)
+    ICurrentUser currentUser,
+    IProductionOrderDeliveryRiskCalculator riskCalculator)
     : IRequestHandler<ReleaseProductionOrderCommand, Result<ProductionOrderResponse>> {
     public async ValueTask<Result<ProductionOrderResponse>> Handle(
         ReleaseProductionOrderCommand command,
@@ -28,12 +29,12 @@ public sealed class ReleaseProductionOrderCommandHandler(
         var outcome = await repository.TryReleaseAsync(
             order.Id,
             currentUser.CompanyId,
-            DateTime.UtcNow,
+            riskCalculator.UtcNow,
             command.Expectation,
             cancellationToken);
         return outcome.Status switch {
             ProductionExecutionStatus.Success => Result<ProductionOrderResponse>.Success(
-                ProductionOrderResponse.From(outcome.Order!)),
+                ProductionOrderResponse.From(outcome.Order!, riskCalculator)),
             ProductionExecutionStatus.ActiveBomNotFound =>
                 Result<ProductionOrderResponse>.Failure(BomErrors.ActiveNotFound),
             ProductionExecutionStatus.ActiveRoutingNotFound =>

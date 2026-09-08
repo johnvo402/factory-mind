@@ -10,7 +10,9 @@ namespace FactoryMind.Application.Features.ProductionOrders.CreateProductionOrde
 public sealed class CreateProductionOrderCommandHandler(
     IProductionOrderRepository repository,
     IProductRepository productRepository,
-    ICurrentUser currentUser) : IRequestHandler<CreateProductionOrderCommand, Result<ProductionOrderResponse>> {
+    ICurrentUser currentUser,
+    IProductionOrderDeliveryRiskCalculator riskCalculator)
+    : IRequestHandler<CreateProductionOrderCommand, Result<ProductionOrderResponse>> {
     public async ValueTask<Result<ProductionOrderResponse>> Handle(
         CreateProductionOrderCommand command,
         CancellationToken cancellationToken) {
@@ -31,7 +33,7 @@ public sealed class CreateProductionOrderCommandHandler(
             return Result<ProductionOrderResponse>.Failure(ProductionOrderErrors.NumberAlreadyExists);
         }
 
-        var now = DateTime.UtcNow;
+        var now = riskCalculator.UtcNow;
         var order = new ProductionOrder {
             CompanyId = currentUser.CompanyId,
             Number = number,
@@ -39,11 +41,13 @@ public sealed class CreateProductionOrderCommandHandler(
             Product = product,
             Quantity = command.Quantity,
             Status = ProductionOrderStatuses.Planned,
+            DueDate = riskCalculator.NormalizeDueDate(command.DueDate),
+            Priority = command.Priority,
             CreatedAt = now,
             UpdatedAt = now
         };
         repository.Add(order);
         await repository.SaveChangesAsync(cancellationToken);
-        return Result<ProductionOrderResponse>.Success(ProductionOrderResponse.From(order));
+        return Result<ProductionOrderResponse>.Success(ProductionOrderResponse.From(order, riskCalculator));
     }
 }

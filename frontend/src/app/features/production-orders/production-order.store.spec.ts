@@ -37,7 +37,7 @@ describe('ProductionOrderStore lifecycle', () => {
       'getWarehouses',
     ]);
     machines = jasmine.createSpyObj<MachineApiService>('MachineApiService', ['getMachines']);
-    api.getProductionOrders.and.returnValue(success([order()]));
+    api.getProductionOrders.and.returnValue(success(orderPage([order()])));
     api.getOperations.and.returnValue(success([operation()]));
     machines.getMachines.and.returnValue(success([]));
     products.getProducts.and.returnValue(success([]));
@@ -154,6 +154,25 @@ describe('ProductionOrderStore lifecycle', () => {
     expect(store.operations()).toEqual([operation()]);
   });
 
+  it('applies delivery filters through the planning endpoint and resets pagination', async () => {
+    api.getProductionOrders.calls.reset();
+    api.getProductionOrders.and.returnValue(
+      success({ items: [order()], page: 1, pageSize: 50, totalCount: 73 }),
+    );
+
+    await store.goToPage(3);
+    await store.applyFilters({ priority: 'urgent', deliveryStatus: 'overdue' });
+
+    expect(store.filters().page).toBe(1);
+    expect(store.filters().priority).toBe('urgent');
+    expect(store.filters().deliveryStatus).toBe('overdue');
+    expect(store.totalCount()).toBe(73);
+    expect(api.getProductionOrders).toHaveBeenCalledWith(
+      jasmine.objectContaining({ page: 1, priority: 'urgent', deliveryStatus: 'overdue' }),
+      true,
+    );
+  });
+
   function order(status: ProductionOrder['status'] = 'planned'): ProductionOrder {
     return {
       id: 'po-1',
@@ -163,6 +182,13 @@ describe('ProductionOrderStore lifecycle', () => {
       productName: 'Product',
       quantity: 5,
       status,
+      dueDate: null,
+      priority: 'normal',
+      deliveryStatus: 'no_due_date',
+      daysUntilDue: null,
+      isOverdue: false,
+      isDueSoon: false,
+      isCompletedLate: false,
       billOfMaterialId: 'bom-1',
       bomRevision: 2,
       routingId: 'routing-1',
@@ -202,6 +228,10 @@ describe('ProductionOrderStore lifecycle', () => {
 
   function success<T>(data: T): Observable<ApiResponse<T>> {
     return of({ success: true, message: 'OK', data });
+  }
+
+  function orderPage(items: ProductionOrder[]) {
+    return { items, page: 1, pageSize: 50, totalCount: items.length };
   }
 
   function refreshFailure<T>(): Observable<T> {

@@ -50,6 +50,10 @@ internal sealed partial class DeterministicManufacturingPlanner : IAiToolPlanner
         if (IsProductionOrderList(normalized)) {
             var arguments = new Dictionary<string, object?>();
             AddStatus(arguments, normalized, machineStatuses: false);
+            AddPlanningFilters(arguments, normalized);
+            if (ContainsAny(normalized, "chua hoan thanh", "active")) {
+                arguments["status"] = "active";
+            }
             if (product is not null) {
                 arguments["productCode"] = product;
             }
@@ -117,7 +121,22 @@ internal sealed partial class DeterministicManufacturingPlanner : IAiToolPlanner
     private static bool IsProductionOrderList(string text) =>
         (ContainsAny(text, "liet ke", "show", "list")
             && ContainsAny(text, "lenh", "production order"))
-        || text.Contains("production orders for", StringComparison.Ordinal);
+        || text.Contains("production orders for", StringComparison.Ordinal)
+        || (ContainsAny(text, "lenh", "production order", "orders")
+            && ContainsAny(
+                text,
+                "qua han",
+                "overdue",
+                "sap den han",
+                "due soon",
+                "chua co han giao",
+                "without due date",
+                "completed late",
+                "hoan thanh tre",
+                "urgent",
+                "khan cap",
+                "high priority",
+                "uu tien cao"));
 
     private static bool IsMachineQuestion(string text) => ContainsAny(
         text,
@@ -146,6 +165,14 @@ internal sealed partial class DeterministicManufacturingPlanner : IAiToolPlanner
         "tiep theo",
         "hoan thanh bao nhieu",
         "khi nao",
+        "eta",
+        "finish",
+        "complete",
+        "toi han",
+        "den han",
+        "due",
+        "qua han",
+        "overdue",
         "theo sop",
         "where is",
         "where and",
@@ -187,10 +214,30 @@ internal sealed partial class DeterministicManufacturingPlanner : IAiToolPlanner
             arguments["status"] = "released";
         } else if (ContainsAny(text, "planned", "ke hoach")) {
             arguments["status"] = "planned";
-        } else if (ContainsAny(text, "completed", "da hoan thanh")) {
+        } else if (ContainsAny(text, "completed", "da hoan thanh", "hoan thanh")) {
             arguments["status"] = "completed";
         } else if (ContainsAny(text, "cancelled", "canceled", "da huy")) {
             arguments["status"] = "cancelled";
+        }
+    }
+
+    private static void AddPlanningFilters(Dictionary<string, object?> arguments, string text) {
+        if (ContainsAny(text, "completed late", "hoan thanh tre")) {
+            arguments["deliveryStatus"] = "completed_late";
+        } else if (ContainsAny(text, "chua co han giao", "without due date", "no due date")) {
+            arguments["deliveryStatus"] = "no_due_date";
+        } else if (ContainsAny(text, "sap den han", "due soon")) {
+            arguments["deliveryStatus"] = "due_soon";
+        } else if (ContainsAny(text, "qua han", "overdue")) {
+            arguments["deliveryStatus"] = "overdue";
+        }
+
+        if (ContainsAny(text, "khan cap", "urgent")) {
+            arguments["priority"] = "urgent";
+        } else if (ContainsAny(text, "uu tien cao", "high priority")) {
+            arguments["priority"] = "high";
+        } else if (ContainsAny(text, "uu tien thap", "low priority")) {
+            arguments["priority"] = "low";
         }
     }
 

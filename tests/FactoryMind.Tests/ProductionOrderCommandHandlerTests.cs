@@ -21,7 +21,8 @@ public sealed class ProductionOrderCommandHandlerTests {
         var handler = new CreateProductionOrderCommandHandler(
             orderRepository,
             productRepository,
-            currentUser);
+            currentUser,
+            RiskCalculator());
 
         var result = await handler.Handle(
             new CreateProductionOrderCommand(" po-001 ", product.Id, 500.125m),
@@ -45,7 +46,8 @@ public sealed class ProductionOrderCommandHandlerTests {
         var handler = new CreateProductionOrderCommandHandler(
             orderRepository,
             productRepository,
-            currentUser);
+            currentUser,
+            RiskCalculator());
 
         var result = await handler.Handle(
             new CreateProductionOrderCommand("PO-001", product.Id, 100m),
@@ -65,11 +67,13 @@ public sealed class ProductionOrderCommandHandlerTests {
     private sealed class FakeProductionOrderRepository : IProductionOrderRepository {
         public List<ProductionOrder> Orders { get; } = [];
 
-        public Task<IReadOnlyList<ProductionOrder>> GetByCompanyAsync(
+        public Task<(IReadOnlyList<ProductionOrder> Items, int TotalCount)> GetByCompanyAsync(
             Guid companyId,
-            string? search,
-            CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<ProductionOrder>>(
-                Orders.Where(order => order.CompanyId == companyId).ToList());
+            ProductionOrderListCriteria criteria,
+            CancellationToken cancellationToken) {
+            var items = Orders.Where(order => order.CompanyId == companyId).ToList();
+            return Task.FromResult(((IReadOnlyList<ProductionOrder>)items, items.Count));
+        }
 
         public Task<ProductionOrder?> GetByIdAsync(
             Guid productionOrderId,
@@ -135,4 +139,7 @@ public sealed class ProductionOrderCommandHandlerTests {
         public void Remove(Product product) => Products.Remove(product);
         public Task SaveChangesAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
+
+    private static IProductionOrderDeliveryRiskCalculator RiskCalculator() =>
+        new ProductionOrderDeliveryRiskCalculator(TimeProvider.System, new PlanningSettings());
 }

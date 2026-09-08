@@ -8,7 +8,7 @@ public sealed class DashboardQueryHandlerTests {
     [Fact]
     public async Task Summary_uses_the_current_company_scope() {
         var currentUser = new FakeCurrentUser();
-        var expected = new DashboardSummary(3, 5, 2, 4, 1);
+        var expected = new DashboardSummary(3, 5, 2, 4, 1, 2, 1, 1, 1, 1);
         var repository = new FakeDashboardRepository(expected);
         var handler = new GetDashboardSummaryQueryHandler(repository, currentUser);
 

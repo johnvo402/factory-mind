@@ -1,5 +1,6 @@
 using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.ProductionOrders;
+using FactoryMind.Domain.Manufacturing;
 using FluentValidation;
 
 namespace FactoryMind.Api.Endpoints;
@@ -7,7 +8,23 @@ namespace FactoryMind.Api.Endpoints;
 public sealed record ProductionOrderRequest(
     string Number,
     Guid ProductId,
-    decimal Quantity);
+    decimal Quantity,
+    DateTime? DueDate = null,
+    string Priority = ProductionOrderPriorities.Normal);
+
+public sealed class ProductionOrderQueryRequest {
+    public string? Search { get; init; }
+    public string? Status { get; init; }
+    public string? Priority { get; init; }
+    public string? DeliveryStatus { get; init; }
+    public DateTime? DueFrom { get; init; }
+    public DateTime? DueTo { get; init; }
+    public Guid? ProductId { get; init; }
+    public int? Page { get; init; }
+    public int? PageSize { get; init; }
+    public string? SortBy { get; init; }
+    public string? SortDirection { get; init; }
+}
 
 public sealed record ProductionMaterialAllocationRequest(
     Guid MaterialId,
@@ -39,6 +56,41 @@ public sealed class ProductionOrderRequestValidator : AbstractValidator<Producti
             .WithMessage(
                 $"Quantity must have at most {ProductionOrderConstraints.QuantityPrecision} digits and " +
                 $"{ProductionOrderConstraints.QuantityScale} decimal places.");
+        RuleFor(request => request.Priority)
+            .Must(priority => priority is not null && ProductionOrderPriorities.All.Contains(priority))
+            .WithMessage("Priority must be low, normal, high, or urgent.");
+    }
+}
+
+public sealed class ProductionOrderQueryRequestValidator : AbstractValidator<ProductionOrderQueryRequest> {
+    public ProductionOrderQueryRequestValidator() {
+        RuleFor(request => request.Search)
+            .MaximumLength(200).WithMessage("Search must not exceed 200 characters.");
+        RuleFor(request => request.Status)
+            .Must(status => status is null || ProductionOrderStatuses.All.Contains(status))
+            .WithMessage("Status is invalid.");
+        RuleFor(request => request.Priority)
+            .Must(priority => priority is null || ProductionOrderPriorities.All.Contains(priority))
+            .WithMessage("Priority is invalid.");
+        RuleFor(request => request.DeliveryStatus)
+            .Must(status => status is null || ProductionOrderDeliveryStatuses.All.Contains(status))
+            .WithMessage("Delivery status is invalid.");
+        RuleFor(request => request.Page)
+            .GreaterThanOrEqualTo(1).When(request => request.Page.HasValue)
+            .WithMessage("Page must be at least 1.");
+        RuleFor(request => request.PageSize)
+            .InclusiveBetween(1, ProductionOrderConstraints.MaximumPageSize)
+            .When(request => request.PageSize.HasValue)
+            .WithMessage($"Page size must be between 1 and {ProductionOrderConstraints.MaximumPageSize}.");
+        RuleFor(request => request.SortBy)
+            .Must(value => value is null || ProductionOrderSortFields.All.Contains(value))
+            .WithMessage("Sort field is invalid.");
+        RuleFor(request => request.SortDirection)
+            .Must(value => value is null || ProductionOrderSortDirections.All.Contains(value))
+            .WithMessage("Sort direction is invalid.");
+        RuleFor(request => request)
+            .Must(request => !request.DueFrom.HasValue || !request.DueTo.HasValue || request.DueFrom <= request.DueTo)
+            .WithMessage("Due from must be before or equal to due to.");
     }
 }
 

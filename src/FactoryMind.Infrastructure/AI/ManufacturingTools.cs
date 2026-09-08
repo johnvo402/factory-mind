@@ -85,7 +85,9 @@ internal static class ManufacturingToolSchemas {
         {
           "type": "object",
           "properties": {
-            "status": { "type": "string", "enum": ["planned", "released", "in_progress", "completed", "cancelled"] },
+            "status": { "type": "string", "enum": ["planned", "released", "in_progress", "completed", "cancelled", "active"] },
+            "priority": { "type": "string", "enum": ["low", "normal", "high", "urgent"] },
+            "deliveryStatus": { "type": "string", "enum": ["no_due_date", "on_track", "due_soon", "overdue", "completed_on_time", "completed_late", "cancelled"] },
             "productCode": { "type": "string", "minLength": 1, "maxLength": 50 },
             "limit": { "type": "integer", "minimum": 1, "maximum": 20 }
           },
@@ -181,6 +183,10 @@ internal static class ToolFormatting {
         ? value.Value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture)
         : "none";
 
+    public static string Date(DateTime? value) => value.HasValue
+        ? value.Value.ToUniversalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        : "none";
+
     public static string Operation(ProductionOrderOperation operation) =>
         $"{operation.Sequence} {operation.Name} ({operation.Status}), Work Center "
         + $"{operation.WorkCenterCode} - {operation.WorkCenterName}, Machine "
@@ -188,10 +194,12 @@ internal static class ToolFormatting {
         + $"started {Timestamp(operation.StartedAt)}";
 }
 
-public sealed class GetProductionOrderStatusTool(FactoryMindDbContext dbContext) : IManufacturingReadTool {
+public sealed class GetProductionOrderStatusTool(
+    FactoryMindDbContext dbContext,
+    IProductionOrderDeliveryRiskCalculator riskCalculator) : IManufacturingReadTool {
     public AiToolDefinition Definition { get; } = new(
         "get_production_order_status",
-        "Returns the current tenant-scoped state of one production order identified by its exact number, including locked BOM/routing revisions and current/next operations. Read-only.",
+        "Returns the current tenant-scoped state and server-calculated delivery deadline facts of one production order identified by its exact number, including locked BOM/routing revisions and current/next operations. Read-only; never predicts ETA.",
         ManufacturingToolSchemas.ExactCode("number", ProductionOrderConstraints.MaximumNumberLength));
 
     public async Task<ToolExecutionResult> ExecuteAsync(
@@ -226,8 +234,11 @@ public sealed class GetProductionOrderStatusTool(FactoryMindDbContext dbContext)
         var current = operations.FirstOrDefault(operation => operation.Status == ProductionOperationStatuses.InProgress);
         var next = operations.FirstOrDefault(operation => operation.Status == ProductionOperationStatuses.Pending);
         var completed = operations.Count(operation => operation.Status == ProductionOperationStatuses.Completed);
+        var risk = riskCalculator.Calculate(order);
         var detail = $"Product {order.Product?.Code} - {order.Product?.Name}; quantity {ToolFormatting.Decimal(order.Quantity)}; "
-            + $"status {order.Status}; locked BOM revision {order.BillOfMaterial?.Revision.ToString(CultureInfo.InvariantCulture) ?? "none"}; "
+            + $"status {order.Status}; priority {order.Priority}; due date {ToolFormatting.Date(order.DueDate)}; "
+            + $"delivery status {risk.DeliveryStatus}; days until due {risk.DaysUntilDue?.ToString(CultureInfo.InvariantCulture) ?? "none"}; "
+            + $"locked BOM revision {order.BillOfMaterial?.Revision.ToString(CultureInfo.InvariantCulture) ?? "none"}; "
             + $"locked Routing revision {order.Routing?.Revision.ToString(CultureInfo.InvariantCulture) ?? "none"}; "
             + $"released {ToolFormatting.Timestamp(order.ReleasedAt)}; started {ToolFormatting.Timestamp(order.StartedAt)}; "
             + $"completed {ToolFormatting.Timestamp(order.CompletedAt)}; operations completed {completed}/{operations.Count}; "
@@ -629,33 +640,61 @@ public sealed class GetProductionOrderMaterialReadinessTool(
     }
 }
 
-public sealed class ListProductionOrdersTool(FactoryMindDbContext dbContext) : IManufacturingReadTool {
+public sealed class ListProductionOrdersTool(
+    FactoryMindDbContext dbContext,
+    IProductionOrderDeliveryRiskCalculator riskCalculator) : IManufacturingReadTool {
     public AiToolDefinition Definition { get; } = new(
         "list_production_orders",
-        "Lists up to 20 tenant-scoped production orders, optionally filtered by an allowed status and exact product code, including current in-progress operation, Work Center, and machine. Read-only.",
+        "Lists up to 20 tenant-scoped production orders, optionally filtered by allowed status, priority, server-calculated delivery status, and exact product code. Includes current execution facts. Read-only; never predicts ETA or capacity.",
         ManufacturingToolSchemas.ListProductionOrders);
 
     public async Task<ToolExecutionResult> ExecuteAsync(
         Guid companyId,
         JsonElement arguments,
         CancellationToken cancellationToken) {
-        if (!ToolArguments.HasOnly(arguments, "status", "productCode", "limit")
+        if (!ToolArguments.HasOnly(arguments, "status", "priority", "deliveryStatus", "productCode", "limit")
             || !ToolArguments.OptionalString(
                 arguments,
                 "status",
                 ProductionOrderConstraints.MaximumStatusLength,
                 out var status)
-            || status is not null && !ProductionOrderStatuses.All.Contains(status)
+            || status is not null
+                && status != "active"
+                && !ProductionOrderStatuses.All.Contains(status)
+            || !ToolArguments.OptionalString(arguments, "priority", 30, out var priority)
+            || priority is not null && !ProductionOrderPriorities.All.Contains(priority)
+            || !ToolArguments.OptionalString(arguments, "deliveryStatus", 30, out var deliveryStatus)
+            || deliveryStatus is not null && !ProductionOrderDeliveryStatuses.All.Contains(deliveryStatus)
             || !ToolArguments.OptionalString(arguments, "productCode", 50, out var productCode)
             || !ToolArguments.OptionalLimit(arguments, out var limit)) {
             return ToolResults.InvalidArguments();
         }
 
         var normalizedProductCode = productCode?.ToUpperInvariant();
+        var activeStatuses = new[] {
+            ProductionOrderStatuses.Planned,
+            ProductionOrderStatuses.Released,
+            ProductionOrderStatuses.InProgress
+        };
         var query = dbContext.ProductionOrders.AsNoTracking()
             .Where(order => order.CompanyId == companyId);
-        if (status is not null) {
+        if (status == "active") {
+            query = query.Where(order => activeStatuses.Contains(order.Status));
+        } else if (status is not null) {
             query = query.Where(order => order.Status == status.ToLowerInvariant());
+        }
+
+        if (priority is not null) {
+            query = query.Where(order => order.Priority == priority.ToLowerInvariant());
+        }
+
+        var now = riskCalculator.UtcNow;
+        var dueSoonThrough = riskCalculator.DueSoonThrough;
+        if (deliveryStatus is not null) {
+            query = query.Where(ProductionOrderDeliveryRiskCalculator.DeliveryStatusPredicate(
+                deliveryStatus,
+                now,
+                dueSoonThrough));
         }
 
         if (normalizedProductCode is not null) {
@@ -672,7 +711,10 @@ public sealed class ListProductionOrdersTool(FactoryMindDbContext dbContext) : I
                 order.Product!.Code,
                 order.Product.Name,
                 order.Quantity,
-                order.Status))
+                order.Status,
+                order.Priority,
+                order.DueDate,
+                order.CompletedAt))
             .ToListAsync(cancellationToken);
         var ids = orders.Select(order => order.Id).ToList();
         var operations = await dbContext.ProductionOrderOperations.AsNoTracking()
@@ -688,6 +730,12 @@ public sealed class ListProductionOrdersTool(FactoryMindDbContext dbContext) : I
             .ToListAsync(cancellationToken);
         var byOrder = operations.ToDictionary(operation => operation.ProductionOrderId);
         return ToolResults.Success(orders.Select(order => {
+            var risk = ProductionOrderDeliveryRiskCalculator.Calculate(
+                order.Status,
+                order.DueDate,
+                order.CompletedAt,
+                now,
+                riskCalculator.DueSoonDays);
             var current = byOrder.TryGetValue(order.Id, out var operation)
                 ? $"current operation {operation.Sequence} {operation.Name}; Work Center {operation.WorkCenterCode}; Machine {operation.MachineCode ?? "none"}"
                 : "no current in-progress operation";
@@ -695,7 +743,9 @@ public sealed class ListProductionOrdersTool(FactoryMindDbContext dbContext) : I
                 order.Id,
                 "production_order",
                 order.Number,
-                $"Product {order.ProductCode} - {order.ProductName}; quantity {ToolFormatting.Decimal(order.Quantity)}; status {order.Status}; {current}.");
+                $"Product {order.ProductCode} - {order.ProductName}; quantity {ToolFormatting.Decimal(order.Quantity)}; "
+                    + $"status {order.Status}; priority {order.Priority}; due date {ToolFormatting.Date(order.DueDate)}; "
+                    + $"delivery status {risk.DeliveryStatus}; days until due {risk.DaysUntilDue?.ToString(CultureInfo.InvariantCulture) ?? "none"}; {current}.");
         }).ToList());
     }
 
@@ -705,7 +755,10 @@ public sealed class ListProductionOrdersTool(FactoryMindDbContext dbContext) : I
         string ProductCode,
         string ProductName,
         decimal Quantity,
-        string Status);
+        string Status,
+        string Priority,
+        DateTime? DueDate,
+        DateTime? CompletedAt);
     private sealed record OperationRow(
         Guid ProductionOrderId,
         int Sequence,

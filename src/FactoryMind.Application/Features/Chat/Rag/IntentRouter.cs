@@ -29,7 +29,9 @@ public sealed class IntentRouter : IIntentRouter {
                 "san pham", "product", "bom", "dinh muc", "cau tao", "lam tu"
             ],
             [BusinessDataScope.ProductionOrders] = [
-                "lenh san xuat", "lenh", "don hang", "production order", "order", "tien do", "po"
+                "lenh san xuat", "lenh", "don hang", "production order", "order", "tien do", "po",
+                "qua han", "toi han", "den han", "han giao", "due", "overdue", "urgent", "khan cap",
+                "uu tien", "priority", "completed late", "hoan thanh tre", "eta", "finish tomorrow"
             ],
             [BusinessDataScope.WorkCenters] = [
                 "work center", "workcenter", "trung tam gia cong", "station", "line"

@@ -298,11 +298,17 @@ thể gọi `propose_release_production_order(number)` để tạo Pending propo
 AI không thể đổi Machine status, start/complete/cancel order, start/complete operation, assign Machine,
 consume/adjust inventory, activate BOM/Routing, tạo record hay xóa dữ liệu.
 
-Tool planning được kiểm tra offline trong CI bởi `FactoryMind.AiToolEval`. Bộ 50 fixture đa ngôn ngữ đo
+Tool planning được kiểm tra offline trong CI bởi `FactoryMind.AiToolEval`. Bộ 74 fixture đa ngôn ngữ đo
 tool selection, exact tool + arguments, no-tool precision, exact identifier, unauthorized-tool rejection,
 call bounds, duplicate rate và average calls. Điểm của bộ này mô tả deterministic policy fixture cùng
 server enforcement, không phải tuyên bố độ chính xác của live Gemini. Write-action evaluation là một
 quality gate riêng; proposal không được tính là manufacturing mutation.
+
+Các read tool của Production Order còn trả `priority`, `dueDate`, `deliveryStatus` và
+`daysUntilDue` do server tính. Ví dụ hỗ trợ: “PO-2026-001 còn bao nhiêu ngày đến hạn?”, “Những lệnh
+nào đang quá hạn?”, “Có lệnh khẩn cấp nào chưa hoàn thành?” và “Những PO nào hoàn thành trễ?”. Với
+“PO này khi nào chắc chắn hoàn thành?”, hệ thống phải nói chưa có mô hình lịch/năng lực để cung cấp
+ETA đáng tin cậy; routing minutes không được dùng làm ETA.
 
 SSE stream có các event semantic sau:
 
@@ -632,6 +638,7 @@ Tất cả business endpoints dùng prefix `/api` và tenant được lấy từ
 | `/api/inventories/receive`, `/issue`, `/adjust`, `/transfer` | `POST` | Atomic stock operations | Manager/Admin |
 | `/api/product-inventories`, `/transactions` | `GET` | Finished-goods balances và immutable ProductionOutput history | Manager/Admin |
 | `/api/production-orders` | `GET`, `POST`, `PUT`, `DELETE` | Planned Production Order planning data | Manager/Admin |
+| `/api/production-orders/planning` | `GET` | Tenant-scoped delivery-risk filters, server sorting và pagination | Manager/Admin |
 | `/api/production-orders/{id}/release`, `/cancel` | `POST` | Explicit lifecycle; Release locks active BOM + Routing and snapshots operations | Manager/Admin |
 | `/api/production-orders/{id}/start` | `POST` | Validate allocations and atomically consume raw materials | Manager/Admin |
 | `/api/production-orders/{id}/operations/{operationId}/start`, `/complete` | `POST` | Thực thi tuần tự; Start nhận Machine rõ ràng và Complete giải phóng Machine atomically | Manager/Admin |

@@ -82,11 +82,11 @@ public sealed class RoutingMigrationIntegrationTests(PostgreSqlFixture fixture)
             }
 
             await migrator.MigrateAsync(RoutingMigration);
-            dbContext.ChangeTracker.Clear();
-            var orders = await dbContext.ProductionOrders.OrderBy(order => order.Number).ToListAsync();
-            Assert.Equal(4, orders.Count);
-            Assert.All(orders, order => Assert.Null(order.RoutingId));
-            Assert.Empty(await dbContext.Routings.ToListAsync());
+            Assert.Equal("4", await ScalarAsync(
+                dbContext, "SELECT COUNT(*)::text FROM production_orders;"));
+            Assert.Equal("0", await ScalarAsync(
+                dbContext, "SELECT COUNT(*)::text FROM production_orders WHERE \"RoutingId\" IS NOT NULL;"));
+            Assert.Equal("0", await ScalarAsync(dbContext, "SELECT COUNT(*)::text FROM routings;"));
             Assert.Equal("0", await ScalarAsync(
                 dbContext, "SELECT COUNT(*)::text FROM production_order_operations;"));
         } finally {

@@ -14,7 +14,8 @@ public sealed class StartProductionOrderCommandHandler(
     IMaterialRepository materialRepository,
     IWarehouseRepository warehouseRepository,
     MaterialRequirementCalculator calculator,
-    ICurrentUser currentUser)
+    ICurrentUser currentUser,
+    IProductionOrderDeliveryRiskCalculator riskCalculator)
     : IRequestHandler<StartProductionOrderCommand, Result<ProductionOrderResponse>> {
     public async ValueTask<Result<ProductionOrderResponse>> Handle(
         StartProductionOrderCommand command,
@@ -103,7 +104,7 @@ public sealed class StartProductionOrderCommandHandler(
             warehouses.Add(warehouse.Id, warehouse);
         }
 
-        var startedAt = DateTime.UtcNow;
+        var startedAt = riskCalculator.UtcNow;
         var transactions = normalizedAllocations.Select(allocation => new InventoryTransaction {
             CompanyId = currentUser.CompanyId,
             WarehouseId = allocation.WarehouseId,
@@ -127,7 +128,7 @@ public sealed class StartProductionOrderCommandHandler(
             cancellationToken);
         return outcome.Status switch {
             ProductionExecutionStatus.Success => Result<ProductionOrderResponse>.Success(
-                ProductionOrderResponse.From(outcome.Order!)),
+                ProductionOrderResponse.From(outcome.Order!, riskCalculator)),
             ProductionExecutionStatus.InsufficientStock =>
                 Result<ProductionOrderResponse>.Failure(InventoryErrors.InsufficientStock),
             ProductionExecutionStatus.WarehouseUnavailable =>
