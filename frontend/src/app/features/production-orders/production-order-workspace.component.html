@@ -41,6 +41,12 @@
   ) {
     <div class="error" role="alert">{{ store.error() }}</div>
   }
+  @if (store.refreshWarning()) {
+    <div class="impact-confirmation" role="status">
+      <app-ui-icon name="triangle-alert" [size]="18" />
+      <span>{{ store.refreshWarning() }}</span>
+    </div>
+  }
 
   @if (store.isLoading()) {
     <div class="state" aria-live="polite">Đang tải lệnh sản xuất...</div>
@@ -713,6 +719,12 @@
           <span>Kế hoạch</span><span>Phát hành</span><span>Đang sản xuất</span
           ><span>Hoàn thành</span>
         </div>
+        @if (store.refreshWarning()) {
+          <div class="impact-confirmation" role="status">
+            <app-ui-icon name="triangle-alert" [size]="18" />
+            <span>{{ store.refreshWarning() }}</span>
+          </div>
+        }
         <dl class="lifecycle-times">
           <div>
             <dt>Phát hành</dt>

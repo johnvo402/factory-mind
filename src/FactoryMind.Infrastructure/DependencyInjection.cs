@@ -103,6 +103,7 @@ public static class DependencyInjection {
         services.AddSingleton<IDocumentProcessingQueue, HangfireDocumentProcessingQueue>();
         services.AddSingleton<IDocumentTextExtractor, PdfPigDocumentTextExtractor>();
         services.AddSingleton<IExcelWorkbookReader, ClosedXmlWorkbookReader>();
+        services.AddSingleton<IExcelImportTemplateGenerator, ClosedXmlExcelImportTemplateGenerator>();
         services.AddSingleton<ICredentialHasher, CredentialHasher>();
         services.AddOptions<GeminiSettings>()
             .Bind(configuration.GetSection(GeminiSettings.SectionName))

@@ -44,6 +44,7 @@ public static class ApiRoutes {
         public const string Group = Base + "/imports/excel";
         public const string Preview = "/preview";
         public const string Import = "/import";
+        public const string Template = "/template/{entityType}";
     }
 
     public static class Settings {

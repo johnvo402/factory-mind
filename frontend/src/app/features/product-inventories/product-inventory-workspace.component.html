@@ -193,7 +193,11 @@
                       >
                     </td>
                     <td>
-                      {{ transaction.referenceType || '—' }}<br /><span class="muted">{{
+                      {{ transaction.referenceType || '—' }}
+                      @if (transaction.referenceId) {
+                        <br /><span class="muted">ID: {{ transaction.referenceId }}</span>
+                      }
+                      <br /><span class="muted">{{
                         transaction.note || 'Không có ghi chú'
                       }}</span>
                     </td>

@@ -73,11 +73,16 @@ export class DataWorkspaceComponent {
     effect(() => {
       this.activeView();
       this.importMessage.set('');
+      if (this.importEntityType() === null) {
+        this.importOpen.set(false);
+      }
     });
   }
 
-  protected importEntityType(): ExcelImportEntityType {
+  protected readonly importEntityType = computed<ExcelImportEntityType | null>(() => {
     switch (this.activeView()) {
+      case 'machines':
+        return 'machine';
       case 'materials':
         return 'material';
       case 'inventories':
@@ -86,10 +91,11 @@ export class DataWorkspaceComponent {
         return 'product';
       case 'production-orders':
         return 'production_order';
-      default:
-        return 'machine';
+      case 'work-centers':
+      case 'product-inventories':
+        return null;
     }
-  }
+  });
 
   protected async handleImported(count: number): Promise<void> {
     this.importMessage.set(`Đã import ${count} dòng thành công.`);
@@ -107,8 +113,12 @@ export class DataWorkspaceComponent {
       case 'production-orders':
         await this.orders.initialize();
         break;
-      default:
+      case 'machines':
         await this.machines.load();
+        break;
+      case 'work-centers':
+      case 'product-inventories':
+        break;
     }
   }
 }

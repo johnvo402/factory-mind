@@ -51,6 +51,9 @@ public sealed class ApiRoutesTests {
         Assert.Equal(
             "/api/imports/excel/import",
             ApiRoutes.ExcelImports.Group + ApiRoutes.ExcelImports.Import);
+        Assert.Equal(
+            "/api/imports/excel/template/{entityType}",
+            ApiRoutes.ExcelImports.Group + ApiRoutes.ExcelImports.Template);
         Assert.Equal("/api/settings/company", ApiRoutes.Settings.Group + ApiRoutes.Settings.Company);
         Assert.Equal("/api/settings/users", ApiRoutes.Settings.Group + ApiRoutes.Settings.Users);
         Assert.Equal(

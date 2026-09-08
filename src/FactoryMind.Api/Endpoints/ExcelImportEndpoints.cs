@@ -4,6 +4,7 @@ using FactoryMind.Application.Features.ExcelImports;
 using FactoryMind.Application.Features.ExcelImports.ImportExcel;
 using FactoryMind.Application.Features.ExcelImports.PreviewExcelImport;
 using FactoryMind.Api.Routing;
+using FactoryMind.Shared.Contracts;
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,6 +14,23 @@ public static class ExcelImportEndpoints {
     public static IEndpointRouteBuilder MapExcelImportEndpoints(this IEndpointRouteBuilder endpoints) {
         var group = endpoints.MapGroup(ApiRoutes.ExcelImports.Group)
             .RequireAuthorization(AuthorizationPolicies.Manager);
+
+        group.MapGet(ApiRoutes.ExcelImports.Template, (
+            string entityType,
+            IExcelImportTemplateGenerator generator) => {
+                var normalizedEntityType = entityType.Trim().ToLowerInvariant();
+                if (ExcelImportDefinition.GetRequiredFields(normalizedEntityType) is null) {
+                    return Result<ExcelImportTemplateFile>
+                        .Failure(ExcelImportErrors.InvalidEntityType)
+                        .ToHttpResult();
+                }
+
+                var template = generator.Generate(normalizedEntityType);
+                return Results.File(
+                    template.Content,
+                    ExcelImportConstraints.ContentType,
+                    template.FileName);
+            });
 
         group.MapPost(ApiRoutes.ExcelImports.Preview, async (
             [FromForm] PreviewExcelImportForm form,

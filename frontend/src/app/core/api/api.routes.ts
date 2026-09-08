@@ -24,6 +24,7 @@ export const API_ROUTES = {
   excelImports: {
     preview: `${API_BASE}/imports/excel/preview`,
     import: `${API_BASE}/imports/excel/import`,
+    template: (entityType: string) => `${API_BASE}/imports/excel/template/${entityType}`,
   },
   settings: {
     company: `${API_BASE}/settings/company`,

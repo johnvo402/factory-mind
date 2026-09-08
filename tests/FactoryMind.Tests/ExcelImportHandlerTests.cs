@@ -8,6 +8,66 @@ using ClosedXML.Excel;
 namespace FactoryMind.Tests;
 
 public sealed class ExcelImportHandlerTests {
+    public static TheoryData<string> SupportedEntityTypes => new() {
+        ExcelImportEntityTypes.Machine,
+        ExcelImportEntityTypes.Material,
+        ExcelImportEntityTypes.Product,
+        ExcelImportEntityTypes.Inventory,
+        ExcelImportEntityTypes.ProductionOrder
+    };
+
+    [Fact]
+    public void Import_contract_contains_exactly_the_five_supported_entity_types() {
+        Assert.Equal(5, ExcelImportEntityTypes.All.Count);
+        Assert.True(ExcelImportEntityTypes.All.SetEquals([
+            ExcelImportEntityTypes.Machine,
+            ExcelImportEntityTypes.Material,
+            ExcelImportEntityTypes.Product,
+            ExcelImportEntityTypes.Inventory,
+            ExcelImportEntityTypes.ProductionOrder
+        ]));
+    }
+
+    [Theory]
+    [MemberData(nameof(SupportedEntityTypes))]
+    public void Generated_template_matches_the_import_contract(string entityType) {
+        var generator = new ClosedXmlExcelImportTemplateGenerator();
+
+        var template = generator.Generate(entityType);
+
+        Assert.NotEmpty(template.Content);
+        Assert.Equal(
+            $"factorymind-{entityType.Replace('_', '-')}-import-template.xlsx",
+            template.FileName);
+        using var stream = new MemoryStream(template.Content);
+        using var workbook = new XLWorkbook(stream);
+        Assert.Equal(["Data", "Hướng dẫn"], workbook.Worksheets.Select(sheet => sheet.Name));
+        var headers = workbook.Worksheet("Data")
+            .Row(1)
+            .CellsUsed()
+            .Select(cell => cell.GetString())
+            .ToList();
+        Assert.Equal(ExcelImportDefinition.GetRequiredFields(entityType), headers);
+        Assert.Null(workbook.Worksheet("Data").RangeUsed()!.RowsUsed().Skip(1).FirstOrDefault());
+    }
+
+    [Theory]
+    [MemberData(nameof(SupportedEntityTypes))]
+    public void Template_guidance_covers_every_required_field_and_no_unknown_fields(string entityType) {
+        var requiredFields = ExcelImportDefinition.GetRequiredFields(entityType);
+        var description = ExcelImportTemplateDefinition.Get(entityType);
+
+        Assert.NotNull(requiredFields);
+        Assert.NotNull(description);
+        Assert.Equal(
+            requiredFields!.OrderBy(field => field),
+            description!.Fields.Select(field => field.Field).OrderBy(field => field));
+        Assert.All(description.Fields, field => {
+            Assert.False(string.IsNullOrWhiteSpace(field.Description));
+            Assert.False(string.IsNullOrWhiteSpace(field.Example));
+        });
+    }
+
     [Fact]
     public async Task ClosedXml_reader_reads_the_first_worksheet_with_formatted_values() {
         await using var stream = new MemoryStream();

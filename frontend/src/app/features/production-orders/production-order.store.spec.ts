@@ -76,6 +76,16 @@ describe('ProductionOrderStore lifecycle', () => {
     expect(store.error()).toBe('The product does not have an active routing.');
   });
 
+  it('keeps release successful when the canonical refresh fails', async () => {
+    api.releaseProductionOrder.and.returnValue(success(order('released')));
+    api.getProductionOrders.and.returnValue(refreshFailure());
+
+    expect(await store.release('po-1')).toBeTrue();
+    expect(api.releaseProductionOrder).toHaveBeenCalledTimes(1);
+    expect(store.error()).toBe('');
+    expect(store.refreshWarning()).toContain('đã được thực hiện thành công');
+  });
+
   it('starts with allocations then refreshes orders, operations, and machines', async () => {
     const input = { allocations: [{ materialId: 'mat-1', warehouseId: 'wh-1', quantity: 5 }] };
     api.startProductionOrder.and.returnValue(success(order('in_progress')));
@@ -100,6 +110,16 @@ describe('ProductionOrderStore lifecycle', () => {
     expect(store.error()).toBe('Insufficient stock.');
   });
 
+  it('keeps start successful when execution refresh fails', async () => {
+    api.startProductionOrder.and.returnValue(success(order('in_progress')));
+    api.getOperations.and.returnValue(refreshFailure());
+
+    expect(await store.start('po-1', { allocations: [] })).toBeTrue();
+    expect(api.startProductionOrder).toHaveBeenCalledTimes(1);
+    expect(store.error()).toBe('');
+    expect(store.refreshWarning()).toContain('Vui lòng tải lại màn hình');
+  });
+
   it('completes and cancels through canonical mutations', async () => {
     api.completeProductionOrder.and.returnValue(success(order('completed')));
     api.cancelProductionOrder.and.returnValue(success(order('cancelled')));
@@ -107,6 +127,26 @@ describe('ProductionOrderStore lifecycle', () => {
     expect(api.completeProductionOrder).toHaveBeenCalledWith('po-1', { warehouseId: 'wh-fg' });
     expect(await store.cancel('po-1')).toBeTrue();
     expect(api.cancelProductionOrder).toHaveBeenCalledWith('po-1');
+  });
+
+  it('keeps complete successful when operations refresh fails', async () => {
+    api.completeProductionOrder.and.returnValue(success(order('completed')));
+    api.getOperations.and.returnValue(refreshFailure());
+
+    expect(await store.complete('po-1', { warehouseId: 'wh-fg' })).toBeTrue();
+    expect(api.completeProductionOrder).toHaveBeenCalledTimes(1);
+    expect(store.error()).toBe('');
+    expect(store.refreshWarning()).toContain('chưa thể tải lại dữ liệu mới nhất');
+  });
+
+  it('keeps operation transition successful when a follow-up refresh fails', async () => {
+    api.startOperation.and.returnValue(success(operation()));
+    api.getProductionOrders.and.returnValue(refreshFailure());
+
+    expect(await store.startOperation('po-1', 'op-1', 'machine-1')).toBeTrue();
+    expect(api.startOperation).toHaveBeenCalledTimes(1);
+    expect(store.error()).toBe('');
+    expect(store.refreshWarning()).toContain('đã được thực hiện thành công');
   });
 
   it('loads operation state from the dedicated endpoint', async () => {
@@ -162,5 +202,15 @@ describe('ProductionOrderStore lifecycle', () => {
 
   function success<T>(data: T): Observable<ApiResponse<T>> {
     return of({ success: true, message: 'OK', data });
+  }
+
+  function refreshFailure<T>(): Observable<T> {
+    return throwError(
+      () =>
+        new HttpErrorResponse({
+          status: 0,
+          statusText: 'Network error',
+        }),
+    );
   }
 });

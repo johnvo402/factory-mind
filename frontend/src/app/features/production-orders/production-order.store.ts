@@ -33,6 +33,7 @@ export class ProductionOrderStore {
   private readonly loadingState = signal(false);
   private readonly savingState = signal(false);
   private readonly errorState = signal('');
+  private readonly refreshWarningState = signal('');
   private readonly searchState = signal('');
   private readonly requirementState = signal<MaterialRequirements | null>(null);
   private readonly requirementLoadingState = signal(false);
@@ -48,6 +49,7 @@ export class ProductionOrderStore {
   readonly isLoading = this.loadingState.asReadonly();
   readonly isSaving = this.savingState.asReadonly();
   readonly error = this.errorState.asReadonly();
+  readonly refreshWarning = this.refreshWarningState.asReadonly();
   readonly search = this.searchState.asReadonly();
   readonly requirements = this.requirementState.asReadonly();
   readonly isLoadingRequirements = this.requirementLoadingState.asReadonly();
@@ -58,6 +60,7 @@ export class ProductionOrderStore {
   async initialize(): Promise<void> {
     this.loadingState.set(true);
     this.errorState.set('');
+    this.refreshWarningState.set('');
     try {
       const [orderResponse, productResponse, machineResponse, warehouseResponse] =
         await Promise.all([
@@ -81,6 +84,7 @@ export class ProductionOrderStore {
     this.searchState.set(search.trim());
     this.loadingState.set(true);
     this.errorState.set('');
+    this.refreshWarningState.set('');
     try {
       const response = await firstValueFrom(this.api.getProductionOrders(this.searchState()));
       this.orderItems.set(response.data ?? []);
@@ -92,37 +96,17 @@ export class ProductionOrderStore {
   }
 
   async save(orderId: string | null, input: ProductionOrderInput): Promise<boolean> {
-    this.savingState.set(true);
-    this.errorState.set('');
-    try {
+    return this.runLifecycle(async () => {
       if (orderId) {
         await firstValueFrom(this.api.updateProductionOrder(orderId, input));
       } else {
         await firstValueFrom(this.api.createProductionOrder(input));
       }
-      await this.load();
-      return true;
-    } catch (error: unknown) {
-      this.errorState.set(businessDataErrorMessage(error));
-      return false;
-    } finally {
-      this.savingState.set(false);
-    }
+    });
   }
 
   async delete(orderId: string): Promise<boolean> {
-    this.savingState.set(true);
-    this.errorState.set('');
-    try {
-      await firstValueFrom(this.api.deleteProductionOrder(orderId));
-      await this.load();
-      return true;
-    } catch (error: unknown) {
-      this.errorState.set(businessDataErrorMessage(error));
-      return false;
-    } finally {
-      this.savingState.set(false);
-    }
+    return this.runLifecycle(() => firstValueFrom(this.api.deleteProductionOrder(orderId)));
   }
 
   async release(orderId: string): Promise<boolean> {
@@ -134,22 +118,21 @@ export class ProductionOrderStore {
   }
 
   async start(orderId: string, input: StartProductionOrderInput): Promise<boolean> {
-    const succeeded = await this.runLifecycle(() =>
-      firstValueFrom(this.api.startProductionOrder(orderId, input)),
+    const succeeded = await this.runLifecycle(
+      () => firstValueFrom(this.api.startProductionOrder(orderId, input)),
+      [() => this.refreshExecution(orderId)],
     );
     if (succeeded) {
       this.clearRequirements();
-      await this.refreshExecution(orderId);
     }
     return succeeded;
   }
 
   async complete(orderId: string, input: CompleteProductionOrderInput): Promise<boolean> {
-    const succeeded = await this.runLifecycle(() =>
-      firstValueFrom(this.api.completeProductionOrder(orderId, input)),
+    return this.runLifecycle(
+      () => firstValueFrom(this.api.completeProductionOrder(orderId, input)),
+      [() => this.loadOperations(orderId)],
     );
-    if (succeeded) await this.loadOperations(orderId);
-    return succeeded;
   }
 
   async cancel(orderId: string): Promise<boolean> {
@@ -248,19 +231,35 @@ export class ProductionOrderStore {
     this.operationLoadingState.set(false);
   }
 
-  private async runLifecycle(request: () => Promise<unknown>): Promise<boolean> {
+  private async runLifecycle(
+    request: () => Promise<unknown>,
+    followUpRefreshes: Array<() => Promise<unknown>> = [],
+  ): Promise<boolean> {
     this.savingState.set(true);
     this.errorState.set('');
+    this.refreshWarningState.set('');
     try {
       await request();
-      await this.loadOrdersWithoutSpinner();
-      return true;
     } catch (error: unknown) {
       this.errorState.set(businessDataErrorMessage(error));
-      return false;
-    } finally {
       this.savingState.set(false);
+      return false;
     }
+
+    try {
+      await this.loadOrdersWithoutSpinner();
+    } catch {
+      this.setRefreshWarning();
+    }
+    for (const refresh of followUpRefreshes) {
+      try {
+        if ((await refresh()) === false) this.setRefreshWarning();
+      } catch {
+        this.setRefreshWarning();
+      }
+    }
+    this.savingState.set(false);
+    return true;
   }
 
   private async transitionOperation(
@@ -269,8 +268,16 @@ export class ProductionOrderStore {
   ): Promise<boolean> {
     this.savingState.set(true);
     this.errorState.set('');
+    this.refreshWarningState.set('');
     try {
       await firstValueFrom(request());
+    } catch (error: unknown) {
+      this.errorState.set(businessDataErrorMessage(error));
+      this.savingState.set(false);
+      return false;
+    }
+
+    try {
       const [orderResponse, machineResponse, operationResponse] = await Promise.all([
         firstValueFrom(this.api.getProductionOrders(this.searchState())),
         firstValueFrom(this.machineApi.getMachines()),
@@ -279,13 +286,12 @@ export class ProductionOrderStore {
       this.orderItems.set(orderResponse.data ?? []);
       this.machineItems.set(machineResponse.data ?? []);
       this.operationItems.set(operationResponse.data ?? []);
-      return true;
-    } catch (error: unknown) {
-      this.errorState.set(businessDataErrorMessage(error));
-      return false;
+    } catch {
+      this.setRefreshWarning();
     } finally {
       this.savingState.set(false);
     }
+    return true;
   }
 
   private async loadOrdersWithoutSpinner(): Promise<void> {
@@ -303,15 +309,17 @@ export class ProductionOrderStore {
   }
 
   private async refreshExecution(orderId: string): Promise<void> {
-    try {
-      const [machineResponse, operationResponse] = await Promise.all([
-        firstValueFrom(this.machineApi.getMachines()),
-        firstValueFrom(this.api.getOperations(orderId)),
-      ]);
-      this.machineItems.set(machineResponse.data ?? []);
-      this.operationItems.set(operationResponse.data ?? []);
-    } catch (error: unknown) {
-      this.operationErrorState.set(businessDataErrorMessage(error));
-    }
+    const [machineResponse, operationResponse] = await Promise.all([
+      firstValueFrom(this.machineApi.getMachines()),
+      firstValueFrom(this.api.getOperations(orderId)),
+    ]);
+    this.machineItems.set(machineResponse.data ?? []);
+    this.operationItems.set(operationResponse.data ?? []);
+  }
+
+  private setRefreshWarning(): void {
+    this.refreshWarningState.set(
+      'Thao tác đã được thực hiện thành công nhưng chưa thể tải lại dữ liệu mới nhất. Vui lòng tải lại màn hình.',
+    );
   }
 }

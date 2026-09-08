@@ -83,7 +83,7 @@ Ngoài phạm vi hiện tại:
 | Raw Material Inventory | Warehouse master data, `InventoryBalance`/`InventoryTransaction`, current material balances, filtered history và receive/issue/adjust/transfer | Manager/Admin |
 | Production Orders | UI manual đầy đủ: kiểm tra vật tư, Release, cấp phát nhiều kho, Start, thực thi công đoạn, Cancel và Complete vào kho thành phẩm | Manager/Admin |
 | Finished Goods Inventory | Read-only `ProductInventoryBalance` và lịch sử `ProductInventoryTransaction` được tạo bởi Production Order Complete | Manager/Admin |
-| Excel Import | Preview header/rows, gợi ý mapping, validate toàn file và import transaction | Manager/Admin |
+| Excel Import | Tải template `.xlsx`, preview header/rows, gợi ý mapping, validate toàn file và import transaction | Manager/Admin |
 | Dashboard | Active orders, inventory balances, available/total machines và alerts | Mọi user đã đăng nhập |
 | Settings | Company, tenant users, roles và AI metadata không lộ key | Admin |
 | Production delivery | API image, Angular/Nginx image, internal PostgreSQL/MinIO và health checks | Vận hành hệ thống |
@@ -110,6 +110,18 @@ thành phẩm trực tiếp từ frontend.
 Release thủ công bắt đầu từ nút xác nhận trong Production Order UI. Release qua AI vẫn là luồng độc
 lập `Chat -> proposal -> human confirmation`; cả hai đều gọi business command chuẩn của backend. AI
 không được Start, Complete, Cancel hoặc điều khiển công đoạn.
+
+### Excel Import
+
+Hỗ trợ: Machines, Materials, Raw Inventory opening balances, Products và Production Orders.
+Không hỗ trợ: Work Centers và Finished Goods Inventory. Hai workspace không hỗ trợ sẽ không hiển thị
+nút **Nhập từ Excel**; Finished Goods là ledger chỉ đọc và chỉ nhận đầu ra từ Production Order
+Complete.
+
+Trong dialog import, chọn **Tải file mẫu** để tải `.xlsx` được sinh từ đúng backend import contract.
+Workbook có sheet `Data` đầu tiên với tên cột kỹ thuật không dịch và sheet `Hướng dẫn` chứa mô tả,
+giá trị hợp lệ, ví dụ và lưu ý. Người dùng vẫn có thể tải workbook riêng, xác nhận mapping, preview và
+import như trước.
 
 ## Kiến trúc
 

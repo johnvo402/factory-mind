@@ -5,6 +5,29 @@
       <button type="button" class="close" aria-label="Đóng" (click)="closed.emit()"><app-ui-icon name="x" /></button>
     </header>
 
+    <section class="template-help" aria-labelledby="template-help-title">
+      <div>
+        <strong id="template-help-title">Không chắc file cần những cột nào?</strong>
+        <p>Tải file mẫu cho {{ entityLabel() }} và điền dữ liệu vào sheet Data.</p>
+        <ul>
+          <li><strong>Data</strong> — nơi nhập dữ liệu để import.</li>
+          <li><strong>Hướng dẫn</strong> — mô tả từng cột và ví dụ giá trị.</li>
+        </ul>
+      </div>
+      <button
+        type="button"
+        class="secondary template-download"
+        [disabled]="templateDownloading()"
+        (click)="downloadTemplate()"
+      >
+        <app-ui-icon name="download" [size]="18" />
+        {{ templateDownloading() ? 'Đang tạo file mẫu...' : 'Tải file mẫu' }}
+      </button>
+    </section>
+    @if (templateError()) {
+      <p class="status error" role="alert">{{ templateError() }}</p>
+    }
+
     <label class="file-picker">
       <app-ui-icon name="upload" [size]="24" />
       <strong><i>1</i> Chọn tệp .xlsx</strong>

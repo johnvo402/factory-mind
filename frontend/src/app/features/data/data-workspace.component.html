@@ -5,9 +5,11 @@
       <h1>Dữ liệu nhà máy</h1>
       <p>Nguồn dữ liệu chuẩn cho vận hành và câu trả lời của FactoryMind AI.</p>
     </div>
-    <button type="button" class="import-button" (click)="importOpen.set(true)">
-      <app-ui-icon name="upload" [size]="18" /> Nhập từ Excel
-    </button>
+    @if (importEntityType() !== null) {
+      <button type="button" class="import-button" (click)="importOpen.set(true)">
+        <app-ui-icon name="upload" [size]="18" /> Nhập từ Excel
+      </button>
+    }
   </header>
 
   @if (importMessage()) {
@@ -90,9 +92,9 @@
     }
   }
 
-  @if (importOpen()) {
+  @if (importOpen() && importEntityType(); as entityType) {
     <app-excel-import-wizard
-      [entityType]="importEntityType()"
+      [entityType]="entityType"
       (closed)="importOpen.set(false)"
       (imported)="handleImported($event)"
     />

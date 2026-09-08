@@ -344,7 +344,7 @@ Preview
 
 Done.
 
-Implementation status: all five business entity types support bounded preview, mapping, row validation, and transactional `.xlsx` import.
+Implementation status: exactly five business entity types support bounded preview, mapping, row validation, and transactional `.xlsx` import: Machine, Material, Product, raw Inventory opening balance, and Production Order. Each wizard downloads an authenticated backend-generated template with `Data` and `Hướng dẫn` sheets. Work Centers and read-only Finished Goods hide import completely.
 
 ---
 
@@ -643,6 +643,9 @@ Done.
 * [x] Kho vật tư và Kho thành phẩm được tách rõ theo Material/Inventory ledger và Product/ProductInventory ledger.
 * [x] Raw inventory history hỗ trợ các filter Warehouse, Material, transaction type, from/to và pagination đã có ở backend.
 * [x] Route, service, store và component tests bảo vệ manual lifecycle; không thêm AI mutation mới hoặc thay đổi backend business rule.
+* [x] Finished Goods history hiển thị `referenceType`, `referenceId` khi có và note để truy vết Production Output.
+* [x] Mutation success được tách khỏi refresh failure; follow-up GET lỗi chỉ tạo warning và không retry POST.
+* [x] Excel template `.xlsx` được sinh từ `ExcelImportDefinition`, có `Data` đầu tiên và `Hướng dẫn`; Work Centers/Finished Goods không có import action.
 
 Lifecycle UI:
 

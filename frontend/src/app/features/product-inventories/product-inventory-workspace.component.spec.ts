@@ -79,7 +79,21 @@ describe('ProductInventoryWorkspaceComponent', () => {
       jasmine.objectContaining({ page: 1, pageSize: 25 }),
     );
     expect(fixture.nativeElement.textContent).toContain('Nhập thành phẩm từ sản xuất');
+    expect(fixture.nativeElement.textContent).toContain('ID: po-1');
     expect(fixture.nativeElement.textContent).toContain('Trang 1 / 2');
+  });
+
+  it('does not render a null reference identifier', async () => {
+    const page = transactionPage();
+    page.items[0].referenceId = null;
+    api.getTransactions.and.returnValue(success(page));
+
+    clickButton('Lịch sử thành phẩm');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).not.toContain('ID: null');
+    expect(fixture.nativeElement.textContent).not.toContain('ID: undefined');
   });
 
   it('applies ledger filters and requests the next page', async () => {

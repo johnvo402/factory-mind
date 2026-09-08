@@ -19,6 +19,12 @@ export class ExcelImportApiService {
     return this.http.post<ApiResponse<ExcelPreview>>(API_ROUTES.excelImports.preview, form);
   }
 
+  downloadTemplate(entityType: ExcelImportEntityType): Observable<Blob> {
+    return this.http.get(API_ROUTES.excelImports.template(entityType), {
+      responseType: 'blob',
+    });
+  }
+
   import(
     entityType: ExcelImportEntityType,
     mapping: Record<string, string>,

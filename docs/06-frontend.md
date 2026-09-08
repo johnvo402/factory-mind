@@ -454,7 +454,7 @@ Bên dưới là:
 
 The implemented chat home loads these KPI values from the tenant-scoped dashboard summary endpoint. KPI failure is isolated from chat: the user can still start a conversation and retry the dashboard without reloading the workspace.
 
-The Data workspace includes an Excel import wizard for Machine, Material, Product, Inventory, and Production Order. It previews the first rows, proposes a header mapping, requires confirmation, and renders row-level validation errors without partially importing the workbook.
+The Data workspace includes an Excel import wizard only for Machine, Material, Product, raw Inventory opening balances, and Production Order. Work Centers and Finished Goods hide the import action entirely and can never fall back to Machine import. The wizard can download an authenticated `.xlsx` template before file selection; its first `Data` sheet uses exact backend field names and its `Hướng dẫn` sheet explains every field with Vietnamese examples. Custom workbooks still use preview, suggested/manual mapping, confirmation, and row-level validation without partial import.
 
 The Inventory workspace is a warehouse ledger view rather than balance CRUD. It lists current material/warehouse quantities and last update time, provides Receive, Issue, Adjust, and Transfer forms, manages active/deactivated warehouses, and opens a paged transaction history. Positive and negative changes use both a sign and accessible color treatment. Forms keep visible labels, inline validation, focus indicators, and disabled/loading feedback consistent with the existing workspace styling.
 
@@ -466,6 +466,11 @@ reloads `/api/production-orders/{id}/operations` and Machines instead of trustin
 Starting an operation still requires an explicitly selected Available Machine in the required Work
 Center. Completing an operation refreshes orders, operations, and Machines; completing the order is a
 separate confirmed action that requires a destination Warehouse.
+
+Lifecycle mutations and their follow-up reads have separate outcomes. Once Release, Start, Cancel,
+Complete, Start Operation, or Complete Operation succeeds, a failed refresh is shown as a non-fatal
+warning asking the user to reload; it never changes the confirmed mutation into a failure or retries
+the mutation.
 
 The Start dialog loads the latest locked-BOM requirements and active Warehouses. Each Material can be
 split across multiple Warehouse rows; every row requires a Warehouse and positive quantity, and the
@@ -482,6 +487,8 @@ Raw and finished inventory remain separate by design:
 
 `ProductionOutput` appears only after the backend completes a Production Order. The frontend never
 calls inventory issue endpoints for production consumption and never creates finished-goods records.
+Finished-goods history renders `referenceType`, a non-null `referenceId`, and the note so the output
+can be traced back to its manufacturing source.
 Manual Release uses a Production Order confirmation dialog; AI Release remains
 `proposal -> explicit human confirmation -> canonical Release command`. No other AI write action is
 exposed.

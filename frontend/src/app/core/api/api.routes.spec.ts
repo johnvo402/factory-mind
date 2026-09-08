@@ -25,4 +25,10 @@ describe('API_ROUTES manufacturing parity', () => {
       '/api/product-inventories/transactions',
     );
   });
+
+  it('builds the Excel import template URL', () => {
+    expect(API_ROUTES.excelImports.template('production_order')).toBe(
+      '/api/imports/excel/template/production_order',
+    );
+  });
 });
