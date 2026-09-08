@@ -30,6 +30,7 @@ export class WorkspaceComponent {
     const url = this.routeUrl();
     if (url.startsWith('/knowledge')) return 'knowledge';
     if (url.startsWith('/data')) return 'data';
+    if (url.startsWith('/planning')) return 'planning';
     if (url.startsWith('/settings')) return 'settings';
     return 'chat';
   });

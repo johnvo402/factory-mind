@@ -161,6 +161,16 @@ public static class FactoryMindTelemetry {
         "factorymind.documents.embedding_batches",
         description: "Embedding batches per document.");
 
+    public static readonly Histogram<double> PlanningPreviewDuration = Meter.CreateHistogram<double>(
+        "factorymind.planning.preview.duration", unit: "ms",
+        description: "Deterministic schedule preview duration.");
+    public static readonly Histogram<long> PlanningPreviewOrders = Meter.CreateHistogram<long>(
+        "factorymind.planning.preview.orders", description: "Orders scheduled per preview.");
+    public static readonly Histogram<long> PlanningPreviewOperations = Meter.CreateHistogram<long>(
+        "factorymind.planning.preview.operations", description: "Operations scheduled per preview.");
+    public static readonly Histogram<long> PlanningPreviewUnscheduled = Meter.CreateHistogram<long>(
+        "factorymind.planning.preview.unscheduled", description: "Unscheduled orders per preview.");
+
     public static TagList Tags(params (string Key, object? Value)[] values) {
         var tags = new TagList();
         foreach (var (key, value) in values) {

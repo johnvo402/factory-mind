@@ -8,11 +8,12 @@ public static class SettingsConstraints {
     public const int MaximumUserNameLength = 200;
     public const int MaximumEmailLength = 320;
     public const int MinimumPasswordLength = 8;
+    public const int MaximumTimeZoneIdLength = 100;
 }
 
-public sealed record CompanySettingsResponse(Guid Id, string Name, DateTime CreatedAt) {
+public sealed record CompanySettingsResponse(Guid Id, string Name, string TimeZoneId, DateTime CreatedAt) {
     public static CompanySettingsResponse From(Company company) =>
-        new(company.Id, company.Name, company.CreatedAt);
+        new(company.Id, company.Name, company.TimeZoneId, company.CreatedAt);
 }
 
 public sealed record UserSettingsResponse(
@@ -73,4 +74,6 @@ public static class SettingsErrors {
         "settings.self_admin_change_forbidden",
         "You cannot deactivate or demote your own Admin account.",
         409);
+    public static readonly Error InvalidTimeZone = new(
+        "planning.timezone_invalid", "The company planning timezone is invalid.", 400);
 }

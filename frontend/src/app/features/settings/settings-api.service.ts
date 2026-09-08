@@ -19,8 +19,8 @@ export class SettingsApiService {
     return this.http.get<ApiResponse<CompanySettings>>(API_ROUTES.settings.company);
   }
 
-  updateCompany(name: string): Observable<ApiResponse<CompanySettings>> {
-    return this.http.put<ApiResponse<CompanySettings>>(API_ROUTES.settings.company, { name });
+  updateCompany(name: string, timeZoneId: string): Observable<ApiResponse<CompanySettings>> {
+    return this.http.put<ApiResponse<CompanySettings>>(API_ROUTES.settings.company, { name, timeZoneId });
   }
 
   getUsers(): Observable<ApiResponse<UserSettings[]>> {

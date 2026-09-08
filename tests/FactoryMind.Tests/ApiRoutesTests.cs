@@ -94,5 +94,11 @@ public sealed class ApiRoutesTests {
         Assert.Equal(
             "/api/production-orders/{productionOrderId:guid}/cancel",
             ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.Cancel);
+        Assert.Equal(
+            "/api/production-orders/schedule-preview",
+            ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.SchedulePreview);
+        Assert.Equal(
+            "/api/work-centers/{workCenterId:guid}/calendar",
+            ApiRoutes.WorkCenters.Group + ApiRoutes.WorkCenters.Calendar);
     }
 }

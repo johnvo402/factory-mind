@@ -466,3 +466,21 @@ stable second keys prevent page overlap. The list query does not include operati
 dedicated operations endpoint remains authoritative for execution detail. No scheduling/ETA/capacity
 calculation or AI write surface was added.
 
+## Step 12B capacity scheduling backend
+
+`IWorkCenterCalendarService` là canonical expander từ ca local + ngày nghỉ + IANA timezone thành các
+`WorkingInterval` UTC đã sort trong range. Invalid timezone/DST local time trả controlled planning
+error; thiếu ca không biến thành 24/7. Calendar PUT tenant-scoped, revalidate overlap/capacity và thay
+toàn bộ shift/day-off trong một transaction.
+
+`ISchedulePreviewRepository` tải bounded sets thay vì N+1: active PO/Product/locked operations,
+active Routing operations cho Planned và Work Center calendars. `IProductionSchedulePreviewer` xếp
+in-progress trước rồi dùng risk, priority, DueDate, Number và Id làm stable tie-break. Mỗi công đoạn
+giữ precedence; lane cùng Work Center không overlap; working time bỏ qua break/ngày nghỉ. In-progress
+remaining dùng working minutes từ StartedAt tới GeneratedAt. Preview giới hạn horizon/workload,
+honor cancellation và phát telemetry count/duration không gắn tenant identifiers.
+
+Planned dùng active Routing với `isProvisional=true`; Released/InProgress không fallback khỏi locked
+operation snapshot. Projected completion chỉ có khi toàn bộ remaining operations fit horizon.
+Projected delivery là `unknown|projected_on_time|projected_late`, tách khỏi delivery status Step 12A.
+

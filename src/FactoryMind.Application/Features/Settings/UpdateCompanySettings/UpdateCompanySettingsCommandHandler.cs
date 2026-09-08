@@ -15,7 +15,17 @@ public sealed class UpdateCompanySettingsCommandHandler(
             return Result<CompanySettingsResponse>.Failure(SettingsErrors.CompanyNotFound);
         }
 
+        var timeZoneId = command.TimeZoneId.Trim();
+        try {
+            _ = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+        } catch (TimeZoneNotFoundException) {
+            return Result<CompanySettingsResponse>.Failure(SettingsErrors.InvalidTimeZone);
+        } catch (InvalidTimeZoneException) {
+            return Result<CompanySettingsResponse>.Failure(SettingsErrors.InvalidTimeZone);
+        }
+
         company.Name = command.Name.Trim();
+        company.TimeZoneId = timeZoneId;
         await repository.SaveChangesAsync(cancellationToken);
         return Result<CompanySettingsResponse>.Success(CompanySettingsResponse.From(company));
     }

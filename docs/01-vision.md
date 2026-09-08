@@ -369,4 +369,11 @@ hạn bằng timestamp thực tế. “Trễ” ở bước này chỉ có nghĩ
 `CompletedAt > DueDate`; nó không phải dự báo một lệnh tương lai sẽ trễ. Lịch máy, năng lực, ca làm,
 bottleneck, auto-reschedule và ETA vẫn nằm ngoài phạm vi.
 
+## Step 12B — Planning preview, không phải scheduling control
+
+FactoryMind nay có thể chiếu lịch công đoạn và completion dự kiến từ capacity/lịch Work Center,
+Routing hiện hành hoặc snapshot đã khóa. Đây là decision support deterministic: nó mô tả áp lực năng
+lực trong một horizon, không cam kết tương lai. Hệ thống vẫn không lưu lịch, tự sắp xếp lại, gán máy,
+dự trữ nguyên liệu, tối ưu toàn cục hoặc thay đổi ưu tiên.
+
 ---

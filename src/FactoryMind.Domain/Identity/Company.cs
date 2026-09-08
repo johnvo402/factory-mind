@@ -7,6 +7,7 @@ namespace FactoryMind.Domain.Identity;
 public sealed class Company {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = string.Empty;
+    public string TimeZoneId { get; set; } = "UTC";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public ICollection<User> Users { get; set; } = [];
     public ICollection<Conversation> Conversations { get; set; } = [];
@@ -16,6 +17,8 @@ public sealed class Company {
     public ICollection<Product> Products { get; set; } = [];
     public ICollection<BillOfMaterial> BillOfMaterials { get; set; } = [];
     public ICollection<WorkCenter> WorkCenters { get; set; } = [];
+    public ICollection<WorkCenterShift> WorkCenterShifts { get; set; } = [];
+    public ICollection<WorkCenterDayOff> WorkCenterDaysOff { get; set; } = [];
     public ICollection<Routing> Routings { get; set; } = [];
     public ICollection<Warehouse> Warehouses { get; set; } = [];
     public ICollection<InventoryBalance> InventoryBalances { get; set; } = [];

@@ -20,7 +20,9 @@ public sealed class ManufacturingToolRegistry(
     GetWorkCenterStatusTool workCenterStatus,
     GetMaterialInventoryTool materialInventory,
     GetProductionOrderMaterialReadinessTool materialReadiness,
-    ListProductionOrdersTool listProductionOrders) : IManufacturingToolRegistry {
+    ListProductionOrdersTool listProductionOrders,
+    GetProductionOrderSchedulePreviewTool schedulePreview,
+    GetWorkCenterCapacityPreviewTool capacityPreview) : IManufacturingToolRegistry {
     private readonly IReadOnlyDictionary<string, IManufacturingReadTool> _tools =
         new IManufacturingReadTool[] {
             productionOrderStatus,
@@ -29,7 +31,9 @@ public sealed class ManufacturingToolRegistry(
             workCenterStatus,
             materialInventory,
             materialReadiness,
-            listProductionOrders
+            listProductionOrders,
+            schedulePreview,
+            capacityPreview
         }.ToDictionary(tool => tool.Definition.Name, StringComparer.Ordinal);
 
     public IReadOnlyList<AiToolDefinition> Definitions => _tools.Values
@@ -95,6 +99,30 @@ internal static class ManufacturingToolSchemas {
         }
         """);
 
+    public static JsonElement ProductionOrderSchedulePreview => Parse("""
+        {
+          "type": "object",
+          "properties": {
+            "number": { "type": "string", "minLength": 1, "maxLength": 50 },
+            "horizonDays": { "type": "integer", "minimum": 1, "maximum": 30 }
+          },
+          "required": ["number"],
+          "additionalProperties": false
+        }
+        """);
+
+    public static JsonElement WorkCenterCapacityPreview => Parse("""
+        {
+          "type": "object",
+          "properties": {
+            "code": { "type": "string", "minLength": 1, "maxLength": 50 },
+            "horizonDays": { "type": "integer", "minimum": 1, "maximum": 30 }
+          },
+          "required": ["code"],
+          "additionalProperties": false
+        }
+        """);
+
     private static JsonElement Parse(string json) {
         using var document = JsonDocument.Parse(json);
         return document.RootElement.Clone();
@@ -153,6 +181,14 @@ internal static class ToolArguments {
         return element.ValueKind == JsonValueKind.Number
             && element.TryGetInt32(out limit)
             && limit is > 0 and <= 20;
+    }
+
+    public static bool OptionalHorizon(JsonElement arguments, out int horizonDays) {
+        horizonDays = 14;
+        if (!arguments.TryGetProperty("horizonDays", out var element)) return true;
+        return element.ValueKind == JsonValueKind.Number
+            && element.TryGetInt32(out horizonDays)
+            && horizonDays is >= 1 and <= 30;
     }
 }
 
@@ -403,6 +439,8 @@ public sealed class GetWorkCenterStatusTool(FactoryMindDbContext dbContext) : IM
 
         var normalizedCode = code.ToUpperInvariant();
         var workCenter = await dbContext.WorkCenters.AsNoTracking()
+            .Include(item => item.Shifts)
+            .Include(item => item.DaysOff)
             .SingleOrDefaultAsync(
                 item => item.CompanyId == companyId && item.Code.ToUpper() == normalizedCode,
                 cancellationToken);
@@ -449,7 +487,9 @@ public sealed class GetWorkCenterStatusTool(FactoryMindDbContext dbContext) : IM
             workCenter.Id,
             "work_center",
             $"{workCenter.Code} - {workCenter.Name}",
-            $"Active {workCenter.IsActive}; machine counts {counts}; current operations {currentOperations}; machines {machineList}."));
+            $"Active {workCenter.IsActive}; parallel planning capacity {workCenter.ParallelCapacity}; "
+            + $"weekly shifts {workCenter.Shifts.Count}; days off configured {workCenter.DaysOff.Count}; "
+            + $"machine counts {counts}; current operations {currentOperations}; machines {machineList}."));
     }
 }
 
@@ -765,4 +805,93 @@ public sealed class ListProductionOrdersTool(
         string Name,
         string WorkCenterCode,
         string? MachineCode);
+}
+
+public sealed class GetProductionOrderSchedulePreviewTool(
+    FactoryMindDbContext dbContext,
+    ISchedulePreviewRepository repository,
+    IProductionSchedulePreviewer previewer,
+    IProductionOrderDeliveryRiskCalculator riskCalculator,
+    TimeProvider timeProvider) : IManufacturingReadTool {
+    public AiToolDefinition Definition { get; } = new(
+        "get_production_order_schedule_preview",
+        "Returns a deterministic read-only schedule preview and projected completion for one tenant-scoped production order exact number. The result is projected from current planning assumptions, not guaranteed.",
+        ManufacturingToolSchemas.ProductionOrderSchedulePreview);
+
+    public async Task<ToolExecutionResult> ExecuteAsync(
+        Guid companyId,
+        JsonElement arguments,
+        CancellationToken cancellationToken) {
+        if (!ToolArguments.HasOnly(arguments, "number", "horizonDays")
+            || !ToolArguments.RequiredString(arguments, "number", ProductionOrderConstraints.MaximumNumberLength, out var number)
+            || !ToolArguments.OptionalHorizon(arguments, out var horizonDays)) return ToolResults.InvalidArguments();
+        var normalized = number.ToUpperInvariant();
+        var orderId = await dbContext.ProductionOrders.AsNoTracking()
+            .Where(order => order.CompanyId == companyId && order.Number.ToUpper() == normalized)
+            .Select(order => (Guid?)order.Id).SingleOrDefaultAsync(cancellationToken);
+        if (!orderId.HasValue) return ToolResults.NotFound();
+        var data = await repository.LoadAsync(companyId, null, orderId, null, cancellationToken);
+        if (data is null) return ToolResults.NotApplicable(new BusinessDataRecord(
+            orderId.Value, "production_order_schedule_preview", number,
+            "schedule preview unavailable: company planning timezone is invalid."));
+        var result = previewer.Calculate(data, timeProvider.GetUtcNow().UtcDateTime,
+            horizonDays, riskCalculator.DueSoonDays, cancellationToken);
+        if (result.IsFailure || result.Value!.Orders.Count == 0) return ToolResults.NotApplicable(new BusinessDataRecord(
+            orderId.Value, "production_order_schedule_preview", number,
+            $"schedule preview unavailable: {result.Error?.Code ?? "planning data missing"}."));
+        var preview = result.Value;
+        var order = preview.Orders[0];
+        var reason = preview.Unscheduled.FirstOrDefault(item => item.OrderId == order.Id)?.Reason ?? "none";
+        return ToolResults.Success(new BusinessDataRecord(
+            order.Id, "production_order_schedule_preview", order.Number,
+            $"Read-only schedule preview generated {ToolFormatting.Timestamp(preview.GeneratedAt)} for {horizonDays} days; "
+            + $"status {order.Status}; priority {order.Priority}; due date {ToolFormatting.Timestamp(order.DueDate)}; "
+            + $"planning source {order.PlanningSource}; provisional={order.IsProvisional}; "
+            + $"projected start {ToolFormatting.Timestamp(order.ProjectedStart)}; projected completion {ToolFormatting.Timestamp(order.ProjectedCompletion)}; "
+            + $"projected delivery status {order.ProjectedDeliveryStatus}; projected lateness minutes {order.ProjectedLatenessMinutes?.ToString(CultureInfo.InvariantCulture) ?? "none"}; "
+            + $"unscheduled reason {reason}. This preview is based on current planning assumptions and is not a guarantee."));
+    }
+}
+
+public sealed class GetWorkCenterCapacityPreviewTool(
+    FactoryMindDbContext dbContext,
+    ISchedulePreviewRepository repository,
+    IProductionSchedulePreviewer previewer,
+    IProductionOrderDeliveryRiskCalculator riskCalculator,
+    TimeProvider timeProvider) : IManufacturingReadTool {
+    public AiToolDefinition Definition { get; } = new(
+        "get_work_center_capacity_preview",
+        "Returns deterministic planned capacity load for one tenant-scoped Work Center exact code over a bounded horizon. Read-only; this is not OEE, actual utilization, or a guaranteed bottleneck claim.",
+        ManufacturingToolSchemas.WorkCenterCapacityPreview);
+
+    public async Task<ToolExecutionResult> ExecuteAsync(
+        Guid companyId,
+        JsonElement arguments,
+        CancellationToken cancellationToken) {
+        if (!ToolArguments.HasOnly(arguments, "code", "horizonDays")
+            || !ToolArguments.RequiredString(arguments, "code", WorkCenterConstraints.MaximumCodeLength, out var code)
+            || !ToolArguments.OptionalHorizon(arguments, out var horizonDays)) return ToolResults.InvalidArguments();
+        var normalized = code.ToUpperInvariant();
+        var centerId = await dbContext.WorkCenters.AsNoTracking()
+            .Where(center => center.CompanyId == companyId && center.Code.ToUpper() == normalized)
+            .Select(center => (Guid?)center.Id).SingleOrDefaultAsync(cancellationToken);
+        if (!centerId.HasValue) return ToolResults.NotFound();
+        var data = await repository.LoadAsync(companyId, null, null, centerId, cancellationToken);
+        if (data is null) return ToolResults.NotApplicable(new BusinessDataRecord(
+            centerId.Value, "work_center_capacity_preview", code,
+            "capacity preview unavailable: company planning timezone is invalid."));
+        var result = previewer.Calculate(data, timeProvider.GetUtcNow().UtcDateTime,
+            horizonDays, riskCalculator.DueSoonDays, cancellationToken);
+        var center = result.Value?.WorkCenters.SingleOrDefault(item => item.Id == centerId.Value);
+        if (result.IsFailure || center is null) return ToolResults.NotApplicable(new BusinessDataRecord(
+            centerId.Value, "work_center_capacity_preview", code,
+            $"capacity preview unavailable: {result.Error?.Code ?? "planning data missing"}."));
+        return ToolResults.Success(new BusinessDataRecord(
+            center.Id, "work_center_capacity_preview", $"{center.Code} - {center.Name}",
+            $"Read-only {horizonDays}-day capacity preview; parallel capacity {center.ParallelCapacity}; "
+            + $"available capacity minutes {center.AvailableCapacityMinutes}; scheduled minutes {center.ScheduledMinutes}; "
+            + $"planned capacity load percent {center.PlannedLoadPercent?.ToString(CultureInfo.InvariantCulture) ?? "none"}; "
+            + $"unscheduled demand minutes {center.UnscheduledDemandMinutes}; capacity constraint={center.HasCapacityConstraint}; "
+            + $"calendar configured={center.HasCalendar}; active={center.IsActive}. This preview reflects current assumptions, not OEE or guaranteed actual utilization."));
+    }
 }

@@ -37,6 +37,18 @@ public static class ProductionOrderEndpoints {
                 cancellationToken)).ToHttpResult())
             .WithRequestValidation<ProductionOrderQueryRequest>();
 
+        group.MapGet(ApiRoutes.ProductionOrders.SchedulePreview, async (
+            [AsParameters] SchedulePreviewRequest request,
+            ISender sender,
+            CancellationToken cancellationToken) => (await sender.Send(
+                new SchedulePreviewQuery(
+                    request.HorizonDays,
+                    request.Priority,
+                    request.OrderId,
+                    request.WorkCenterId),
+                cancellationToken)).ToHttpResult())
+            .WithRequestValidation<SchedulePreviewRequest>();
+
         group.MapPost(ApiRoutes.ProductionOrders.Root, async (
             [FromBody] ProductionOrderRequest request,
             ISender sender,

@@ -6,6 +6,10 @@ namespace FactoryMind.Application.Features.ProductionOrders;
 public sealed class PlanningSettings {
     public const string SectionName = "Planning";
     public int DueSoonDays { get; set; } = 3;
+    public int DefaultScheduleHorizonDays { get; set; } = 14;
+    public int MaximumScheduleHorizonDays { get; set; } = 90;
+    public int MaximumOrdersPerPreview { get; set; } = 500;
+    public int MaximumOperationsPerPreview { get; set; } = 5000;
 }
 
 public sealed record ProductionOrderDeliveryRisk(

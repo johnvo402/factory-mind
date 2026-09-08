@@ -86,10 +86,12 @@ export const API_ROUTES = {
     root: `${API_BASE}/work-centers`,
     byId: (workCenterId: string) => `${API_BASE}/work-centers/${workCenterId}`,
     deactivate: (workCenterId: string) => `${API_BASE}/work-centers/${workCenterId}/deactivate`,
+    calendar: (workCenterId: string) => `${API_BASE}/work-centers/${workCenterId}/calendar`,
   },
   productionOrders: {
     root: `${API_BASE}/production-orders`,
     planning: `${API_BASE}/production-orders/planning`,
+    schedulePreview: `${API_BASE}/production-orders/schedule-preview`,
     byId: (productionOrderId: string) => `${API_BASE}/production-orders/${productionOrderId}`,
     materialRequirements: (productionOrderId: string) =>
       `${API_BASE}/production-orders/${productionOrderId}/material-requirements`,

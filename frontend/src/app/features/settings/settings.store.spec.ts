@@ -20,7 +20,7 @@ describe('SettingsStore', () => {
 
   it('loads company, users, and safe AI metadata together', async () => {
     api.getCompany.and.returnValue(of({
-      success: true, message: 'OK', data: { id: 'company-1', name: 'Factory', createdAt: '2026-08-01' },
+      success: true, message: 'OK', data: { id: 'company-1', name: 'Factory', timeZoneId: 'UTC', createdAt: '2026-08-01' },
     }));
     api.getUsers.and.returnValue(of({
       success: true, message: 'OK', data: [{

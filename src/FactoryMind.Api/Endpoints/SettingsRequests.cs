@@ -4,7 +4,7 @@ using FluentValidation;
 
 namespace FactoryMind.Api.Endpoints;
 
-public sealed record UpdateCompanySettingsRequest(string Name);
+public sealed record UpdateCompanySettingsRequest(string Name, string TimeZoneId);
 
 public sealed class UpdateCompanySettingsRequestValidator : AbstractValidator<UpdateCompanySettingsRequest> {
     public UpdateCompanySettingsRequestValidator() {
@@ -12,6 +12,9 @@ public sealed class UpdateCompanySettingsRequestValidator : AbstractValidator<Up
             .NotEmpty().WithMessage("Company name is required.")
             .MaximumLength(SettingsConstraints.MaximumCompanyNameLength)
             .WithMessage($"Company name must not exceed {SettingsConstraints.MaximumCompanyNameLength} characters.");
+        RuleFor(request => request.TimeZoneId)
+            .NotEmpty().WithMessage("Planning timezone is required.")
+            .MaximumLength(SettingsConstraints.MaximumTimeZoneIdLength);
     }
 }
 

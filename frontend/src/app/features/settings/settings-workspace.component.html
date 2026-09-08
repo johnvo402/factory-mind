@@ -70,7 +70,12 @@
         <article class="card company-card">
           <div class="editor-heading"><span class="icon-box"><app-ui-icon name="factory" /></span><div><h2>Thông tin doanh nghiệp</h2><p>Tên hiển thị dùng xuyên suốt không gian làm việc.</p></div></div>
           <label>Tên doanh nghiệp<input [value]="companyName()" (input)="companyName.set($any($event.target).value)" maxlength="200"></label>
-          <div class="save-row"><span>{{ companyDirty() ? 'Có thay đổi chưa lưu' : 'Thông tin đã được lưu' }}</span><button type="button" class="primary" [disabled]="store.isLoading() || !companyName().trim() || !companyDirty()" (click)="saveCompany()">Lưu thay đổi</button></div>
+          <label>Múi giờ vận hành
+            <input [value]="companyTimeZoneId()" (input)="companyTimeZoneId.set($any($event.target).value)" maxlength="100" list="planning-timezones" aria-describedby="timezone-help">
+            <datalist id="planning-timezones"><option value="UTC"></option><option value="Asia/Ho_Chi_Minh"></option><option value="Asia/Bangkok"></option><option value="Asia/Singapore"></option></datalist>
+            <small id="timezone-help">Múi giờ IANA dùng để chuyển ca làm việc sang UTC. Không suy đoán từ trình duyệt.</small>
+          </label>
+          <div class="save-row"><span>{{ companyDirty() ? 'Có thay đổi chưa lưu' : 'Thông tin đã được lưu' }}</span><button type="button" class="primary" [disabled]="store.isLoading() || !companyName().trim() || !companyTimeZoneId().trim() || !companyDirty()" (click)="saveCompany()">Lưu thay đổi</button></div>
         </article>
       }
     }

@@ -22,8 +22,26 @@ public sealed class SettingsHandlerTests {
 
         Assert.True(result.IsSuccess);
         Assert.Equal("Factory North", company.Name);
+        Assert.Equal("UTC", company.TimeZoneId);
         Assert.Equal(currentUser.CompanyId, repository.RequestedCompanyId);
         Assert.Equal(1, repository.SaveChangesCount);
+    }
+
+    [Fact]
+    public async Task Company_update_rejects_invalid_planning_timezone_without_mutation() {
+        var currentUser = new FakeCurrentUser();
+        var company = new Company { Id = currentUser.CompanyId, Name = "Old", TimeZoneId = "UTC" };
+        var repository = new FakeSettingsRepository { Company = company };
+        var handler = new UpdateCompanySettingsCommandHandler(repository, currentUser);
+
+        var result = await handler.Handle(
+            new UpdateCompanySettingsCommand("New", "Mars/Olympus"),
+            CancellationToken.None);
+
+        Assert.Equal("planning.timezone_invalid", result.Error?.Code);
+        Assert.Equal("Old", company.Name);
+        Assert.Equal("UTC", company.TimeZoneId);
+        Assert.Equal(0, repository.SaveChangesCount);
     }
 
     [Fact]

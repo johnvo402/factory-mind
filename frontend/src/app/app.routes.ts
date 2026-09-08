@@ -21,6 +21,12 @@ export const routes: Routes = [
       .then((module) => module.DataWorkspaceComponent),
   },
   {
+    path: 'planning',
+    canActivate: [managerGuard],
+    loadComponent: () => import('./features/planning/planning-workspace.component')
+      .then((module) => module.PlanningWorkspaceComponent),
+  },
+  {
     path: 'settings',
     canActivate: [adminGuard],
     loadComponent: () => import('./features/settings/settings-workspace.component')

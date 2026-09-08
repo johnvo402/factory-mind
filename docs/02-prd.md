@@ -483,4 +483,16 @@ Delivery status là fact xác định: `no_due_date`, `on_track`, `due_soon`, `o
 `completed_on_time`, `completed_late`, hoặc `cancelled`. Due Soon mặc định là ba ngày lịch. Không có
 scheduling, capacity promise, dự báo delay, tự đổi priority hay AI mutation mới.
 
+## FR-012B — Work Center capacity và deterministic scheduling preview
+
+Admin quản lý múi giờ IANA của Company. Manager thay thế atomically lịch Work Center gồm capacity
+1–100, nhiều ca không chồng lấn trong tuần và ngày nghỉ toàn ngày. Manager mở `/planning`, chọn
+horizon 7/14/30 ngày và yêu cầu tính lại preview; kết quả gồm projected completion/delivery, planned
+capacity load, Gantt lane đọc-only và typed unscheduled reasons.
+
+Planned PO dùng active Routing provisionally. Released/InProgress dùng đúng operation snapshot đã
+khóa. Preview không persist và không thay đổi PO, priority, Machine, inventory hay execution flow.
+Không có calendar thì không có giả định 24/7. AI chỉ được đọc evidence preview và phải tránh ngôn ngữ
+guarantee.
+
 ---

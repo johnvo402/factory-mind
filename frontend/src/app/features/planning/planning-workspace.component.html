@@ -1,0 +1,46 @@
+<section class="planning-shell">
+  <header class="page-header">
+    <div><span class="eyebrow">KẾ HOẠCH SẢN XUẤT</span><h1>Lịch & năng lực dự kiến</h1><p>Preview deterministic từ Routing, snapshot công đoạn và lịch Work Center hiện tại. Kết quả không phải cam kết hoàn thành.</p></div>
+    <div class="header-actions"><div class="horizon" role="group" aria-label="Khung kế hoạch">@for (days of [7, 14, 30]; track days) { <button type="button" [class.active]="horizonDays() === days" [attr.aria-pressed]="horizonDays() === days" (click)="changeHorizon(days)">{{ days }} ngày</button> }</div><button type="button" class="primary" [disabled]="loading()" (click)="load()"><app-ui-icon name="refresh-cw" [size]="17" /> {{ loading() ? 'Đang tính...' : 'Tính lại kế hoạch' }}</button></div>
+  </header>
+
+  @if (error()) { <p class="notice error" role="alert">{{ error() }}</p> }
+  @if (loading() && !preview()) { <p class="notice" role="status">Đang tính schedule preview...</p> }
+  @if (preview(); as data) {
+    <div class="freshness"><span><app-ui-icon name="clock-3" [size]="15" /> Generated: <strong>{{ formatDate(data.generatedAt) }}</strong></span><span>Múi giờ: <strong>{{ data.timeZoneId }}</strong></span><span>Horizon kết thúc: <strong>{{ formatDate(data.horizonEnd) }}</strong></span></div>
+
+    <section class="summary-grid" aria-label="Tóm tắt schedule preview">
+      <article><span>Lệnh đang lập lịch</span><strong>{{ data.summary.ordersConsidered }}</strong><small>{{ data.summary.ordersScheduled }} có dự kiến hoàn thành</small></article>
+      <article class="good"><span>Dự kiến đúng hạn</span><strong>{{ data.summary.projectedOnTime }}</strong><small>Theo preview hiện tại</small></article>
+      <article class="late"><span>Dự kiến trễ</span><strong>{{ data.summary.projectedLate }}</strong><small>Không phải trạng thái hạn hiện tại</small></article>
+      <article class="warn"><span>Chưa thể lập lịch</span><strong>{{ data.summary.unscheduled }}</strong><small>Có lý do cụ thể bên dưới</small></article>
+      <article><span>Work Center thiếu năng lực</span><strong>{{ data.summary.capacityConstrainedWorkCenters }}</strong><small>Trong horizon {{ horizonDays() }} ngày</small></article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="eyebrow">WORK CENTER CAPACITY</span><h2>Tải năng lực theo preview</h2></div><p>Planned capacity load, không phải OEE hoặc actual utilization.</p></div>
+      <div class="table-wrap"><table><thead><tr><th>Work Center</th><th>Capacity</th><th>Available</th><th>Scheduled</th><th>Demand chưa xếp</th><th>Load</th><th>Trạng thái</th></tr></thead><tbody>@for (center of data.workCenters; track center.id) { <tr><td><strong>{{ center.code }}</strong><small>{{ center.name }}</small></td><td>{{ center.parallelCapacity }} lane</td><td>{{ center.availableCapacityMinutes.toLocaleString('vi-VN') }} phút</td><td>{{ center.scheduledMinutes.toLocaleString('vi-VN') }} phút</td><td>{{ center.unscheduledDemandMinutes.toLocaleString('vi-VN') }} phút</td><td><strong>{{ center.plannedLoadPercent === null ? '—' : center.plannedLoadPercent + '%' }}</strong></td><td><span class="status" [class.danger]="center.hasCapacityConstraint || !center.isActive" [class.warning]="!center.hasCalendar">{{ capacityStatus(center) }}</span></td></tr> }</tbody></table></div>
+    </section>
+
+    <section class="panel gantt-panel">
+      <div class="panel-heading"><div><span class="eyebrow">GANTT ĐỌC-ONLY</span><h2>Lịch dự kiến theo lane</h2></div><div class="legend"><span><i></i> Đã khóa Routing</span><span><i class="provisional"></i> Dự kiến · chưa khóa</span><span><b>!</b> Dự kiến trễ</span></div></div>
+      <p class="gantt-help">Dùng Tab để chọn công đoạn và xem chi tiết. Gantt không hỗ trợ kéo, đổi lane hay lưu lịch.</p>
+      <div class="gantt-scroll" tabindex="0" aria-label="Gantt schedule preview; dùng bảng lệnh phía dưới để đọc dữ liệu chính xác">
+        <div class="gantt" [style.--day-count]="horizonDays()">
+          <div class="gantt-corner">Work Center / Lane</div><div class="day-header">@for (day of days(); track day.toISOString()) { <span>{{ formatDate(day, false) }}</span> }</div>
+          @for (center of data.workCenters; track center.id) { @for (lane of laneNumbers(center); track lane) {
+            <div class="lane-label"><strong>{{ center.code }}</strong><span>Lane {{ lane }}</span></div><div class="lane-track">@for (item of operationsFor(center.id, lane); track item.operation.id) { <button type="button" class="operation-bar" [class.provisional]="item.operation.isProvisional" [class.late]="item.order.projectedDeliveryStatus === 'projected_late'" [class.running]="item.operation.isInProgress" [ngStyle]="barStyle(item.operation)" (click)="selectedOperation.set(item.operation)" [attr.aria-label]="item.order.number + ', ' + item.operation.name + ', lane ' + lane + ', từ ' + formatDate(item.operation.scheduledStart) + ' đến ' + formatDate(item.operation.scheduledEnd)" [title]="item.order.number + ' · ' + item.operation.name"><span>{{ item.order.number }} · {{ item.operation.name }}</span>@if (item.operation.isProvisional) { <em>Dự kiến</em> }@if (item.order.projectedDeliveryStatus === 'projected_late') { <b aria-hidden="true">!</b> }</button> }</div>
+          } }
+        </div>
+      </div>
+      @if (selectedOperation(); as operation) { <article class="operation-detail" aria-live="polite"><div><span class="eyebrow">CHI TIẾT CÔNG ĐOẠN</span><h3>{{ selectedOrder()?.number }} · {{ operation.name }}</h3></div><dl><div><dt>Sản phẩm</dt><dd>{{ selectedOrder()?.productCode }} · {{ selectedOrder()?.productName }}</dd></div><div><dt>Work Center / lane</dt><dd>{{ operation.workCenterCode }} · Lane {{ operation.lane }}</dd></div><div><dt>Standard duration</dt><dd>{{ operation.standardDurationMinutes }} phút</dd></div><div><dt>Dự kiến bắt đầu</dt><dd>{{ formatDate(operation.scheduledStart) }}</dd></div><div><dt>Dự kiến kết thúc</dt><dd>{{ formatDate(operation.scheduledEnd) }}</dd></div><div><dt>Nguồn lập kế hoạch</dt><dd>{{ operation.isProvisional ? 'Active Routing · Dự kiến, chưa khóa' : 'Snapshot Routing đã khóa' }}</dd></div></dl><button type="button" class="ghost" (click)="selectedOperation.set(null)">Đóng chi tiết</button></article> }
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="eyebrow">PROJECTED COMPLETION</span><h2>Dự kiến hoàn thành theo lệnh</h2></div><p>Phân biệt hạn hiện tại của Step 12A với kết quả lịch dự kiến.</p></div>
+      <div class="table-wrap"><table><thead><tr><th>PO / Sản phẩm</th><th>Ưu tiên</th><th>Hạn hiện tại</th><th>Due Date</th><th>Dự kiến hoàn thành</th><th>Theo lịch dự kiến</th><th>Nguồn</th></tr></thead><tbody>@for (order of data.orders; track order.id) { <tr [class.projected-late-row]="order.projectedDeliveryStatus === 'projected_late'"><td><strong>{{ order.number }}</strong><small>{{ order.productCode }} · {{ order.productName }}</small></td><td>{{ order.priority }}</td><td>{{ deliveryLabel(order.deliveryStatus) }}</td><td>{{ formatDate(order.dueDate) }}</td><td>{{ formatDate(order.projectedCompletion) }}</td><td><span class="status" [class.danger]="order.projectedDeliveryStatus === 'projected_late'">{{ projectedLabel(order.projectedDeliveryStatus) }}</span></td><td>{{ order.isProvisional ? 'Dự kiến · chưa khóa Routing' : 'Đã khóa Routing' }}</td></tr> }</tbody></table></div>
+    </section>
+
+    @if (data.unscheduled.length > 0) { <section class="panel warnings"><div class="panel-heading"><div><span class="eyebrow">UNSCHEDULED / WARNINGS</span><h2>Chưa thể lập lịch</h2></div><span>{{ data.unscheduled.length }} vấn đề</span></div><div class="warning-grid">@for (item of data.unscheduled; track item.orderId + '-' + item.operationId + '-' + item.reason) { <article><span class="warning-icon"><app-ui-icon name="triangle-alert" [size]="18" /></span><div><strong>{{ item.orderNumber }}{{ item.operationName ? ' · ' + item.operationName : '' }}</strong><p>{{ reasonLabel(item) }}</p>@if (item.demandMinutes > 0) { <small>Demand: {{ item.demandMinutes }} phút</small> }</div></article> }</div></section> }
+  }
+</section>

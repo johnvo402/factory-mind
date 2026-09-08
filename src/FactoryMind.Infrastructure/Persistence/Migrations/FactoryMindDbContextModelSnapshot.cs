@@ -356,6 +356,13 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValue("UTC");
+
                     b.HasKey("Id");
 
                     b.ToTable("companies", (string)null);
@@ -1311,6 +1318,11 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int>("ParallelCapacity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1321,7 +1333,82 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CompanyId", "Name");
 
-                    b.ToTable("work_centers", (string)null);
+                    b.ToTable("work_centers", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_work_centers_ParallelCapacity_range", "\"ParallelCapacity\" >= 1 AND \"ParallelCapacity\" <= 100");
+                        });
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.WorkCenterDayOff", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorkCenterId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkCenterId");
+
+                    b.HasIndex("CompanyId", "WorkCenterId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("work_center_days_off", (string)null);
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.WorkCenterShift", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorkCenterId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkCenterId");
+
+                    b.HasIndex("CompanyId", "WorkCenterId", "DayOfWeek");
+
+                    b.ToTable("work_center_shifts", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_work_center_shifts_DayOfWeek_range", "\"DayOfWeek\" >= 0 AND \"DayOfWeek\" <= 6");
+
+                            t.HasCheckConstraint("CK_work_center_shifts_Time_order", "\"StartTime\" < \"EndTime\"");
+                        });
                 });
 
             modelBuilder.Entity("FactoryMind.Infrastructure.Persistence.Knowledge.DocumentEmbeddingRecord", b =>
@@ -1845,6 +1932,44 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.WorkCenterDayOff", b =>
+                {
+                    b.HasOne("FactoryMind.Domain.Identity.Company", "Company")
+                        .WithMany("WorkCenterDaysOff")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.WorkCenter", "WorkCenter")
+                        .WithMany("DaysOff")
+                        .HasForeignKey("WorkCenterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("WorkCenter");
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.WorkCenterShift", b =>
+                {
+                    b.HasOne("FactoryMind.Domain.Identity.Company", "Company")
+                        .WithMany("WorkCenterShifts")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FactoryMind.Domain.Manufacturing.WorkCenter", "WorkCenter")
+                        .WithMany("Shifts")
+                        .HasForeignKey("WorkCenterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("WorkCenter");
+                });
+
             modelBuilder.Entity("FactoryMind.Infrastructure.Persistence.Knowledge.DocumentEmbeddingRecord", b =>
                 {
                     b.HasOne("FactoryMind.Domain.Knowledge.DocumentChunk", null)
@@ -1903,6 +2028,10 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Warehouses");
 
+                    b.Navigation("WorkCenterDaysOff");
+
+                    b.Navigation("WorkCenterShifts");
+
                     b.Navigation("WorkCenters");
                 });
 
@@ -1937,6 +2066,13 @@ namespace FactoryMind.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("FactoryMind.Domain.Manufacturing.Routing", b =>
                 {
                     b.Navigation("Operations");
+                });
+
+            modelBuilder.Entity("FactoryMind.Domain.Manufacturing.WorkCenter", b =>
+                {
+                    b.Navigation("DaysOff");
+
+                    b.Navigation("Shifts");
                 });
 #pragma warning restore 612, 618
         }

@@ -15,9 +15,12 @@ export class SettingsWorkspaceComponent implements OnInit {
   protected readonly store = inject(SettingsStore);
   protected readonly activeTab = signal<SettingsTab>('company');
   protected readonly companyName = signal('');
+  protected readonly companyTimeZoneId = signal('UTC');
   private readonly savedCompanyName = signal('');
+  private readonly savedCompanyTimeZoneId = signal('UTC');
   protected readonly companyDirty = computed(
-    () => this.companyName().trim() !== this.savedCompanyName(),
+    () => this.companyName().trim() !== this.savedCompanyName()
+      || this.companyTimeZoneId().trim() !== this.savedCompanyTimeZoneId(),
   );
   protected readonly selectedUserId = signal<string | null>(null);
   protected readonly userName = signal('');
@@ -30,6 +33,8 @@ export class SettingsWorkspaceComponent implements OnInit {
     await this.store.load();
     this.companyName.set(this.store.company()?.name ?? '');
     this.savedCompanyName.set(this.store.company()?.name ?? '');
+    this.companyTimeZoneId.set(this.store.company()?.timeZoneId ?? 'UTC');
+    this.savedCompanyTimeZoneId.set(this.store.company()?.timeZoneId ?? 'UTC');
   }
 
   protected setTab(tab: SettingsTab): void {
@@ -38,9 +43,10 @@ export class SettingsWorkspaceComponent implements OnInit {
 
   protected async saveCompany(): Promise<void> {
     if (this.companyName().trim()) {
-      const saved = await this.store.updateCompany(this.companyName());
+      const saved = await this.store.updateCompany(this.companyName(), this.companyTimeZoneId());
       if (saved) {
         this.savedCompanyName.set(this.companyName().trim());
+        this.savedCompanyTimeZoneId.set(this.companyTimeZoneId().trim());
       }
     }
   }

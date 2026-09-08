@@ -1,0 +1,209 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using FactoryMind.Api.Endpoints;
+using FactoryMind.Api.Routing;
+using FactoryMind.Application.Features.ProductionOrders;
+using FactoryMind.Application.Features.Chat;
+using FactoryMind.Application.Features.WorkCenters;
+using FactoryMind.Domain.Manufacturing;
+using FactoryMind.Infrastructure.Persistence;
+using FactoryMind.IntegrationTests.Infrastructure;
+using FactoryMind.Shared.Contracts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace FactoryMind.IntegrationTests.Manufacturing;
+
+[Collection(IntegrationTestCollection.Name)]
+public sealed class CapacityPlanningIntegrationTests(PostgreSqlFixture fixture)
+    : IntegrationTestBase(fixture) {
+    [Fact]
+    public async Task Calendar_replace_validates_atomically_and_is_tenant_isolated() {
+        var clientA = CreateClient();
+        var clientB = CreateClient();
+        await LoginAsync(clientA, TestData.CompanyAAdminEmail);
+        await LoginAsync(clientB, TestData.CompanyBAdminEmail);
+        var center = await CreateCenterAsync(clientA, $"WC-CAL-{Guid.NewGuid():N}"[..18]);
+        var route = CalendarRoute(center.Id);
+        var valid = new ReplaceWorkCenterCalendarRequest(2, [
+            new WorkCenterShiftRequest(2, new TimeOnly(8, 0), new TimeOnly(12, 0)),
+            new WorkCenterShiftRequest(2, new TimeOnly(13, 0), new TimeOnly(17, 0))
+        ], [new WorkCenterDayOffRequest(new DateOnly(2026, 9, 15))]);
+
+        using (var savedResponse = await clientA.PutAsJsonAsync(route, valid)) {
+            savedResponse.EnsureSuccessStatusCode();
+            var saved = (await savedResponse.Content.ReadFromJsonAsync<ApiResponse<WorkCenterCalendarResponse>>())!.Data!;
+            Assert.Equal(2, saved.ParallelCapacity);
+            Assert.Equal(2, saved.Shifts.Count);
+            Assert.Single(saved.DaysOff);
+        }
+        using (var foreign = await clientB.GetAsync(route)) {
+            Assert.Equal(HttpStatusCode.NotFound, foreign.StatusCode);
+        }
+        using (var overlap = await clientA.PutAsJsonAsync(route,
+                   new ReplaceWorkCenterCalendarRequest(3, [
+                       new WorkCenterShiftRequest(2, new TimeOnly(8, 0), new TimeOnly(12, 0)),
+                       new WorkCenterShiftRequest(2, new TimeOnly(11, 0), new TimeOnly(14, 0))
+                   ], []))) {
+            Assert.Equal(HttpStatusCode.BadRequest, overlap.StatusCode);
+        }
+
+        var unchanged = (await clientA.GetFromJsonAsync<ApiResponse<WorkCenterCalendarResponse>>(route))!.Data!;
+        Assert.Equal(2, unchanged.ParallelCapacity);
+        Assert.Equal(2, unchanged.Shifts.Count);
+    }
+
+    [Fact]
+    public async Task Planned_uses_active_routing_provisionally_and_released_uses_locked_snapshot() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var center = await SeedPlanningDataAsync(suffix);
+        await PutCalendarAsync(Client, center.Id, 2);
+
+        var response = await Client.GetFromJsonAsync<ApiResponse<SchedulePreviewResponse>>(
+            ApiRoutes.ProductionOrders.Group + ApiRoutes.ProductionOrders.SchedulePreview + "?horizonDays=14");
+        var preview = response!.Data!;
+        var planned = preview.Orders.Single(order => order.Number == $"PO-PLAN-{suffix}");
+        var released = preview.Orders.Single(order => order.Number == $"PO-LOCK-{suffix}");
+
+        Assert.True(planned.IsProvisional);
+        Assert.Equal(PlanningSources.ActiveRouting, planned.PlanningSource);
+        Assert.Equal(90, planned.Operations.Single().StandardDurationMinutes);
+        Assert.False(released.IsProvisional);
+        Assert.Equal(PlanningSources.LockedSnapshot, released.PlanningSource);
+        Assert.Equal(30, released.Operations.Single().StandardDurationMinutes);
+        Assert.All(preview.Orders, order => Assert.DoesNotContain("TENANT-B", order.Number));
+
+        using var scope = ApiFactory.Services.CreateScope();
+        var tools = scope.ServiceProvider.GetRequiredService<IManufacturingToolRegistry>();
+        var scheduleEvidence = await tools.ExecuteAsync(TestData.CompanyAId,
+            Call("get_production_order_schedule_preview", $$"""{"number":"PO-PLAN-{{suffix}}","horizonDays":14}"""),
+            CancellationToken.None);
+        var capacityEvidence = await tools.ExecuteAsync(TestData.CompanyAId,
+            Call("get_work_center_capacity_preview", $$"""{"code":"WC-{{suffix}}","horizonDays":14}"""),
+            CancellationToken.None);
+        Assert.Contains("not a guarantee", Assert.Single(scheduleEvidence.Records).Detail);
+        Assert.Contains("planned capacity load", Assert.Single(capacityEvidence.Records).Detail);
+    }
+
+    [Fact]
+    public async Task Invalid_timezone_is_controlled_and_migration_has_planning_schema() {
+        await LoginAsync(Client, TestData.CompanyAAdminEmail);
+        using var invalid = await Client.PutAsJsonAsync(
+            ApiRoutes.Settings.Group + ApiRoutes.Settings.Company,
+            new UpdateCompanySettingsRequest("FactoryMind Company A", "Mars/Olympus"));
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+
+        using var scope = ApiFactory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        var columns = await db.Database.SqlQueryRaw<string>("""
+            SELECT "column_name" AS "Value" FROM information_schema.columns
+            WHERE (table_name = 'companies' AND column_name = 'TimeZoneId')
+               OR (table_name = 'work_centers' AND column_name = 'ParallelCapacity')
+            ORDER BY "column_name"
+            """).ToListAsync();
+        Assert.Equal(["ParallelCapacity", "TimeZoneId"], columns);
+        Assert.True(await db.Database.SqlQueryRaw<int>("""
+            SELECT COUNT(*) AS "Value" FROM information_schema.tables
+            WHERE table_name IN ('work_center_shifts', 'work_center_days_off')
+            """).SingleAsync() == 2);
+    }
+
+    private async Task<WorkCenter> SeedPlanningDataAsync(string suffix) {
+        using var scope = ApiFactory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
+        var center = new WorkCenter {
+            CompanyId = TestData.CompanyAId,
+            Code = $"WC-{suffix}",
+            Name = "Planning Center",
+            ParallelCapacity = 1
+        };
+        var product = new Product { CompanyId = TestData.CompanyAId, Code = $"P-{suffix}", Name = "Planning Product" };
+        var active = new Routing {
+            CompanyId = TestData.CompanyAId,
+            Product = product,
+            Revision = 2,
+            Status = RoutingStatuses.Active
+        };
+        active.Operations.Add(new RoutingOperation {
+            Sequence = 10,
+            Name = "Active operation",
+            WorkCenter = center,
+            SetupTimeMinutes = 30,
+            RunTimeMinutes = 60
+        });
+        var lockedRouting = new Routing {
+            CompanyId = TestData.CompanyAId,
+            Product = product,
+            Revision = 1,
+            Status = RoutingStatuses.Archived
+        };
+        lockedRouting.Operations.Add(new RoutingOperation {
+            Sequence = 10,
+            Name = "Old locked operation",
+            WorkCenter = center,
+            SetupTimeMinutes = 10,
+            RunTimeMinutes = 20
+        });
+        var planned = new ProductionOrder {
+            CompanyId = TestData.CompanyAId,
+            Product = product,
+            Number = $"PO-PLAN-{suffix}",
+            Quantity = 1,
+            Status = ProductionOrderStatuses.Planned,
+            Priority = ProductionOrderPriorities.Normal
+        };
+        var released = new ProductionOrder {
+            CompanyId = TestData.CompanyAId,
+            Product = product,
+            Routing = lockedRouting,
+            Number = $"PO-LOCK-{suffix}",
+            Quantity = 1,
+            Status = ProductionOrderStatuses.Released,
+            Priority = ProductionOrderPriorities.High,
+            ReleasedAt = new DateTime(2026, 9, 8, 11, 0, 0, DateTimeKind.Utc)
+        };
+        released.Operations.Add(new ProductionOrderOperation {
+            CompanyId = TestData.CompanyAId,
+            Sequence = 10,
+            Name = "Old locked operation",
+            WorkCenter = center,
+            WorkCenterCode = center.Code,
+            WorkCenterName = center.Name,
+            SetupTimeMinutes = 10,
+            RunTimeMinutes = 20,
+            RoutingOperation = lockedRouting.Operations.Single()
+        });
+        db.AddRange(center, product, active, lockedRouting, planned, released);
+        await db.SaveChangesAsync();
+        return center;
+    }
+
+    private static async Task<WorkCenterResponse> CreateCenterAsync(HttpClient client, string code) {
+        using var response = await client.PostAsJsonAsync(ApiRoutes.WorkCenters.Group,
+            new WorkCenterCreateRequest(code, code, null));
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ApiResponse<WorkCenterResponse>>())!.Data!;
+    }
+
+    private static async Task PutCalendarAsync(HttpClient client, Guid centerId, int capacity) {
+        using var response = await client.PutAsJsonAsync(CalendarRoute(centerId),
+            new ReplaceWorkCenterCalendarRequest(capacity, [
+                new WorkCenterShiftRequest(2, new TimeOnly(8, 0), new TimeOnly(17, 0)),
+                new WorkCenterShiftRequest(3, new TimeOnly(8, 0), new TimeOnly(17, 0)),
+                new WorkCenterShiftRequest(4, new TimeOnly(8, 0), new TimeOnly(17, 0)),
+                new WorkCenterShiftRequest(5, new TimeOnly(8, 0), new TimeOnly(17, 0)),
+                new WorkCenterShiftRequest(1, new TimeOnly(8, 0), new TimeOnly(17, 0))
+            ], []));
+        response.EnsureSuccessStatusCode();
+    }
+
+    private static string CalendarRoute(Guid centerId) => ApiRoutes.WorkCenters.Group
+        + ApiRoutes.WorkCenters.Calendar.Replace("{workCenterId:guid}", centerId.ToString(), StringComparison.Ordinal);
+
+    private static AiToolCall Call(string name, string json) {
+        using var document = JsonDocument.Parse(json);
+        return new AiToolCall(name, document.RootElement.Clone());
+    }
+}

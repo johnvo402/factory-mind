@@ -38,6 +38,8 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
     public DbSet<BillOfMaterial> BillOfMaterials => Set<BillOfMaterial>();
     public DbSet<BomItem> BomItems => Set<BomItem>();
     public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
+    public DbSet<WorkCenterShift> WorkCenterShifts => Set<WorkCenterShift>();
+    public DbSet<WorkCenterDayOff> WorkCenterDaysOff => Set<WorkCenterDayOff>();
     public DbSet<Routing> Routings => Set<Routing>();
     public DbSet<RoutingOperation> RoutingOperations => Set<RoutingOperation>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
@@ -53,6 +55,7 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
         modelBuilder.Entity<Company>(entity => {
             entity.ToTable("companies");
             entity.Property(company => company.Name).HasMaxLength(200).IsRequired();
+            entity.Property(company => company.TimeZoneId).HasMaxLength(100).HasDefaultValue("UTC").IsRequired();
         });
 
         modelBuilder.Entity<User>(entity => {
@@ -296,7 +299,8 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
         });
 
         modelBuilder.Entity<WorkCenter>(entity => {
-            entity.ToTable("work_centers");
+            entity.ToTable("work_centers", table => table.HasCheckConstraint(
+                "CK_work_centers_ParallelCapacity_range", "\"ParallelCapacity\" >= 1 AND \"ParallelCapacity\" <= 100"));
             entity.HasIndex(workCenter => new { workCenter.CompanyId, workCenter.Code }).IsUnique();
             entity.HasIndex(workCenter => new { workCenter.CompanyId, workCenter.Name });
             entity.Property(workCenter => workCenter.Code)
@@ -307,9 +311,31 @@ public sealed class FactoryMindDbContext(DbContextOptions<FactoryMindDbContext> 
                 .IsRequired();
             entity.Property(workCenter => workCenter.Description)
                 .HasMaxLength(WorkCenterConstraints.MaximumDescriptionLength);
+            entity.Property(workCenter => workCenter.ParallelCapacity).HasDefaultValue(1);
             entity.HasOne(workCenter => workCenter.Company)
                 .WithMany(company => company.WorkCenters)
                 .HasForeignKey(workCenter => workCenter.CompanyId);
+        });
+
+        modelBuilder.Entity<WorkCenterShift>(entity => {
+            entity.ToTable("work_center_shifts", table => {
+                table.HasCheckConstraint("CK_work_center_shifts_DayOfWeek_range", "\"DayOfWeek\" >= 0 AND \"DayOfWeek\" <= 6");
+                table.HasCheckConstraint("CK_work_center_shifts_Time_order", "\"StartTime\" < \"EndTime\"");
+            });
+            entity.HasIndex(shift => new { shift.CompanyId, shift.WorkCenterId, shift.DayOfWeek });
+            entity.HasOne(shift => shift.Company).WithMany(company => company.WorkCenterShifts)
+                .HasForeignKey(shift => shift.CompanyId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(shift => shift.WorkCenter).WithMany(workCenter => workCenter.Shifts)
+                .HasForeignKey(shift => shift.WorkCenterId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<WorkCenterDayOff>(entity => {
+            entity.ToTable("work_center_days_off");
+            entity.HasIndex(day => new { day.CompanyId, day.WorkCenterId, day.Date }).IsUnique();
+            entity.HasOne(day => day.Company).WithMany(company => company.WorkCenterDaysOff)
+                .HasForeignKey(day => day.CompanyId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(day => day.WorkCenter).WithMany(workCenter => workCenter.DaysOff)
+                .HasForeignKey(day => day.WorkCenterId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Routing>(entity => {

@@ -5,6 +5,22 @@ using FluentValidation;
 
 namespace FactoryMind.Api.Endpoints;
 
+public sealed record SchedulePreviewRequest(
+    int? HorizonDays,
+    string? Priority,
+    Guid? OrderId,
+    Guid? WorkCenterId);
+
+public sealed class SchedulePreviewRequestValidator : AbstractValidator<SchedulePreviewRequest> {
+    public SchedulePreviewRequestValidator() {
+        RuleFor(request => request.HorizonDays)
+            .InclusiveBetween(1, 180).When(request => request.HorizonDays.HasValue);
+        RuleFor(request => request.Priority)
+            .Must(priority => priority is null || ProductionOrderPriorities.All.Contains(priority))
+            .WithMessage("Priority is invalid.");
+    }
+}
+
 public sealed record ProductionOrderRequest(
     string Number,
     Guid ProductId,

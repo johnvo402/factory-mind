@@ -361,7 +361,10 @@ public sealed class EfBusinessContextRepository(
                 workCenter.Id,
                 workCenter.Code,
                 workCenter.Name,
-                workCenter.IsActive))
+                workCenter.IsActive,
+                workCenter.ParallelCapacity,
+                workCenter.Shifts.Count,
+                workCenter.DaysOff.Count))
             .ToListAsync(cancellationToken);
         var selected = Rank(question, candidates, item => item.Code, item => item.Name, limit);
         var workCenterIds = selected.Select(workCenter => workCenter.Id).ToList();
@@ -414,6 +417,7 @@ public sealed class EfBusinessContextRepository(
                 "work_center",
                 $"{workCenter.Code} - {workCenter.Name}",
                 $"Active: {workCenter.IsActive}. Machines: {assignedMachines.Count}"
+                + $". Parallel planning capacity: {workCenter.ParallelCapacity}. Weekly shifts: {workCenter.ShiftCount}. Days off configured: {workCenter.DayOffCount}"
                 + (summary.Length == 0 ? "." : $" ({summary}).")
                 + (currentText.Length == 0 ? " Current operations: none." : $" Current operations: {currentText}."));
         }).ToList();
@@ -630,7 +634,14 @@ public sealed class EfBusinessContextRepository(
         DateTime? StartedAt,
         DateTime? CompletedAt,
         DateTime UpdatedAt);
-    private sealed record WorkCenterProjection(Guid Id, string Code, string Name, bool IsActive);
+    private sealed record WorkCenterProjection(
+        Guid Id,
+        string Code,
+        string Name,
+        bool IsActive,
+        int ParallelCapacity,
+        int ShiftCount,
+        int DayOffCount);
     private sealed record WorkCenterMachineProjection(Guid Id, Guid WorkCenterId, string Code, string Status);
     private sealed record RoutingProjection(
         Guid Id,

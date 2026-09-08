@@ -1,6 +1,7 @@
 export interface CompanySettings {
   id: string;
   name: string;
+  timeZoneId: string;
   createdAt: string;
 }
 

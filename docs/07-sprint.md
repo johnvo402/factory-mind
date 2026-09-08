@@ -671,3 +671,15 @@ ProductInventory trực tiếp.
 * [x] Business RAG, 74-case AI Tool Eval, RAG Eval và PostgreSQL tenant/migration/dashboard tests.
 * [x] Scheduling, Gantt, capacity calendar, bottleneck prediction, ETA, rescheduling và auto-priority vẫn deferred sang 12B+.
 
+# Step 12B — Work Center capacity & deterministic scheduling preview
+
+* [x] Company IANA timezone, Work Center ParallelCapacity, weekly shifts và full-day exceptions.
+* [x] Atomic tenant-scoped calendar GET/PUT với validation và không giả định 24/7.
+* [x] Central UTC calendar expansion và deterministic abstract-lane scheduler dùng TimeProvider.
+* [x] Planned active Routing provisional; Released/InProgress locked operation snapshots.
+* [x] Working-time remaining cho in-progress, strict horizon và typed unscheduled reasons.
+* [x] Projected completion/delivery và planned Work Center capacity load, không gọi là OEE.
+* [x] Angular Planning workspace, 7/14/30 refresh, capacity/order tables, warnings và Gantt read-only.
+* [x] Hai AI read tools planning; không có schedule/capacity/Machine mutation hoặc guarantee.
+* [x] Unit, PostgreSQL integration, AI eval và Angular coverage cho boundary chính.
+

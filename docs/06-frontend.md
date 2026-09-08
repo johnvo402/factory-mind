@@ -516,4 +516,16 @@ Khối “Rủi ro giao hàng” cung cấp shortcut Quá hạn, Sắp đến h�
 đã sort/paginate phía server. Dashboard thêm năm KPI planning. Nội dung UI nói rõ đây là phân loại hạn
 giao, không phải ETA hay phân tích năng lực; layout table cuộn ngang trong card ở màn hình hẹp.
 
+## Step 12B planning UX
+
+Settings thêm label `Múi giờ vận hành` và không suy đoán timezone trình duyệt. Work Center action
+`Lịch & năng lực` mở dialog keyboard-accessible để sửa capacity, nhiều ca/ngày và ngày nghỉ; client
+báo overlap/duplicate trước khi backend revalidate.
+
+Route Manager `/planning` là lazy standalone workspace. Nó có horizon 7/14/30, explicit refresh và
+GeneratedAt/timezone; summary cards, bảng capacity, projected-completion table và warnings đều dùng
+server facts. Gantt HTML/CSS chỉ đọc, cuộn ngang, label sticky, bar focusable và panel detail. Màu luôn
+kèm text/marker cho provisional và projected-late; bảng PO là accessible exact-value fallback. Không
+có drag/drop, resize, future Machine assignment hoặc save schedule.
+
 ---

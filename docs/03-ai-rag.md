@@ -178,7 +178,7 @@ Sprint 5 routes chat questions to exactly one of `Business`, `Knowledge`, or `Hy
 
 Step 9 adds a bounded two-phase path for live manufacturing questions. Business intent and explicit
 manufacturing Hybrid intent may make one non-streaming native Gemini function-calling request. The
-planner can select zero to three calls from seven registered read-only tools; it never writes the final
+At the Step 9 milestone, the planner could select zero to three calls from seven registered read-only tools; it never writes the final
 answer. The server rejects unknown names, unexpected properties (including model-supplied tenant
 identity), malformed values, invalid enums and unbounded limits, then injects authenticated
 `CompanyId` into typed EF Core queries.
@@ -197,6 +197,12 @@ The approved tools are:
 * `get_material_inventory`
 * `get_production_order_material_readiness`
 * `list_production_orders`
+
+Step 12B extends that bounded registry to nine read-only tools with
+`get_production_order_schedule_preview` and `get_work_center_capacity_preview`. Both require an exact
+tenant-scoped identifier, default to a 14-day horizon, cap AI requests at 30 days, and report a
+deterministic planning preview rather than a guaranteed commitment, OEE measurement, or actual
+utilization. They cannot persist schedules, change priorities, assign Machines, or reserve inventory.
 
 There is no SQL/query tool and no mutation tool. Material readiness is a current, standalone stock
 comparison for one Planned/Released order, not a reservation or scheduling guarantee; it is explicitly

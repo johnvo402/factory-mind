@@ -82,6 +82,7 @@ Ngoài phạm vi hiện tại:
 | Work Centers & Routing | Quản lý nơi thực hiện, Routing theo revision và chuỗi công đoạn tuần tự cho từng Product | Manager/Admin |
 | Raw Material Inventory | Warehouse master data, `InventoryBalance`/`InventoryTransaction`, current material balances, filtered history và receive/issue/adjust/transfer | Manager/Admin |
 | Production Orders | UI manual đầy đủ: kiểm tra vật tư, Release, cấp phát nhiều kho, Start, thực thi công đoạn, Cancel và Complete vào kho thành phẩm | Manager/Admin |
+| Production Planning | Capacity/lịch Work Center, deterministic schedule preview, projected completion/delivery và Gantt đọc-only | Manager/Admin |
 | Finished Goods Inventory | Read-only `ProductInventoryBalance` và lịch sử `ProductInventoryTransaction` được tạo bởi Production Order Complete | Manager/Admin |
 | Excel Import | Tải template `.xlsx`, preview header/rows, gợi ý mapping, validate toàn file và import transaction | Manager/Admin |
 | Dashboard | Active orders, inventory balances, available/total machines và alerts | Mọi user đã đăng nhập |
@@ -797,6 +798,26 @@ GitHub Actions chạy trên mọi push và pull request vào `main`:
   - `ghcr.io/johnvo402/factory-mind-api:prod`
   - `ghcr.io/johnvo402/factory-mind-frontend:prod`
   - Cả hai image đồng thời có immutable full commit-SHA tag dùng cho deployment.
+
+## Work Center capacity và schedule preview
+
+Admin đặt múi giờ vận hành IANA ở Settings (mặc định `UTC`). Manager cấu hình `ParallelCapacity`,
+ca hàng tuần và ngày nghỉ toàn ngày tại **Work Centers → Lịch & năng lực**. Không có lịch nghĩa là
+`calendar_missing`; hệ thống không tự giả định 24/7. `ParallelCapacity` là số lane lập kế hoạch trừu
+tượng, không phải số Machine đang Available.
+
+`GET /api/production-orders/schedule-preview?horizonDays=14` tính lại một preview đọc-only, ổn định
+theo cùng input. Planned dùng active Routing và được đánh dấu provisional; Released/InProgress chỉ
+dùng snapshot công đoạn đã khóa. Duration là `SetupTimeMinutes + RunTimeMinutes`, không nhân Quantity;
+thời gian nghỉ giữa ca/ngày nghỉ không tiêu thụ duration. UI `/planning` có horizon 7/14/30 ngày,
+bảng planned capacity load, bảng projected completion, lý do chưa xếp và Gantt lane đọc-only.
+
+AI có thể đọc hai evidence mới qua `get_production_order_schedule_preview` và
+`get_work_center_capacity_preview`. Câu trả lời phải nói “schedule preview”, “dự kiến” và “theo giả
+định hiện tại”; không được cam kết ETA, đổi priority, reschedule, gán Machine hay sửa capacity.
+
+Ví dụ: “PO-2026-001 dự kiến hoàn thành khi nào?”, “WC-CNC có thiếu năng lực trong 14 ngày tới
+không?”, “PO nào dự kiến giao trễ theo schedule preview?”.
 
 ## Bảo mật
 

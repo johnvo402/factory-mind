@@ -40,9 +40,9 @@ export class SettingsStore {
     });
   }
 
-  async updateCompany(name: string): Promise<boolean> {
+  async updateCompany(name: string, timeZoneId: string): Promise<boolean> {
     return this.run(async () => {
-      const response = await firstValueFrom(this.api.updateCompany(name));
+      const response = await firstValueFrom(this.api.updateCompany(name, timeZoneId));
       this.companyState.set(response.data);
       this.messageState.set('Đã cập nhật công ty.');
     });

@@ -176,10 +176,11 @@ public sealed class AiReleaseActionIntegrationTests(PostgreSqlFixture fixture) :
         using var scope = ApiFactory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<FactoryMindDbContext>();
         var proposalId = await db.AiActionProposals.AsNoTracking().Select(proposal => proposal.Id).SingleAsync();
+        var expiredAt = new DateTime(2026, 9, 8, 11, 59, 0, DateTimeKind.Utc);
         await db.AiActionProposals.Where(proposal => proposal.Id == proposalId)
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(proposal => proposal.CreatedAt, DateTime.UtcNow.AddMinutes(-2))
-                .SetProperty(proposal => proposal.ExpiresAt, DateTime.UtcNow.AddMinutes(-1)));
+                .SetProperty(proposal => proposal.CreatedAt, expiredAt.AddMinutes(-1))
+                .SetProperty(proposal => proposal.ExpiresAt, expiredAt));
 
         using var response = await Client.PostAsync(ActionRoute(proposalId, ApiRoutes.AiActions.Confirm), null);
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);

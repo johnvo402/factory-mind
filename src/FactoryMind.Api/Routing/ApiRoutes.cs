@@ -113,12 +113,14 @@ public static class ApiRoutes {
         public const string Root = "";
         public const string ById = "/{workCenterId:guid}";
         public const string Deactivate = ById + "/deactivate";
+        public const string Calendar = ById + "/calendar";
     }
 
     public static class ProductionOrders {
         public const string Group = Base + "/production-orders";
         public const string Root = "";
         public const string Planning = "/planning";
+        public const string SchedulePreview = "/schedule-preview";
         public const string ById = "/{productionOrderId:guid}";
         public const string Release = ById + "/release";
         public const string Start = ById + "/start";

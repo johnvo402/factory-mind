@@ -22,6 +22,24 @@ public static class WorkCenterEndpoints {
             ISender sender,
             CancellationToken cancellationToken) => (await sender.Send(
                 new GetWorkCenterQuery(workCenterId), cancellationToken)).ToHttpResult());
+        group.MapGet(ApiRoutes.WorkCenters.Calendar, async (
+            Guid workCenterId,
+            ISender sender,
+            CancellationToken cancellationToken) => (await sender.Send(
+                new GetWorkCenterCalendarQuery(workCenterId), cancellationToken)).ToHttpResult());
+        group.MapPut(ApiRoutes.WorkCenters.Calendar, async (
+            Guid workCenterId,
+            [FromBody] ReplaceWorkCenterCalendarRequest request,
+            ISender sender,
+            CancellationToken cancellationToken) => (await sender.Send(
+                new ReplaceWorkCenterCalendarCommand(
+                    workCenterId,
+                    request.ParallelCapacity,
+                    request.Shifts.Select(shift => new WorkCenterShiftInput(
+                        shift.DayOfWeek, shift.StartTime, shift.EndTime)).ToList(),
+                    request.DaysOff.Select(day => new WorkCenterDayOffInput(day.Date)).ToList()),
+                cancellationToken)).ToHttpResult())
+            .WithRequestValidation<ReplaceWorkCenterCalendarRequest>();
         group.MapPost(ApiRoutes.WorkCenters.Root, async (
             [FromBody] WorkCenterCreateRequest request,
             ISender sender,

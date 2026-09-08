@@ -34,7 +34,8 @@ public sealed class IntentRouter : IIntentRouter {
                 "uu tien", "priority", "completed late", "hoan thanh tre", "eta", "finish tomorrow"
             ],
             [BusinessDataScope.WorkCenters] = [
-                "work center", "workcenter", "trung tam gia cong", "station", "line"
+                "work center", "workcenter", "trung tam gia cong", "station", "line",
+                "nang luc", "capacity", "planned load", "qua tai"
             ],
             [BusinessDataScope.Routings] = [
                 "routing", "route", "quy trinh san xuat", "lo trinh"

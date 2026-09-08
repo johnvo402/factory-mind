@@ -50,6 +50,10 @@ services:
       Observability__Otlp__Enabled: ${OTLP_ENABLED:-false}
       Observability__Otlp__Endpoint: ${OTLP_ENDPOINT:-}
       Planning__DueSoonDays: ${PLANNING_DUE_SOON_DAYS:-3}
+      Planning__DefaultScheduleHorizonDays: ${PLANNING_DEFAULT_SCHEDULE_HORIZON_DAYS:-14}
+      Planning__MaximumScheduleHorizonDays: ${PLANNING_MAXIMUM_SCHEDULE_HORIZON_DAYS:-90}
+      Planning__MaximumOrdersPerPreview: ${PLANNING_MAXIMUM_ORDERS_PER_PREVIEW:-500}
+      Planning__MaximumOperationsPerPreview: ${PLANNING_MAXIMUM_OPERATIONS_PER_PREVIEW:-5000}
       BootstrapAdmin__CompanyName: ${BOOTSTRAP_COMPANY_NAME:-}
       BootstrapAdmin__Name: ${BOOTSTRAP_ADMIN_NAME:-}
       BootstrapAdmin__Email: ${BOOTSTRAP_ADMIN_EMAIL:-}

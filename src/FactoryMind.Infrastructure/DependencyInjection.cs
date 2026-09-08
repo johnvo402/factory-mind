@@ -82,12 +82,14 @@ public static class DependencyInjection {
         services.AddScoped<IInventoryRepository, EfInventoryRepository>();
         services.AddScoped<IWarehouseRepository, EfWarehouseRepository>();
         services.AddScoped<IWorkCenterRepository, EfWorkCenterRepository>();
+        services.AddScoped<IWorkCenterCalendarRepository, EfWorkCenterCalendarRepository>();
         services.AddScoped<IRoutingRepository, EfRoutingRepository>();
         services.AddScoped<IMachineRepository, EfMachineRepository>();
         services.AddScoped<IMaterialRepository, EfMaterialRepository>();
         services.AddScoped<IProductRepository, EfProductRepository>();
         services.AddScoped<IProductInventoryRepository, EfProductInventoryRepository>();
         services.AddScoped<IProductionOrderRepository, EfProductionOrderRepository>();
+        services.AddScoped<ISchedulePreviewRepository, EfSchedulePreviewRepository>();
         services.AddScoped<IProductionExecutionRepository, EfProductionExecutionRepository>();
         services.AddScoped<ISettingsRepository, EfSettingsRepository>();
         services.AddScoped<GetProductionOrderStatusTool>();
@@ -97,6 +99,8 @@ public static class DependencyInjection {
         services.AddScoped<GetMaterialInventoryTool>();
         services.AddScoped<GetProductionOrderMaterialReadinessTool>();
         services.AddScoped<ListProductionOrdersTool>();
+        services.AddScoped<GetProductionOrderSchedulePreviewTool>();
+        services.AddScoped<GetWorkCenterCapacityPreviewTool>();
         services.AddScoped<IManufacturingToolRegistry, ManufacturingToolRegistry>();
         services.AddSingleton<IAiSettingsReader, GeminiSettingsReader>();
         services.AddScoped<DocumentProcessingJob>();
@@ -131,6 +135,13 @@ public static class DependencyInjection {
             .Bind(configuration.GetSection(PlanningSettings.SectionName))
             .Validate(settings => settings.DueSoonDays is >= 1 and <= 30,
                 "Planning DueSoonDays must be between 1 and 30.")
+            .Validate(settings => settings.DefaultScheduleHorizonDays >= 1
+                    && settings.MaximumScheduleHorizonDays <= 180
+                    && settings.DefaultScheduleHorizonDays <= settings.MaximumScheduleHorizonDays,
+                "Planning schedule horizon settings are invalid.")
+            .Validate(settings => settings.MaximumOrdersPerPreview is >= 1 and <= 5000
+                    && settings.MaximumOperationsPerPreview is >= 1 and <= 50000,
+                "Planning preview workload limits are invalid.")
             .ValidateOnStart();
         services.AddSingleton(serviceProvider =>
             serviceProvider.GetRequiredService<IOptions<PlanningSettings>>().Value);

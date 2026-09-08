@@ -7,6 +7,8 @@ using FactoryMind.Application.Features.Chat;
 using FactoryMind.Application.Features.Chat.Rag;
 using FactoryMind.Application.Features.Chat.Tools;
 using FactoryMind.Application.Features.Knowledge;
+using FactoryMind.Application.Features.ProductionOrders;
+using FactoryMind.Application.Features.WorkCenters;
 using FluentValidation;
 using Mediator;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +32,8 @@ public static class DependencyInjection {
         services.AddSingleton<AiActionIntentGate>();
         services.AddSingleton<IAiActionProposalRegistry, AiActionProposalRegistry>();
         services.AddScoped<IAiActionOrchestrator, AiActionOrchestrator>();
+        services.AddSingleton<IWorkCenterCalendarService, WorkCenterCalendarService>();
+        services.AddSingleton<IProductionSchedulePreviewer, DeterministicProductionSchedulePreviewer>();
 
         return services;
     }

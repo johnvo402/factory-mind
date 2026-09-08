@@ -24,7 +24,7 @@ public static class SettingsEndpoints {
             ISender sender,
             CancellationToken cancellationToken) =>
             (await sender.Send(
-                new UpdateCompanySettingsCommand(request.Name),
+                new UpdateCompanySettingsCommand(request.Name, request.TimeZoneId),
                 cancellationToken)).ToHttpResult())
             .WithRequestValidation<UpdateCompanySettingsRequest>();
 

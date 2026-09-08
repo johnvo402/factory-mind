@@ -2,8 +2,10 @@ using System.Text.Json;
 using FactoryMind.Application.Features.Boms;
 using FactoryMind.Application.Features.Chat;
 using FactoryMind.Application.Features.ProductionOrders;
+using FactoryMind.Application.Features.WorkCenters;
 using FactoryMind.Infrastructure.AI;
 using FactoryMind.Infrastructure.Persistence;
+using FactoryMind.Infrastructure.Persistence.ProductionOrders;
 using Microsoft.EntityFrameworkCore;
 
 namespace FactoryMind.Tests;
@@ -16,11 +18,13 @@ public sealed class ManufacturingToolRegistryTests {
         "get_work_center_status",
         "get_material_inventory",
         "get_production_order_material_readiness",
-        "list_production_orders"
+        "list_production_orders",
+        "get_production_order_schedule_preview",
+        "get_work_center_capacity_preview"
     ];
 
     [Fact]
-    public void Registry_contains_only_the_seven_approved_read_only_tools() {
+    public void Registry_contains_only_the_nine_approved_read_only_tools() {
         using var dbContext = CreateDbContext();
         var registry = CreateRegistry(dbContext);
 
@@ -146,14 +150,23 @@ public sealed class ManufacturingToolRegistryTests {
         Assert.Equal(20, properties.GetProperty("limit").GetProperty("maximum").GetInt32());
     }
 
-    private static ManufacturingToolRegistry CreateRegistry(FactoryMindDbContext dbContext) => new(
-        new GetProductionOrderStatusTool(dbContext, RiskCalculator()),
+    private static ManufacturingToolRegistry CreateRegistry(FactoryMindDbContext dbContext) {
+        var risk = RiskCalculator();
+        var repository = new EfSchedulePreviewRepository(dbContext, risk);
+        var previewer = new DeterministicProductionSchedulePreviewer(new WorkCenterCalendarService());
+        return new(
+        new GetProductionOrderStatusTool(dbContext, risk),
         new GetMachineStatusTool(dbContext),
         new ListMachinesTool(dbContext),
         new GetWorkCenterStatusTool(dbContext),
         new GetMaterialInventoryTool(dbContext),
         new GetProductionOrderMaterialReadinessTool(dbContext, new MaterialRequirementCalculator()),
-        new ListProductionOrdersTool(dbContext, RiskCalculator()));
+        new ListProductionOrdersTool(dbContext, risk),
+        new GetProductionOrderSchedulePreviewTool(
+            dbContext, repository, previewer, risk, TimeProvider.System),
+        new GetWorkCenterCapacityPreviewTool(
+            dbContext, repository, previewer, risk, TimeProvider.System));
+    }
 
     private static IProductionOrderDeliveryRiskCalculator RiskCalculator() =>
         new ProductionOrderDeliveryRiskCalculator(TimeProvider.System, new PlanningSettings());

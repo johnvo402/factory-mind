@@ -27,6 +27,12 @@
       <strong>Quản lý nhà máy</strong>
       <p>Dữ liệu có cấu trúc phục vụ vận hành và AI.</p>
     </section>
+  } @else if (activeView() === 'planning') {
+    <section class="data-context">
+      <span class="section-label">Kế hoạch sản xuất</span>
+      <strong>Lịch và năng lực dự kiến</strong>
+      <p>Preview đọc-only theo dữ liệu và giả định hiện tại.</p>
+    </section>
   } @else if (activeView() === 'knowledge') {
     <section class="data-context">
       <span class="section-label">Kho tri thức</span>
@@ -46,6 +52,7 @@
     <a routerLink="/knowledge" [class.active]="activeView() === 'knowledge'" [attr.aria-current]="activeView() === 'knowledge' ? 'page' : null"><app-ui-icon name="book-open" [size]="19" /><span>Tri thức</span></a>
     @if (userRole() === 'Admin' || userRole() === 'Manager') {
       <a routerLink="/data/machines" [class.active]="activeView() === 'data'" [attr.aria-current]="activeView() === 'data' ? 'page' : null"><app-ui-icon name="database" [size]="19" /><span>Dữ liệu</span></a>
+      <a routerLink="/planning" [class.active]="activeView() === 'planning'" [attr.aria-current]="activeView() === 'planning' ? 'page' : null"><app-ui-icon name="clock-3" [size]="19" /><span>Kế hoạch sản xuất</span></a>
     }
     @if (userRole() === 'Admin') {
       <a routerLink="/settings" [class.active]="activeView() === 'settings'" [attr.aria-current]="activeView() === 'settings' ? 'page' : null"><app-ui-icon name="settings" [size]="19" /><span>Cài đặt</span></a>

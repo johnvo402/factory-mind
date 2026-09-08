@@ -6,8 +6,10 @@ using FactoryMind.Application.Features.Chat;
 using FactoryMind.Application.Features.Chat.Rag;
 using FactoryMind.Application.Features.Chat.Tools;
 using FactoryMind.Application.Features.ProductionOrders;
+using FactoryMind.Application.Features.WorkCenters;
 using FactoryMind.Infrastructure.AI;
 using FactoryMind.Infrastructure.Persistence;
+using FactoryMind.Infrastructure.Persistence.ProductionOrders;
 using Microsoft.EntityFrameworkCore;
 
 var datasetPath = Path.Combine(AppContext.BaseDirectory, "ai-tool-eval-cases.json");
@@ -26,6 +28,8 @@ await using var dbContext = new FactoryMindDbContext(
 var riskCalculator = new ProductionOrderDeliveryRiskCalculator(
     TimeProvider.System,
     new PlanningSettings());
+var scheduleRepository = new EfSchedulePreviewRepository(dbContext, riskCalculator);
+var schedulePreviewer = new DeterministicProductionSchedulePreviewer(new WorkCenterCalendarService());
 var productionRegistry = new ManufacturingToolRegistry(
     new GetProductionOrderStatusTool(dbContext, riskCalculator),
     new GetMachineStatusTool(dbContext),
@@ -33,7 +37,11 @@ var productionRegistry = new ManufacturingToolRegistry(
     new GetWorkCenterStatusTool(dbContext),
     new GetMaterialInventoryTool(dbContext),
     new GetProductionOrderMaterialReadinessTool(dbContext, new MaterialRequirementCalculator()),
-    new ListProductionOrdersTool(dbContext, riskCalculator));
+    new ListProductionOrdersTool(dbContext, riskCalculator),
+    new GetProductionOrderSchedulePreviewTool(
+        dbContext, scheduleRepository, schedulePreviewer, riskCalculator, TimeProvider.System),
+    new GetWorkCenterCapacityPreviewTool(
+        dbContext, scheduleRepository, schedulePreviewer, riskCalculator, TimeProvider.System));
 var router = new IntentRouter();
 var planner = new DeterministicManufacturingPlanner();
 var failures = new List<string>();
@@ -46,7 +54,10 @@ var minimumCategoryCounts = new Dictionary<string, int>(StringComparer.Ordinal) 
     ["unknown_insufficient_data"] = 6,
     ["delivery_risk"] = 10,
     ["priority_planning"] = 5,
-    ["unsupported_scheduling"] = 5
+    ["unsupported_scheduling"] = 5,
+    ["schedule_preview"] = 10,
+    ["capacity_preview"] = 8,
+    ["planning_safety"] = 6
 };
 var categoryCounts = cases.GroupBy(evalCase => evalCase.Category, StringComparer.Ordinal)
     .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
@@ -63,10 +74,12 @@ var approvedToolNames = new[] {
     "get_work_center_status",
     "get_material_inventory",
     "get_production_order_material_readiness",
-    "list_production_orders"
+    "list_production_orders",
+    "get_production_order_schedule_preview",
+    "get_work_center_capacity_preview"
 };
 if (!productionRegistry.Definitions.Select(definition => definition.Name).SequenceEqual(approvedToolNames)) {
-    failures.Add("registry: production allowlist differs from the seven approved read-only tools");
+    failures.Add("registry: production allowlist differs from the nine approved read-only tools");
 }
 
 foreach (var definition in productionRegistry.Definitions) {

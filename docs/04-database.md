@@ -612,3 +612,15 @@ UTC `DateTime` nhất quán.
 Các index `(CompanyId, Status, DueDate)` và `(CompanyId, Priority)` phục vụ aggregate/filter theo
 tenant. Delivery status và days-to-due không lưu DB; chúng được tính từ DueDate, lifecycle state,
 CompletedAt và clock server. Chi tiết quyết định nằm ở decision log 0041.
+
+## Work Center capacity planning schema
+
+Migration `AddWorkCenterCapacityPlanning` thêm `companies.TimeZoneId varchar(100) NOT NULL DEFAULT
+'UTC'`, `work_centers.ParallelCapacity integer NOT NULL DEFAULT 1`, `work_center_shifts` và
+`work_center_days_off`. Dữ liệu cũ không nhận ca giả; Work Center cũ trả `calendar_missing` tới khi
+được cấu hình.
+
+Shift lưu `DayOfWeek` 0–6 và `time without time zone`; ngày/giờ chỉ có nghĩa khi kết hợp Company IANA
+timezone. Check constraints bảo vệ day range, start trước end và capacity 1–100. Ngày nghỉ có unique
+index `(CompanyId, WorkCenterId, Date)`; overlap ca được validate ở application trước transaction
+replace. Không có bảng schedule/lane vì preview không persist.
