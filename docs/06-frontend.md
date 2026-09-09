@@ -528,4 +528,9 @@ server facts. Gantt HTML/CSS chỉ đọc, cuộn ngang, label sticky, bar focus
 kèm text/marker cho provisional và projected-late; bảng PO là accessible exact-value fallback. Không
 có drag/drop, resize, future Machine assignment hoặc save schedule.
 
+Horizon đang chọn và horizon của preview đang hiển thị là hai trạng thái khác nhau. Khi request mới
+thất bại, UI giữ preview cũ, hiển thị rõ số ngày đã tải và lấy day headers, Gantt width/geometry cùng
+warning text từ `horizonStart`/`horizonEnd` của response cũ; lỗi có `role="alert"`. Vì vậy chọn 30 ngày
+không thể relabel preview 14 ngày còn trên màn hình.
+
 ---

@@ -1,20 +1,20 @@
 <section class="planning-shell">
   <header class="page-header">
     <div><span class="eyebrow">KẾ HOẠCH SẢN XUẤT</span><h1>Lịch & năng lực dự kiến</h1><p>Preview deterministic từ Routing, snapshot công đoạn và lịch Work Center hiện tại. Kết quả không phải cam kết hoàn thành.</p></div>
-    <div class="header-actions"><div class="horizon" role="group" aria-label="Khung kế hoạch">@for (days of [7, 14, 30]; track days) { <button type="button" [class.active]="horizonDays() === days" [attr.aria-pressed]="horizonDays() === days" (click)="changeHorizon(days)">{{ days }} ngày</button> }</div><button type="button" class="primary" [disabled]="loading()" (click)="load()"><app-ui-icon name="refresh-cw" [size]="17" /> {{ loading() ? 'Đang tính...' : 'Tính lại kế hoạch' }}</button></div>
+    <div class="header-actions"><div class="horizon" role="group" aria-label="Khung kế hoạch">@for (days of [7, 14, 30]; track days) { <button type="button" [class.active]="requestedHorizonDays() === days" [attr.aria-pressed]="requestedHorizonDays() === days" (click)="changeHorizon(days)">{{ days }} ngày</button> }</div><button type="button" class="primary" [disabled]="loading()" (click)="load()"><app-ui-icon name="refresh-cw" [size]="17" /> {{ loading() ? 'Đang tính...' : 'Tính lại kế hoạch' }}</button></div>
   </header>
 
   @if (error()) { <p class="notice error" role="alert">{{ error() }}</p> }
   @if (loading() && !preview()) { <p class="notice" role="status">Đang tính schedule preview...</p> }
   @if (preview(); as data) {
-    <div class="freshness"><span><app-ui-icon name="clock-3" [size]="15" /> Generated: <strong>{{ formatDate(data.generatedAt) }}</strong></span><span>Múi giờ: <strong>{{ data.timeZoneId }}</strong></span><span>Horizon kết thúc: <strong>{{ formatDate(data.horizonEnd) }}</strong></span></div>
+    <div class="freshness"><span><app-ui-icon name="clock-3" [size]="15" /> Generated: <strong>{{ formatDate(data.generatedAt) }}</strong></span><span>Preview đang hiển thị: <strong>{{ loadedHorizonDays() }} ngày</strong></span><span>Múi giờ: <strong>{{ data.timeZoneId }}</strong></span><span>Horizon kết thúc: <strong>{{ formatDate(data.horizonEnd) }}</strong></span></div>
 
     <section class="summary-grid" aria-label="Tóm tắt schedule preview">
       <article><span>Lệnh đang lập lịch</span><strong>{{ data.summary.ordersConsidered }}</strong><small>{{ data.summary.ordersScheduled }} có dự kiến hoàn thành</small></article>
       <article class="good"><span>Dự kiến đúng hạn</span><strong>{{ data.summary.projectedOnTime }}</strong><small>Theo preview hiện tại</small></article>
       <article class="late"><span>Dự kiến trễ</span><strong>{{ data.summary.projectedLate }}</strong><small>Không phải trạng thái hạn hiện tại</small></article>
       <article class="warn"><span>Chưa thể lập lịch</span><strong>{{ data.summary.unscheduled }}</strong><small>Có lý do cụ thể bên dưới</small></article>
-      <article><span>Work Center thiếu năng lực</span><strong>{{ data.summary.capacityConstrainedWorkCenters }}</strong><small>Trong horizon {{ horizonDays() }} ngày</small></article>
+      <article><span>Work Center thiếu năng lực</span><strong>{{ data.summary.capacityConstrainedWorkCenters }}</strong><small>Trong horizon {{ loadedHorizonDays() }} ngày</small></article>
     </section>
 
     <section class="panel">
@@ -26,7 +26,7 @@
       <div class="panel-heading"><div><span class="eyebrow">GANTT ĐỌC-ONLY</span><h2>Lịch dự kiến theo lane</h2></div><div class="legend"><span><i></i> Đã khóa Routing</span><span><i class="provisional"></i> Dự kiến · chưa khóa</span><span><b>!</b> Dự kiến trễ</span></div></div>
       <p class="gantt-help">Dùng Tab để chọn công đoạn và xem chi tiết. Gantt không hỗ trợ kéo, đổi lane hay lưu lịch.</p>
       <div class="gantt-scroll" tabindex="0" aria-label="Gantt schedule preview; dùng bảng lệnh phía dưới để đọc dữ liệu chính xác">
-        <div class="gantt" [style.--day-count]="horizonDays()">
+        <div class="gantt" [style.--day-count]="loadedHorizonDays()">
           <div class="gantt-corner">Work Center / Lane</div><div class="day-header">@for (day of days(); track day.toISOString()) { <span>{{ formatDate(day, false) }}</span> }</div>
           @for (center of data.workCenters; track center.id) { @for (lane of laneNumbers(center); track lane) {
             <div class="lane-label"><strong>{{ center.code }}</strong><span>Lane {{ lane }}</span></div><div class="lane-track">@for (item of operationsFor(center.id, lane); track item.operation.id) { <button type="button" class="operation-bar" [class.provisional]="item.operation.isProvisional" [class.late]="item.order.projectedDeliveryStatus === 'projected_late'" [class.running]="item.operation.isInProgress" [ngStyle]="barStyle(item.operation)" (click)="selectedOperation.set(item.operation)" [attr.aria-label]="item.order.number + ', ' + item.operation.name + ', lane ' + lane + ', từ ' + formatDate(item.operation.scheduledStart) + ' đến ' + formatDate(item.operation.scheduledEnd)" [title]="item.order.number + ' · ' + item.operation.name"><span>{{ item.order.number }} · {{ item.operation.name }}</span>@if (item.operation.isProvisional) { <em>Dự kiến</em> }@if (item.order.projectedDeliveryStatus === 'projected_late') { <b aria-hidden="true">!</b> }</button> }</div>

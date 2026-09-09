@@ -21,10 +21,16 @@ import {
 export class PlanningWorkspaceComponent implements OnInit {
   private readonly api = inject(PlanningApiService);
   protected readonly preview = signal<SchedulePreview | null>(null);
-  protected readonly horizonDays = signal(14);
+  protected readonly requestedHorizonDays = signal(14);
   protected readonly loading = signal(false);
   protected readonly error = signal('');
   protected readonly selectedOperation = signal<ScheduleOperationPreview | null>(null);
+  protected readonly loadedHorizonDays = computed(() => {
+    const preview = this.preview();
+    if (!preview) return this.requestedHorizonDays();
+    const days = (Date.parse(preview.horizonEnd) - Date.parse(preview.horizonStart)) / 86_400_000;
+    return Number.isFinite(days) && days > 0 ? Math.round(days) : this.requestedHorizonDays();
+  });
   protected readonly selectedOrder = computed(() => {
     const operation = this.selectedOperation();
     return operation ? this.preview()?.orders.find(order => order.operations.some(item => item.id === operation.id)) ?? null : null;
@@ -32,7 +38,7 @@ export class PlanningWorkspaceComponent implements OnInit {
   protected readonly days = computed(() => {
     const preview = this.preview();
     if (!preview) return [];
-    return Array.from({ length: this.horizonDays() }, (_, index) => {
+    return Array.from({ length: this.loadedHorizonDays() }, (_, index) => {
       const date = new Date(preview.horizonStart);
       date.setUTCDate(date.getUTCDate() + index);
       return date;
@@ -45,7 +51,7 @@ export class PlanningWorkspaceComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
     try {
-      const response = await firstValueFrom(this.api.getPreview(this.horizonDays()));
+      const response = await firstValueFrom(this.api.getPreview(this.requestedHorizonDays()));
       this.preview.set(response.data ?? null);
       this.selectedOperation.set(null);
     } catch (error: unknown) {
@@ -56,8 +62,8 @@ export class PlanningWorkspaceComponent implements OnInit {
   }
 
   protected changeHorizon(value: number): void {
-    if (this.horizonDays() === value) return;
-    this.horizonDays.set(value);
+    if (this.requestedHorizonDays() === value) return;
+    this.requestedHorizonDays.set(value);
     void this.load();
   }
 
@@ -119,8 +125,9 @@ export class PlanningWorkspaceComponent implements OnInit {
       work_center_missing: 'Không tìm thấy Work Center.',
       work_center_inactive: `${center}Work Center đã ngừng hoạt động.`,
       calendar_missing: `${center}chưa cấu hình ca làm việc.`,
-      horizon_exceeded: `Không đủ thời gian trong khung ${this.horizonDays()} ngày.`,
+      horizon_exceeded: `Không đủ thời gian trong khung ${this.loadedHorizonDays()} ngày.`,
       current_capacity_conflict: `${center}số công đoạn đang chạy vượt parallel capacity.`,
+      blocked_by_predecessor: 'Chưa thể lập lịch vì thời điểm hoàn thành công đoạn trước chưa xác định.',
     };
     return labels[item.reason] ?? item.reason;
   }

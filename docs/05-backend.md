@@ -473,8 +473,9 @@ calculation or AI write surface was added.
 error; thiếu ca không biến thành 24/7. Calendar PUT tenant-scoped, revalidate overlap/capacity và thay
 toàn bộ shift/day-off trong một transaction.
 
-`ISchedulePreviewRepository` tải bounded sets thay vì N+1: active PO/Product/locked operations,
-active Routing operations cho Planned và Work Center calendars. `IProductionSchedulePreviewer` xếp
+`ISchedulePreviewRepository` tải canonical active workload của tenant thay vì N+1: toàn bộ
+Planned/Released/InProgress PO, Product/locked operations, active Routing operations cho Planned và
+Work Center calendars. `IProductionSchedulePreviewer` xếp
 in-progress trước rồi dùng risk, priority, DueDate, Number và Id làm stable tie-break. Mỗi công đoạn
 giữ precedence; lane cùng Work Center không overlap; working time bỏ qua break/ngày nghỉ. In-progress
 remaining dùng working minutes từ StartedAt tới GeneratedAt. Preview giới hạn horizon/workload,
@@ -483,4 +484,12 @@ honor cancellation và phát telemetry count/duration không gắn tenant identi
 Planned dùng active Routing với `isProvisional=true`; Released/InProgress không fallback khỏi locked
 operation snapshot. Projected completion chỉ có khi toàn bộ remaining operations fit horizon.
 Projected delivery là `unknown|projected_on_time|projected_late`, tách khỏi delivery status Step 12A.
+
+`priority`, `orderId` và `workCenterId` là output-only filters: handler tính full canonical preview
+trước rồi mới chọn orders, warnings và Work Center cần trả. Summary được tính lại theo subset trả về;
+mọi capacity value vẫn đến từ canonical global calculation. Workload limits áp dụng trước filter,
+không truncate cạnh tranh. Khi predecessor không có projected end, successor nhận
+`blocked_by_predecessor` thay vì lý do gốc giả hoặc `horizon_exceeded`. Nếu một active locked order đã
+Completed toàn bộ operation và mọi `CompletedAt` hợp lệ, projected completion là timestamp thực tế
+muộn nhất; không tạo operation giả.
 

@@ -14,7 +14,7 @@ public sealed record SchedulePreviewRequest(
 public sealed class SchedulePreviewRequestValidator : AbstractValidator<SchedulePreviewRequest> {
     public SchedulePreviewRequestValidator() {
         RuleFor(request => request.HorizonDays)
-            .InclusiveBetween(1, 180).When(request => request.HorizonDays.HasValue);
+            .GreaterThanOrEqualTo(1).When(request => request.HorizonDays.HasValue);
         RuleFor(request => request.Priority)
             .Must(priority => priority is null || ProductionOrderPriorities.All.Contains(priority))
             .WithMessage("Priority is invalid.");

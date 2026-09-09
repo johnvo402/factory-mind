@@ -286,20 +286,20 @@ Read-only manufacturing tools hỗ trợ trực tiếp các câu hỏi như:
 - “Kho còn bao nhiêu RM-001?”
 - “PO-001 đủ nguyên liệu để bắt đầu chưa?”
 
-Registry chỉ gồm `get_production_order_status`, `get_machine_status`, `list_machines`,
-`get_work_center_status`, `get_material_inventory`, `get_production_order_material_readiness` và
-`list_production_orders`. Server tự lấy tenant từ authenticated claims, validate schema/arguments,
-và thực thi EF Core query có `CompanyId` predicate. Material readiness là snapshot độc lập của một
-order dựa trên stock hiện tại; nó không phải reservation, lịch sản xuất hay cam kết có thể bắt đầu
-trong tương lai.
+Registry gồm chín read-only tools: bảy tool vận hành cốt lõi cùng
+`get_production_order_schedule_preview` và `get_work_center_capacity_preview`. Server tự lấy tenant
+từ authenticated claims, validate schema/arguments, và thực thi EF Core query có `CompanyId`
+predicate. Material readiness là snapshot độc lập của một order dựa trên stock hiện tại; nó không
+phải reservation hay cam kết có thể bắt đầu trong tương lai. Hai planning tool chỉ giải thích
+canonical schedule preview theo giả định hiện tại, không cam kết kết quả tương lai.
 
-FactoryMind có đúng 7 immediate read-only tools và 1 controlled proposed write action. Gemini chỉ có
+FactoryMind có đúng 9 immediate read-only tools và 1 controlled proposed write action. Gemini chỉ có
 thể gọi `propose_release_production_order(number)` để tạo Pending proposal từ dữ liệu server. Chỉ
 `POST /api/ai/actions/{proposalId}/confirm`, sau Manager authorization và revalidation, mới gọi release.
 AI không thể đổi Machine status, start/complete/cancel order, start/complete operation, assign Machine,
 consume/adjust inventory, activate BOM/Routing, tạo record hay xóa dữ liệu.
 
-Tool planning được kiểm tra offline trong CI bởi `FactoryMind.AiToolEval`. Bộ 74 fixture đa ngôn ngữ đo
+Tool planning được kiểm tra offline trong CI bởi `FactoryMind.AiToolEval`. Bộ 98 fixture đa ngôn ngữ đo
 tool selection, exact tool + arguments, no-tool precision, exact identifier, unauthorized-tool rejection,
 call bounds, duplicate rate và average calls. Điểm của bộ này mô tả deterministic policy fixture cùng
 server enforcement, không phải tuyên bố độ chính xác của live Gemini. Write-action evaluation là một
@@ -308,8 +308,8 @@ quality gate riêng; proposal không được tính là manufacturing mutation.
 Các read tool của Production Order còn trả `priority`, `dueDate`, `deliveryStatus` và
 `daysUntilDue` do server tính. Ví dụ hỗ trợ: “PO-2026-001 còn bao nhiêu ngày đến hạn?”, “Những lệnh
 nào đang quá hạn?”, “Có lệnh khẩn cấp nào chưa hoàn thành?” và “Những PO nào hoàn thành trễ?”. Với
-“PO này khi nào chắc chắn hoàn thành?”, hệ thống phải nói chưa có mô hình lịch/năng lực để cung cấp
-ETA đáng tin cậy; routing minutes không được dùng làm ETA.
+“PO này khi nào chắc chắn hoàn thành?”, hệ thống chỉ được viện dẫn server schedule preview và phải nói
+đó là projection theo giả định hiện tại, không phải ETA được bảo đảm.
 
 SSE stream có các event semantic sau:
 
@@ -811,6 +811,12 @@ theo cùng input. Planned dùng active Routing và được đánh dấu provisi
 dùng snapshot công đoạn đã khóa. Duration là `SetupTimeMinutes + RunTimeMinutes`, không nhân Quantity;
 thời gian nghỉ giữa ca/ngày nghỉ không tiêu thụ duration. UI `/planning` có horizon 7/14/30 ngày,
 bảng planned capacity load, bảng projected completion, lý do chưa xếp và Gantt lane đọc-only.
+
+Scheduler luôn tính từ toàn bộ active workload `Planned|Released|InProgress` của tenant trước. Các
+filter `priority`, `orderId` và `workCenterId` chỉ chọn phần response sau khi tính, nên API và AI không
+tạo ETA sớm giả do loại bỏ lệnh cạnh tranh. Nếu completion của predecessor không thể project, các
+successor nhận `blocked_by_predecessor`; operation gốc vẫn giữ nguyên lý do. Active order có toàn bộ
+operation Completed dùng `CompletedAt` thực tế cuối cùng làm projected completion khi timestamps hợp lệ.
 
 AI có thể đọc hai evidence mới qua `get_production_order_schedule_preview` và
 `get_work_center_capacity_preview`. Câu trả lời phải nói “schedule preview”, “dự kiến” và “theo giả

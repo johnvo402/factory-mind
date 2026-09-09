@@ -9,9 +9,6 @@ public sealed class EfSchedulePreviewRepository(
     IProductionOrderDeliveryRiskCalculator riskCalculator) : ISchedulePreviewRepository {
     public async Task<SchedulePreviewData?> LoadAsync(
         Guid companyId,
-        string? priority,
-        Guid? orderId,
-        Guid? workCenterId,
         CancellationToken cancellationToken) {
         var timeZoneId = await dbContext.Companies.AsNoTracking()
             .Where(company => company.Id == companyId)
@@ -29,8 +26,6 @@ public sealed class EfSchedulePreviewRepository(
             .Include(order => order.Product)
             .Include(order => order.Operations)
             .Where(order => order.CompanyId == companyId && activeStatuses.Contains(order.Status));
-        if (priority is not null) orderQuery = orderQuery.Where(order => order.Priority == priority);
-        if (orderId.HasValue) orderQuery = orderQuery.Where(order => order.Id == orderId.Value);
         var orders = await orderQuery.OrderBy(order => order.Number).ThenBy(order => order.Id)
             .ToListAsync(cancellationToken);
 
@@ -54,14 +49,9 @@ public sealed class EfSchedulePreviewRepository(
             .ToListAsync(cancellationToken);
         var centerById = centers.ToDictionary(center => center.Id);
 
-        var mappedOrders = orders.Select(order => MapOrder(order, routingByProduct, centerById)).ToList();
-        if (workCenterId.HasValue) {
-            mappedOrders = mappedOrders.Where(order =>
-                order.Operations.Any(operation => operation.WorkCenterId == workCenterId.Value)).ToList();
-        }
         return new SchedulePreviewData(
             timeZoneId,
-            mappedOrders,
+            orders.Select(order => MapOrder(order, routingByProduct, centerById)).ToList(),
             centers.Select(center => new ScheduleWorkCenterInput(
                 center.Id, center.Code, center.Name, center.IsActive, center.ParallelCapacity,
                 center.Shifts.ToList(), center.DaysOff.ToList())).ToList());

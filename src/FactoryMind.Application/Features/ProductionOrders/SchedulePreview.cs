@@ -30,6 +30,7 @@ public static class ScheduleUnscheduledReasons {
     public const string CalendarMissing = "calendar_missing";
     public const string HorizonExceeded = "horizon_exceeded";
     public const string CurrentCapacityConflict = "current_capacity_conflict";
+    public const string BlockedByPredecessor = "blocked_by_predecessor";
 }
 
 public sealed record SchedulePreviewQuery(
@@ -85,10 +86,13 @@ public sealed record ScheduleWorkCenterInput(
 public interface ISchedulePreviewRepository {
     Task<SchedulePreviewData?> LoadAsync(
         Guid companyId,
-        string? priority,
-        Guid? orderId,
-        Guid? workCenterId,
         CancellationToken cancellationToken);
+}
+
+public static class SchedulePreviewWorkload {
+    public static bool ExceedsLimit(SchedulePreviewData data, PlanningSettings settings) =>
+        data.Orders.Count > settings.MaximumOrdersPerPreview
+        || data.Orders.Sum(order => order.Operations.Count) > settings.MaximumOperationsPerPreview;
 }
 
 public sealed record SchedulePreviewSummary(
@@ -168,6 +172,48 @@ public sealed record SchedulePreviewResponse(
     IReadOnlyList<WorkCenterCapacityPreview> WorkCenters,
     IReadOnlyList<UnscheduledOperationPreview> Unscheduled);
 
+public static class SchedulePreviewViews {
+    public static SchedulePreviewResponse ApplyFilters(
+        SchedulePreviewResponse canonical,
+        SchedulePreviewData workload,
+        string? priority,
+        Guid? orderId,
+        Guid? workCenterId) {
+        var relevantOrderIds = workCenterId.HasValue
+            ? workload.Orders
+                .Where(order => order.Operations.Any(operation => operation.WorkCenterId == workCenterId.Value))
+                .Select(order => order.Id)
+                .ToHashSet()
+            : null;
+        var orders = canonical.Orders
+            .Where(order => priority is null || order.Priority == priority)
+            .Where(order => !orderId.HasValue || order.Id == orderId.Value)
+            .Where(order => relevantOrderIds is null || relevantOrderIds.Contains(order.Id))
+            .ToList();
+        var returnedOrderIds = orders.Select(order => order.Id).ToHashSet();
+        var workCenters = canonical.WorkCenters
+            .Where(center => !workCenterId.HasValue || center.Id == workCenterId.Value)
+            .ToList();
+        var unscheduled = canonical.Unscheduled
+            .Where(item => returnedOrderIds.Contains(item.OrderId))
+            .ToList();
+        var summary = new SchedulePreviewSummary(
+            orders.Count,
+            orders.Count(order => order.ProjectedCompletion.HasValue),
+            orders.Count(order => order.ProjectedDeliveryStatus == ProjectedDeliveryStatuses.OnTime),
+            orders.Count(order => order.ProjectedDeliveryStatus == ProjectedDeliveryStatuses.Late),
+            unscheduled.Select(item => item.OrderId).Distinct().Count(),
+            workCenters.Count(center => center.HasCapacityConstraint),
+            orders.Sum(order => order.Operations.Count));
+        return canonical with {
+            Summary = summary,
+            Orders = orders,
+            WorkCenters = workCenters,
+            Unscheduled = unscheduled
+        };
+    }
+}
+
 public interface IProductionSchedulePreviewer {
     Result<SchedulePreviewResponse> Calculate(
         SchedulePreviewData data,
@@ -197,12 +243,9 @@ public sealed class SchedulePreviewQueryHandler(
 
         using var activity = FactoryMindTelemetry.ActivitySource.StartActivity("planning.schedule_preview");
         var started = Stopwatch.GetTimestamp();
-        var data = await repository.LoadAsync(
-            currentUser.CompanyId, query.Priority, query.OrderId, query.WorkCenterId, cancellationToken);
+        var data = await repository.LoadAsync(currentUser.CompanyId, cancellationToken);
         if (data is null) return Result<SchedulePreviewResponse>.Failure(PlanningCalendarErrors.InvalidTimeZone);
-        var operationCount = data.Orders.Sum(order => order.Operations.Count);
-        if (data.Orders.Count > settings.MaximumOrdersPerPreview
-            || operationCount > settings.MaximumOperationsPerPreview) {
+        if (SchedulePreviewWorkload.ExceedsLimit(data, settings)) {
             return Result<SchedulePreviewResponse>.Failure(PlanningErrors.PreviewTooLarge);
         }
 
@@ -226,7 +269,10 @@ public sealed class SchedulePreviewQueryHandler(
             activity?.SetTag("planning.horizon_days", horizonDays);
         }
         activity?.SetTag("planning.outcome", outcome);
-        return result;
+        return result.IsFailure
+            ? result
+            : Result<SchedulePreviewResponse>.Success(SchedulePreviewViews.ApplyFilters(
+                result.Value!, data, query.Priority, query.OrderId, query.WorkCenterId));
     }
 }
 
@@ -279,32 +325,40 @@ public sealed class DeterministicProductionSchedulePreviewer(IWorkCenterCalendar
             }
 
             var earliest = generatedAt;
-            var blocked = false;
+            var predecessorBlocked = false;
             foreach (var operation in order.Operations.OrderBy(item => item.Sequence).ThenBy(item => item.Id)) {
                 if (operation.Status == ProductionOperationStatuses.Completed) {
-                    if (operation.CompletedAt.HasValue && operation.CompletedAt > earliest) earliest = operation.CompletedAt.Value;
+                    if (!operation.CompletedAt.HasValue) {
+                        predecessorBlocked = true;
+                    } else if (!predecessorBlocked && operation.CompletedAt > earliest) {
+                        earliest = operation.CompletedAt.Value;
+                    }
                     continue;
                 }
                 if (operation.Status == ProductionOperationStatuses.InProgress) {
                     var existing = scheduledByOrder[order.Id].SingleOrDefault(item => item.Id == operation.Id);
-                    if (existing is not null) earliest = existing.ScheduledEnd;
+                    if (existing is null) {
+                        predecessorBlocked = true;
+                    } else if (!predecessorBlocked) {
+                        earliest = existing.ScheduledEnd;
+                    }
                     continue;
                 }
-                if (blocked) {
-                    AddUnscheduled(order, operation, ScheduleUnscheduledReasons.HorizonExceeded, unscheduled);
+                if (predecessorBlocked) {
+                    AddUnscheduled(order, operation, ScheduleUnscheduledReasons.BlockedByPredecessor, unscheduled);
                     continue;
                 }
                 var failure = ValidateCenter(operation, states, out var state);
                 if (failure is not null) {
                     AddUnscheduled(order, operation, failure, unscheduled);
-                    blocked = true;
+                    predecessorBlocked = true;
                     continue;
                 }
                 var duration = operation.SetupTimeMinutes + operation.RunTimeMinutes;
                 var placement = state!.Place(earliest, duration, horizonEnd);
                 if (placement is null) {
                     AddUnscheduled(order, operation, ScheduleUnscheduledReasons.HorizonExceeded, unscheduled);
-                    blocked = true;
+                    predecessorBlocked = true;
                     continue;
                 }
                 var preview = ToPreview(order, operation, placement.Value, duration, false);
@@ -454,8 +508,20 @@ public sealed class DeterministicProductionSchedulePreviewer(IWorkCenterCalendar
         var failed = unscheduled.Any(item => item.OrderId == order.Id);
         var expected = order.Operations.Count(operation => operation.Status != ProductionOperationStatuses.Completed);
         var complete = !failed && operations.Count == expected;
-        DateTime? start = operations.Count == 0 ? null : operations.Min(operation => operation.ScheduledStart);
-        DateTime? end = complete && operations.Count > 0 ? operations.Max(operation => operation.ScheduledEnd) : null;
+        var allOperationsCompleted = order.Operations.Count > 0
+            && order.Operations.All(operation => operation.Status == ProductionOperationStatuses.Completed);
+        var allCompletionTimesValid = allOperationsCompleted
+            && order.Operations.All(operation => operation.CompletedAt.HasValue);
+        var actualStart = order.StartedAt
+            ?? order.Operations.Where(operation => operation.StartedAt.HasValue)
+                .Select(operation => operation.StartedAt)
+                .Min();
+        DateTime? start = allOperationsCompleted
+            ? actualStart
+            : operations.Count == 0 ? null : operations.Min(operation => operation.ScheduledStart);
+        DateTime? end = allCompletionTimesValid
+            ? order.Operations.Max(operation => operation.CompletedAt)
+            : complete && operations.Count > 0 ? operations.Max(operation => operation.ScheduledEnd) : null;
         var projectedStatus = order.DueDate is null || end is null
             ? ProjectedDeliveryStatuses.Unknown
             : end <= order.DueDate ? ProjectedDeliveryStatuses.OnTime : ProjectedDeliveryStatuses.Late;

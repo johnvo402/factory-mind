@@ -25,9 +25,8 @@ await using var dbContext = new FactoryMindDbContext(
     new DbContextOptionsBuilder<FactoryMindDbContext>()
         .UseNpgsql("Host=localhost;Database=ai_tool_eval_unused")
         .Options);
-var riskCalculator = new ProductionOrderDeliveryRiskCalculator(
-    TimeProvider.System,
-    new PlanningSettings());
+var planningSettings = new PlanningSettings();
+var riskCalculator = new ProductionOrderDeliveryRiskCalculator(TimeProvider.System, planningSettings);
 var scheduleRepository = new EfSchedulePreviewRepository(dbContext, riskCalculator);
 var schedulePreviewer = new DeterministicProductionSchedulePreviewer(new WorkCenterCalendarService());
 var productionRegistry = new ManufacturingToolRegistry(
@@ -39,9 +38,9 @@ var productionRegistry = new ManufacturingToolRegistry(
     new GetProductionOrderMaterialReadinessTool(dbContext, new MaterialRequirementCalculator()),
     new ListProductionOrdersTool(dbContext, riskCalculator),
     new GetProductionOrderSchedulePreviewTool(
-        dbContext, scheduleRepository, schedulePreviewer, riskCalculator, TimeProvider.System),
+        dbContext, scheduleRepository, schedulePreviewer, riskCalculator, TimeProvider.System, planningSettings),
     new GetWorkCenterCapacityPreviewTool(
-        dbContext, scheduleRepository, schedulePreviewer, riskCalculator, TimeProvider.System));
+        dbContext, scheduleRepository, schedulePreviewer, riskCalculator, TimeProvider.System, planningSettings));
 var router = new IntentRouter();
 var planner = new DeterministicManufacturingPlanner();
 var failures = new List<string>();

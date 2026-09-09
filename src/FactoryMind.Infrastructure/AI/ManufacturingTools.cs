@@ -812,7 +812,8 @@ public sealed class GetProductionOrderSchedulePreviewTool(
     ISchedulePreviewRepository repository,
     IProductionSchedulePreviewer previewer,
     IProductionOrderDeliveryRiskCalculator riskCalculator,
-    TimeProvider timeProvider) : IManufacturingReadTool {
+    TimeProvider timeProvider,
+    PlanningSettings settings) : IManufacturingReadTool {
     public AiToolDefinition Definition { get; } = new(
         "get_production_order_schedule_preview",
         "Returns a deterministic read-only schedule preview and projected completion for one tenant-scoped production order exact number. The result is projected from current planning assumptions, not guaranteed.",
@@ -830,17 +831,20 @@ public sealed class GetProductionOrderSchedulePreviewTool(
             .Where(order => order.CompanyId == companyId && order.Number.ToUpper() == normalized)
             .Select(order => (Guid?)order.Id).SingleOrDefaultAsync(cancellationToken);
         if (!orderId.HasValue) return ToolResults.NotFound();
-        var data = await repository.LoadAsync(companyId, null, orderId, null, cancellationToken);
+        var data = await repository.LoadAsync(companyId, cancellationToken);
         if (data is null) return ToolResults.NotApplicable(new BusinessDataRecord(
             orderId.Value, "production_order_schedule_preview", number,
             "schedule preview unavailable: company planning timezone is invalid."));
+        if (SchedulePreviewWorkload.ExceedsLimit(data, settings)) return ToolResults.NotApplicable(new BusinessDataRecord(
+            orderId.Value, "production_order_schedule_preview", number,
+            $"schedule preview unavailable: {PlanningErrors.PreviewTooLarge.Code}."));
         var result = previewer.Calculate(data, timeProvider.GetUtcNow().UtcDateTime,
             horizonDays, riskCalculator.DueSoonDays, cancellationToken);
-        if (result.IsFailure || result.Value!.Orders.Count == 0) return ToolResults.NotApplicable(new BusinessDataRecord(
+        var order = result.Value?.Orders.SingleOrDefault(item => item.Id == orderId.Value);
+        if (result.IsFailure || order is null) return ToolResults.NotApplicable(new BusinessDataRecord(
             orderId.Value, "production_order_schedule_preview", number,
             $"schedule preview unavailable: {result.Error?.Code ?? "planning data missing"}."));
-        var preview = result.Value;
-        var order = preview.Orders[0];
+        var preview = result.Value!;
         var reason = preview.Unscheduled.FirstOrDefault(item => item.OrderId == order.Id)?.Reason ?? "none";
         return ToolResults.Success(new BusinessDataRecord(
             order.Id, "production_order_schedule_preview", order.Number,
@@ -858,7 +862,8 @@ public sealed class GetWorkCenterCapacityPreviewTool(
     ISchedulePreviewRepository repository,
     IProductionSchedulePreviewer previewer,
     IProductionOrderDeliveryRiskCalculator riskCalculator,
-    TimeProvider timeProvider) : IManufacturingReadTool {
+    TimeProvider timeProvider,
+    PlanningSettings settings) : IManufacturingReadTool {
     public AiToolDefinition Definition { get; } = new(
         "get_work_center_capacity_preview",
         "Returns deterministic planned capacity load for one tenant-scoped Work Center exact code over a bounded horizon. Read-only; this is not OEE, actual utilization, or a guaranteed bottleneck claim.",
@@ -876,10 +881,13 @@ public sealed class GetWorkCenterCapacityPreviewTool(
             .Where(center => center.CompanyId == companyId && center.Code.ToUpper() == normalized)
             .Select(center => (Guid?)center.Id).SingleOrDefaultAsync(cancellationToken);
         if (!centerId.HasValue) return ToolResults.NotFound();
-        var data = await repository.LoadAsync(companyId, null, null, centerId, cancellationToken);
+        var data = await repository.LoadAsync(companyId, cancellationToken);
         if (data is null) return ToolResults.NotApplicable(new BusinessDataRecord(
             centerId.Value, "work_center_capacity_preview", code,
             "capacity preview unavailable: company planning timezone is invalid."));
+        if (SchedulePreviewWorkload.ExceedsLimit(data, settings)) return ToolResults.NotApplicable(new BusinessDataRecord(
+            centerId.Value, "work_center_capacity_preview", code,
+            $"capacity preview unavailable: {PlanningErrors.PreviewTooLarge.Code}."));
         var result = previewer.Calculate(data, timeProvider.GetUtcNow().UtcDateTime,
             horizonDays, riskCalculator.DueSoonDays, cancellationToken);
         var center = result.Value?.WorkCenters.SingleOrDefault(item => item.Id == centerId.Value);

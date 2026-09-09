@@ -682,4 +682,8 @@ ProductInventory trực tiếp.
 * [x] Angular Planning workspace, 7/14/30 refresh, capacity/order tables, warnings và Gantt read-only.
 * [x] Hai AI read tools planning; không có schedule/capacity/Machine mutation hoặc guarantee.
 * [x] Unit, PostgreSQL integration, AI eval và Angular coverage cho boundary chính.
+* [x] Correctness hardening: canonical tenant workload trước output filters/API/AI selection.
+* [x] Unknown predecessor completion chặn successor bằng `blocked_by_predecessor`; root reason được giữ.
+* [x] Active order đã Completed toàn bộ operations dùng actual latest `CompletedAt` cho projection.
+* [x] Failed horizon refresh giữ nguyên loaded horizon facts và Gantt geometry của preview cũ.
 

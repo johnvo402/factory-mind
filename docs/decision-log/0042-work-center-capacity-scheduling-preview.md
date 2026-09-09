@@ -25,6 +25,13 @@ orders read only their locked `ProductionOrderOperation` snapshots; a later acti
 cannot change them. Missing or invalid inputs become typed unscheduled reasons instead of fallback
 assumptions.
 
+All schedule surfaces load the full bounded tenant workload (`Planned`, `Released`, `InProgress`) and
+calculate one canonical preview before applying `priority`, `orderId`, or `workCenterId`. These are
+view filters, not scenario inputs: they select response rows without removing competing work.
+Filtered summaries describe the returned order/Work Center subset, while each returned capacity fact
+is unchanged from the canonical global calculation. The same rule applies to both planning AI tools;
+global workload limits are enforced before selecting their exact target.
+
 ## Duration and projections
 
 Step 12B interprets `SetupTimeMinutes + RunTimeMinutes` as the complete standard duration of one
@@ -36,6 +43,13 @@ Projected completion exists only when all remaining operations fit the strict ho
 to DueDate yields `projected_on_time` or `projected_late`; absent due/completion yields `unknown`.
 These are planning projections based on current assumptions, not guarantees and not replacements for
 Step 12A delivery status.
+
+An operation may schedule only when its predecessor has a known projected or actual end. The first
+operation that fails keeps its typed root reason; downstream work is `blocked_by_predecessor`. A
+current-capacity conflict with a valid projected end may still provide the precedence timestamp, but
+the order remains unscheduled because the conflict warning is retained. An active locked order whose
+operations are all Completed uses the latest valid actual `CompletedAt`; missing completion timestamps
+remain unknown and never create fake future work.
 
 ## Consequences and boundary
 

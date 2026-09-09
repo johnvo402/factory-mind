@@ -24,6 +24,41 @@ public sealed class DeterministicProductionSchedulePreviewerTests {
     }
 
     [Fact]
+    public void Order_and_priority_filters_select_from_canonical_schedule_without_removing_contention() {
+        var center = Center(1);
+        var firstOrder = Order("PO-A", Operation(center, 60)) with { Priority = ProductionOrderPriorities.Urgent };
+        var targetOrder = Order("PO-B", Operation(center, 60));
+        var data = Data([firstOrder, targetOrder], [center]);
+        var canonical = previewer.Calculate(data, Now, 1, 3, CancellationToken.None).Value!;
+
+        var filtered = SchedulePreviewViews.ApplyFilters(
+            canonical, data, ProductionOrderPriorities.Normal, targetOrder.Id, null);
+
+        var canonicalTarget = canonical.Orders.Single(order => order.Id == targetOrder.Id);
+        Assert.Equal(canonicalTarget.ProjectedCompletion, filtered.Orders.Single().ProjectedCompletion);
+        Assert.Equal(Now.AddHours(2), filtered.Orders.Single().ProjectedCompletion);
+        Assert.Equal(1, filtered.Summary.OrdersConsidered);
+        Assert.Equal(canonical.WorkCenters.Single().ScheduledMinutes, filtered.WorkCenters.Single().ScheduledMinutes);
+    }
+
+    [Fact]
+    public void Work_center_filter_preserves_indirect_upstream_contention() {
+        var cut = Center(1, "CUT");
+        var paint = Center(1, "PAINT");
+        var targetOrder = Order("PO-A", Operation(cut, 60, 1), Operation(paint, 60, 2));
+        var competingOrder = Order("PO-B", Operation(cut, 60)) with { Priority = ProductionOrderPriorities.Urgent };
+        var data = Data([targetOrder, competingOrder], [cut, paint]);
+        var canonical = previewer.Calculate(data, Now, 1, 3, CancellationToken.None).Value!;
+
+        var filtered = SchedulePreviewViews.ApplyFilters(canonical, data, null, null, paint.Id);
+
+        Assert.Equal([targetOrder.Id], filtered.Orders.Select(order => order.Id).ToArray());
+        Assert.Equal([paint.Id], filtered.WorkCenters.Select(center => center.Id).ToArray());
+        Assert.Equal(Now.AddHours(2), filtered.Orders.Single().Operations.Single(operation =>
+            operation.WorkCenterId == paint.Id).ScheduledStart);
+    }
+
+    [Fact]
     public void Capacity_two_allows_parallel_operations_on_abstract_lanes() {
         var center = Center(2);
         var result = previewer.Calculate(
@@ -129,6 +164,143 @@ public sealed class DeterministicProductionSchedulePreviewerTests {
     }
 
     [Fact]
+    public void In_progress_predecessor_without_calendar_blocks_successor() {
+        var unavailable = Center(1, "NO-CALENDAR", []);
+        var valid = Center(1, "VALID");
+        var order = ExecutionOrder("PO-BLOCKED",
+            Operation(unavailable, 60, 10) with {
+                Status = ProductionOperationStatuses.InProgress,
+                StartedAt = Now
+            },
+            Operation(valid, 60, 20));
+
+        var result = previewer.Calculate(Data([order], [unavailable, valid]),
+            Now.AddHours(1), 1, 3, CancellationToken.None).Value!;
+
+        Assert.Empty(result.Orders.Single().Operations);
+        AssertReasonSequence(result, ScheduleUnscheduledReasons.CalendarMissing);
+    }
+
+    [Fact]
+    public void In_progress_predecessor_outside_horizon_blocks_successor() {
+        var first = Center(1, "LONG");
+        var second = Center(1, "VALID");
+        var order = ExecutionOrder("PO-HORIZON",
+            Operation(first, 600, 10) with {
+                Status = ProductionOperationStatuses.InProgress,
+                StartedAt = Now
+            },
+            Operation(second, 60, 20));
+
+        var result = previewer.Calculate(Data([order], [first, second]),
+            Now.AddHours(1), 1, 3, CancellationToken.None).Value!;
+
+        Assert.Empty(result.Orders.Single().Operations);
+        AssertReasonSequence(result, ScheduleUnscheduledReasons.HorizonExceeded);
+    }
+
+    [Fact]
+    public void Pending_inactive_predecessor_blocks_successor() {
+        var inactive = Center(1, "INACTIVE") with { IsActive = false };
+        var valid = Center(1, "VALID");
+        var order = Order("PO-INACTIVE", Operation(inactive, 60, 10), Operation(valid, 60, 20));
+
+        var result = previewer.Calculate(Data([order], [inactive, valid]),
+            Now, 1, 3, CancellationToken.None).Value!;
+
+        Assert.Empty(result.Orders.Single().Operations);
+        AssertReasonSequence(result, ScheduleUnscheduledReasons.WorkCenterInactive);
+    }
+
+    [Fact]
+    public void Pending_calendar_failure_preserves_root_reason_and_blocks_every_successor() {
+        var unavailable = Center(1, "NO-CALENDAR", []);
+        var valid = Center(1, "VALID");
+        var order = Order("PO-CHAIN",
+            Operation(unavailable, 60, 10),
+            Operation(valid, 60, 20),
+            Operation(valid, 60, 30));
+
+        var result = previewer.Calculate(Data([order], [unavailable, valid]),
+            Now, 1, 3, CancellationToken.None).Value!;
+
+        Assert.Empty(result.Orders.Single().Operations);
+        Assert.Equal([
+            ScheduleUnscheduledReasons.CalendarMissing,
+            ScheduleUnscheduledReasons.BlockedByPredecessor,
+            ScheduleUnscheduledReasons.BlockedByPredecessor
+        ], result.Unscheduled.OrderBy(item => item.OperationName).Select(item => item.Reason).ToArray());
+    }
+
+    [Fact]
+    public void All_completed_active_orders_use_latest_actual_completion_for_delivery_projection() {
+        var center = Center(1);
+        var completedAt = Now.AddHours(3);
+        ScheduleOrderInput CompletedOrder(string number, DateTime dueDate) => ExecutionOrder(number,
+            Operation(center, 60, 10) with {
+                Status = ProductionOperationStatuses.Completed,
+                StartedAt = Now,
+                CompletedAt = Now.AddHours(1)
+            },
+            Operation(center, 60, 20) with {
+                Status = ProductionOperationStatuses.Completed,
+                StartedAt = Now.AddHours(2),
+                CompletedAt = completedAt
+            }) with { DueDate = dueDate };
+        var onTime = CompletedOrder("PO-READY-A", Now.AddHours(4));
+        var late = CompletedOrder("PO-READY-B", Now.AddHours(2));
+
+        var result = previewer.Calculate(Data([onTime, late], [center]),
+            Now.AddHours(5), 1, 3, CancellationToken.None).Value!;
+
+        Assert.All(result.Orders, order => {
+            Assert.Equal(completedAt, order.ProjectedCompletion);
+            Assert.Empty(order.Operations);
+        });
+        Assert.Equal(ProjectedDeliveryStatuses.OnTime,
+            result.Orders.Single(order => order.Id == onTime.Id).ProjectedDeliveryStatus);
+        Assert.Equal(ProjectedDeliveryStatuses.Late,
+            result.Orders.Single(order => order.Id == late.Id).ProjectedDeliveryStatus);
+    }
+
+    [Fact]
+    public void Missing_actual_completion_keeps_ready_order_unknown_and_blocks_any_successor() {
+        var center = Center(1);
+        var missingTimestamp = Operation(center, 60, 10) with {
+            Status = ProductionOperationStatuses.Completed,
+            StartedAt = Now,
+            CompletedAt = null
+        };
+        var ready = ExecutionOrder("PO-READY-UNKNOWN", missingTimestamp);
+        var invalidChain = ExecutionOrder("PO-CHAIN-UNKNOWN", missingTimestamp with { Id = Guid.NewGuid() },
+            Operation(center, 60, 20));
+
+        var result = previewer.Calculate(Data([ready, invalidChain], [center]),
+            Now.AddHours(2), 1, 3, CancellationToken.None).Value!;
+
+        Assert.Null(result.Orders.Single(order => order.Id == ready.Id).ProjectedCompletion);
+        Assert.Equal(ProjectedDeliveryStatuses.Unknown,
+            result.Orders.Single(order => order.Id == ready.Id).ProjectedDeliveryStatus);
+        Assert.Empty(result.Orders.Single(order => order.Id == invalidChain.Id).Operations);
+        Assert.Equal(ScheduleUnscheduledReasons.BlockedByPredecessor,
+            result.Unscheduled.Single(item => item.OrderId == invalidChain.Id).Reason);
+    }
+
+    [Fact]
+    public void Canonical_workload_limits_are_checked_before_output_filters() {
+        var center = Center(1);
+        var data = Data([
+            Order("PO-A", Operation(center, 60)),
+            Order("PO-B", Operation(center, 60))
+        ], [center]);
+
+        Assert.True(SchedulePreviewWorkload.ExceedsLimit(data, new PlanningSettings {
+            MaximumOrdersPerPreview = 1,
+            MaximumOperationsPerPreview = 10
+        }));
+    }
+
+    [Fact]
     public void In_progress_work_above_parallel_capacity_is_surfaced_as_current_conflict() {
         var center = Center(1);
         ScheduleOrderInput Running(string number) => Order(number, Operation(center, 180) with {
@@ -191,6 +363,21 @@ public sealed class DeterministicProductionSchedulePreviewerTests {
         Guid.NewGuid(), number, "P", "Product", ProductionOrderStatuses.Planned,
         ProductionOrderPriorities.Normal, ProductionOrderDeliveryStatuses.NoDueDate,
         null, null, PlanningSources.ActiveRouting, true, operations);
+
+    private static ScheduleOrderInput ExecutionOrder(string number, params ScheduleOperationInput[] operations) =>
+        Order(number, operations) with {
+            Status = ProductionOrderStatuses.InProgress,
+            StartedAt = Now,
+            PlanningSource = PlanningSources.LockedSnapshot,
+            IsProvisional = false
+        };
+
+    private static void AssertReasonSequence(SchedulePreviewResponse result, string rootReason) {
+        Assert.Equal(rootReason, result.Unscheduled.Single(item => item.OperationName == "Operation 10").Reason);
+        Assert.Equal(ScheduleUnscheduledReasons.BlockedByPredecessor,
+            result.Unscheduled.Single(item => item.OperationName == "Operation 20").Reason);
+        Assert.Null(result.Orders.Single().ProjectedCompletion);
+    }
 
     private static ScheduleOperationInput Operation(
         ScheduleWorkCenterInput center,

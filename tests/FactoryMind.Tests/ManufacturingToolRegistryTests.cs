@@ -152,6 +152,7 @@ public sealed class ManufacturingToolRegistryTests {
 
     private static ManufacturingToolRegistry CreateRegistry(FactoryMindDbContext dbContext) {
         var risk = RiskCalculator();
+        var planningSettings = new PlanningSettings();
         var repository = new EfSchedulePreviewRepository(dbContext, risk);
         var previewer = new DeterministicProductionSchedulePreviewer(new WorkCenterCalendarService());
         return new(
@@ -163,9 +164,9 @@ public sealed class ManufacturingToolRegistryTests {
         new GetProductionOrderMaterialReadinessTool(dbContext, new MaterialRequirementCalculator()),
         new ListProductionOrdersTool(dbContext, risk),
         new GetProductionOrderSchedulePreviewTool(
-            dbContext, repository, previewer, risk, TimeProvider.System),
+            dbContext, repository, previewer, risk, TimeProvider.System, planningSettings),
         new GetWorkCenterCapacityPreviewTool(
-            dbContext, repository, previewer, risk, TimeProvider.System));
+            dbContext, repository, previewer, risk, TimeProvider.System, planningSettings));
     }
 
     private static IProductionOrderDeliveryRiskCalculator RiskCalculator() =>

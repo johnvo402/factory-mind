@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { PlanningApiService } from './planning-api.service';
 import { SchedulePreview } from './planning.models';
 import { PlanningWorkspaceComponent } from './planning-workspace.component';
@@ -39,6 +39,25 @@ describe('PlanningWorkspaceComponent', () => {
     buttons.find(button => button.textContent?.includes('Tính lại kế hoạch'))?.click();
     await fixture.whenStable();
     expect(api.getPreview.calls.count()).toBe(3);
+  });
+
+  it('keeps the loaded 14-day horizon and Gantt geometry when a 30-day refresh fails', async () => {
+    api.getPreview.and.returnValue(throwError(() => new Error('30-day request failed')));
+    const horizonButton = (Array.from(
+      fixture.nativeElement.querySelectorAll('button'),
+    ) as HTMLButtonElement[]).find(button => button.textContent?.includes('30 ngày'))!;
+
+    horizonButton.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(api.getPreview).toHaveBeenCalledWith(30);
+    expect(horizonButton.getAttribute('aria-pressed')).toBe('true');
+    expect(text()).toContain('Preview đang hiển thị: 14 ngày');
+    expect(text()).toContain('Unable to connect to the FactoryMind API.');
+    expect(fixture.nativeElement.querySelectorAll('.day-header span').length).toBe(14);
+    expect((fixture.nativeElement.querySelector('.gantt') as HTMLElement).style.getPropertyValue('--day-count')).toBe('14');
+    expect(text()).toContain('PO-001');
   });
 
   function text(): string { return fixture.nativeElement.textContent; }
