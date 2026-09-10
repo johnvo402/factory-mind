@@ -739,10 +739,15 @@ giá trị cardinality thấp; question, prompt, evidence, content, vector, secr
 
 ## Production containers
 
-Tạo file secrets riêng từ template dành riêng cho Production:
+Production là topology một VPS với PostgreSQL/MinIO private, API private và Angular/Nginx public qua
+cổng cấu hình. Mỗi release bắt buộc là cùng một full 40-character Git SHA cho API và frontend; tag
+`prod` chỉ là con trỏ tiện lợi do CI publish, không được deployment scripts chấp nhận.
 
-```powershell
-Copy-Item .env.production.example .env.production
+Trên Linux VPS, tạo file secrets riêng:
+
+```bash
+cp .env.production.example .env.production
+chmod 600 .env.production
 ```
 
 Cấu hình tối thiểu trong `.env.production`:
@@ -753,37 +758,56 @@ Cấu hình tối thiểu trong `.env.production`:
 - `JWT_KEY` mạnh, tối thiểu 32 ký tự và không dùng development key
 - `GEMINI_API_KEY`
 - `BOOTSTRAP_COMPANY_NAME`, `BOOTSTRAP_ADMIN_NAME`, `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` khi database còn trống
-- `IMAGE_TAG=prod` dùng con trỏ release mới nhất đã vượt qua CI trên `main`; có thể thay bằng full 40-character commit SHA khi cần ghim phiên bản hoặc rollback
+- `FACTORYMIND_STATE_DIR` và `BACKUP_ROOT` trỏ tới thư mục host private, nên đặt ngoài checkout
 
 Nếu GHCR package không public, đăng nhập registry bằng token chỉ có quyền `read:packages`:
 
-```powershell
-$env:CR_PAT | docker login ghcr.io -u <github-user> --password-stdin
+```bash
+printf '%s' "$CR_PAT" | docker login ghcr.io -u <github-user> --password-stdin
 ```
 
-Validate, pull đúng artifact đã qua CI, rồi chạy production topology mà không build source trên deployment host:
+Deploy đúng artifact đã qua CI:
 
-```powershell
-docker compose --env-file .env.production -f compose.prod.yaml config --quiet
-docker compose --env-file .env.production -f compose.prod.yaml pull api frontend
-docker compose --env-file .env.production -f compose.prod.yaml up -d --no-build --wait --wait-timeout 180
-docker compose --env-file .env.production -f compose.prod.yaml ps
+```bash
+./scripts/production/deploy.sh 0123456789abcdef0123456789abcdef01234567
 ```
 
-Production Compose không chứa `build:` cho API/frontend, đặt `pull_policy: always` để mỗi lần `up` đều kiểm tra release `prod` mới nhất, và hard-code `ASPNETCORE_ENVIRONMENT=Production`. Production topology chỉ publish cổng Nginx frontend. Nginx phục vụ Angular và reverse proxy `/api` tới API private; PostgreSQL và MinIO chỉ nằm trong internal network.
+Script validate SHA/env, giữ exclusive deployment lock, pull image trước khi chạm release đang chạy,
+tạo backup PostgreSQL + MinIO đã checksum, chạy one-shot migration, chờ health, chạy smoke và ghi
+current/previous SHA. Invariant là `NO VERIFIED BACKUP -> NO MIGRATION`.
 
-Để rollback, tạm đổi `IMAGE_TAG` từ `prod` sang full commit SHA tốt trước đó, chạy lại `pull api frontend`, rồi `up -d --no-build --wait`. Đổi lại `prod` ở lần deploy tiếp theo để tiếp tục lấy release mới nhất đã vượt qua CI.
+Normal Production API startup không chạy `Database.MigrateAsync()`. Compose service `migrate` dùng cùng
+immutable API image và chạy:
 
-Sau lần khởi tạo database đầu tiên, xóa các biến `BOOTSTRAP_*` khỏi deployment environment. API không đọc lại bootstrap credentials khi Company và User đã tồn tại.
+```bash
+dotnet FactoryMind.Api.dll --migrate
+```
 
-Trước mỗi lần nâng cấp:
+Mode này apply EF migrations, bootstrap Company/Admin đầu tiên một cách idempotent rồi exit; API chỉ
+start sau exit code 0. Development/Testing vẫn tự initialize để không làm khó local workflow.
 
-- Sao lưu PostgreSQL và MinIO volumes.
-- Xác nhận tag `prod` đang trỏ tới run CI mong muốn; ghi lại full commit SHA để có thể rollback.
-- Xác nhận health checks trước khi chuyển traffic.
-- Chuẩn bị rollback image và người chịu trách nhiệm rollback.
+Các lệnh vận hành chính:
 
-TLS, domain và VPS deployment chưa được tự động hóa vì phụ thuộc hạ tầng đích và credentials vận hành.
+```bash
+./scripts/production/backup.sh
+./scripts/production/rollback.sh
+./scripts/production/restore.sh /path/to/backup --force
+./scripts/production/smoke.sh 0123456789abcdef0123456789abcdef01234567
+./scripts/production/verify-backup-restore.sh
+```
+
+Application rollback chỉ đổi API/frontend image và **không** reverse database migration. Migration cần
+tuân theo `expand -> deploy -> contract later` khi phải tương thích ngược. Nếu schema không còn tương
+thích với image cũ, operator phải chủ động restore pre-deploy backup; scripts không tự động phá dữ liệu.
+
+Runbook đầy đủ:
+
+- [Production deployment](docs/operations/production-deployment.md)
+- [Backup, restore và isolated recovery drill](docs/operations/backup-restore.md)
+
+Local VPS backup chỉ bảo vệ trước lỗi ứng dụng/operator, không bảo vệ khi mất VPS/disk. Cần sao chép
+backup đã mã hóa ra offsite storage và diễn tập restore định kỳ. Production internet exposure phải kết
+thúc HTTPS qua reverse proxy/load balancer/trusted tunnel; cổng HTTP thuần không phải ingress an toàn.
 
 ## CI/CD
 

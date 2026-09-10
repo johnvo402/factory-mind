@@ -33,17 +33,34 @@ services:
       retries: 10
       start_period: 20s
 
+  migrate:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-johnvo402}/factory-mind-api:${IMAGE_TAG:?IMAGE_TAG must be an immutable release SHA}
+    pull_policy: ${APP_PULL_POLICY:-always}
+    restart: "no"
+    command: ["dotnet", "FactoryMind.Api.dll", "--migrate"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__FactoryMind: Host=postgres;Port=5432;Database=${POSTGRES_DB:-factorymind};Username=${POSTGRES_USER:-factorymind};Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      BootstrapAdmin__CompanyName: ${BOOTSTRAP_COMPANY_NAME:-}
+      BootstrapAdmin__Name: ${BOOTSTRAP_ADMIN_NAME:-}
+      BootstrapAdmin__Email: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BootstrapAdmin__Password: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-johnvo402}/factory-mind-api:${IMAGE_TAG:-prod}
-    pull_policy: always
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-johnvo402}/factory-mind-api:${IMAGE_TAG:?IMAGE_TAG must be an immutable release SHA}
+    pull_policy: ${APP_PULL_POLICY:-always}
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      Release__Sha: ${IMAGE_TAG:?IMAGE_TAG must be an immutable release SHA}
       ConnectionStrings__FactoryMind: Host=postgres;Port=5432;Database=${POSTGRES_DB:-factorymind};Username=${POSTGRES_USER:-factorymind};Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       Minio__Endpoint: minio:9000
       Minio__AccessKey: ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}
       Minio__SecretKey: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
-      Minio__Bucket: factorymind
+      Minio__Bucket: ${MINIO_BUCKET:-factorymind}
       Minio__UseSsl: "false"
       Jwt__Key: ${JWT_KEY:?JWT_KEY is required}
       GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required}
@@ -59,8 +76,8 @@ services:
       BootstrapAdmin__Email: ${BOOTSTRAP_ADMIN_EMAIL:-}
       BootstrapAdmin__Password: ${BOOTSTRAP_ADMIN_PASSWORD:-}
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       minio:
         condition: service_healthy
     healthcheck:
@@ -71,8 +88,8 @@ services:
       start_period: 30s
 
   frontend:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-johnvo402}/factory-mind-frontend:${IMAGE_TAG:-prod}
-    pull_policy: always
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-johnvo402}/factory-mind-frontend:${IMAGE_TAG:?IMAGE_TAG must be an immutable release SHA}
+    pull_policy: ${APP_PULL_POLICY:-always}
     restart: unless-stopped
     ports:
       - "${HTTP_PORT:-80}:8080"

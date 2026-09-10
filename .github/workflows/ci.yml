@@ -39,6 +39,11 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore FactoryMind.sln
 
+      - name: Validate production Bash scripts
+        run: |
+          bash -n scripts/production/*.sh
+          (cd scripts/production && shellcheck --external-sources ./*.sh)
+
       - name: Verify formatting
         run: dotnet format FactoryMind.sln --verify-no-changes --no-restore
 
@@ -168,6 +173,8 @@ jobs:
       BOOTSTRAP_ADMIN_PASSWORD: ci-bootstrap-password
       IMAGE_TAG: ${{ github.sha }}
       GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+      MINIO_BUCKET: factorymind
+      HTTP_PORT: 18080
 
     steps:
       - name: Checkout repository
@@ -209,3 +216,22 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/factory-mind-frontend:${{ github.sha }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Verify explicit migration mode is idempotent
+        run: |
+          docker compose -f compose.prod.yaml up -d --no-build --wait postgres minio
+          docker compose -f compose.prod.yaml up --no-deps --no-build --abort-on-container-exit --exit-code-from migrate migrate
+          docker compose -f compose.prod.yaml rm -f migrate
+          docker compose -f compose.prod.yaml up --no-deps --no-build --abort-on-container-exit --exit-code-from migrate migrate
+
+      - name: Smoke test isolated production stack
+        run: |
+          docker compose -f compose.prod.yaml up -d --no-build --wait --wait-timeout 180
+          ENV_FILE=/dev/null ./scripts/production/smoke.sh "$GITHUB_SHA"
+
+      - name: Verify isolated PostgreSQL and MinIO backup restore
+        run: ./scripts/production/verify-backup-restore.sh
+
+      - name: Tear down production verification stacks
+        if: always()
+        run: docker compose -f compose.prod.yaml down -v --remove-orphans

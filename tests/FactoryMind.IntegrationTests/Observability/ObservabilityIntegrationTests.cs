@@ -67,8 +67,10 @@ public sealed class ObservabilityIntegrationTests(PostgreSqlFixture fixture)
             responseText,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         Assert.Equal("Healthy", live!.Status);
+        Assert.Equal("0123456789abcdef0123456789abcdef01234567", live.ReleaseSha);
         Assert.Empty(live.Checks);
         Assert.Equal("Healthy", ready!.Status);
+        Assert.Equal("0123456789abcdef0123456789abcdef01234567", ready.ReleaseSha);
         var postgresql = Assert.Single(ready.Checks);
         Assert.Equal("postgresql", postgresql.Name);
         Assert.Equal("Healthy", postgresql.Status);
@@ -80,6 +82,9 @@ public sealed class ObservabilityIntegrationTests(PostgreSqlFixture fixture)
         Assert.DoesNotContain("exception", responseText, StringComparison.OrdinalIgnoreCase);
     }
 
-    private sealed record HealthPayload(string Status, IReadOnlyList<HealthCheckPayload> Checks);
+    private sealed record HealthPayload(
+        string Status,
+        string ReleaseSha,
+        IReadOnlyList<HealthCheckPayload> Checks);
     private sealed record HealthCheckPayload(string Name, string Status, double DurationMs);
 }

@@ -3,18 +3,27 @@ using FactoryMind.Api.Endpoints;
 using FactoryMind.Api.Observability;
 using FactoryMind.Application;
 using FactoryMind.Infrastructure;
+using FactoryMind.Infrastructure.Persistence;
 using FactoryMind.Api.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddFactoryMindLogging();
+var initializationMode = InfrastructureInitializationModeResolver.Resolve(
+    args,
+    builder.Environment.EnvironmentName);
 
-builder.Services
-    .AddApplication()
-    .AddInfrastructure(builder.Configuration)
-    .AddPresentation(builder.Configuration, builder.Environment);
+if (initializationMode == InfrastructureInitializationMode.Migration) {
+    builder.Services.AddInfrastructure(builder.Configuration);
+} else {
+    builder.Services
+        .AddApplication()
+        .AddInfrastructure(builder.Configuration)
+        .AddPresentation(builder.Configuration, builder.Environment);
+}
 
 var app = builder.Build();
-await app.Services.InitializeInfrastructureAsync();
+await app.Services.InitializeInfrastructureAsync(initializationMode);
+if (initializationMode == InfrastructureInitializationMode.Migration) return;
 
 app.UseCors();
 app.UseMiddleware<CorrelationIdMiddleware>();

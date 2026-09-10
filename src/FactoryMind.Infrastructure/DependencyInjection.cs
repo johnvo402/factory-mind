@@ -163,10 +163,14 @@ public static class DependencyInjection {
 
     public static async Task InitializeInfrastructureAsync(
         this IServiceProvider serviceProvider,
+        InfrastructureInitializationMode mode,
         CancellationToken cancellationToken = default) {
+        if (mode == InfrastructureInitializationMode.None) return;
+
         using var scope = serviceProvider.CreateScope();
-        await scope.ServiceProvider
-            .GetRequiredService<FactoryMindDatabaseInitializer>()
-            .InitializeAsync(cancellationToken);
+        var initializer = scope.ServiceProvider.GetRequiredService<FactoryMindDatabaseInitializer>();
+        await initializer.MigrateAsync(cancellationToken);
+        await initializer.BootstrapAsync(cancellationToken);
+        await initializer.SeedDevelopmentAsync(cancellationToken);
     }
 }

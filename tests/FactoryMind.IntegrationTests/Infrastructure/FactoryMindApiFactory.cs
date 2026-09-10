@@ -25,6 +25,7 @@ public sealed class FactoryMindApiFactory(string connectionString) : WebApplicat
         builder.ConfigureAppConfiguration((_, configuration) => {
             configuration.AddInMemoryCollection(new Dictionary<string, string?> {
                 ["ConnectionStrings:FactoryMind"] = connectionString,
+                ["Release:Sha"] = "0123456789abcdef0123456789abcdef01234567",
                 ["BootstrapAdmin:CompanyName"] = "FactoryMind Integration Bootstrap",
                 ["BootstrapAdmin:Name"] = "Integration Bootstrap Admin",
                 ["BootstrapAdmin:Email"] = "bootstrap@factorymind.test",

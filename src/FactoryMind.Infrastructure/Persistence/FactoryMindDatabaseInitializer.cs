@@ -14,9 +14,10 @@ public sealed class FactoryMindDatabaseInitializer(
     IHostEnvironment environment) {
     private const string DevelopmentDemoPassword = "Demo@123";
 
-    public async Task InitializeAsync(CancellationToken cancellationToken = default) {
-        await dbContext.Database.MigrateAsync(cancellationToken);
+    public Task MigrateAsync(CancellationToken cancellationToken = default) =>
+        dbContext.Database.MigrateAsync(cancellationToken);
 
+    public async Task BootstrapAsync(CancellationToken cancellationToken = default) {
         var company = await dbContext.Companies
             .OrderBy(item => item.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
@@ -41,11 +42,15 @@ public sealed class FactoryMindDatabaseInitializer(
             });
         }
 
-        if (!environment.IsDevelopment()) {
-            await dbContext.SaveChangesAsync(cancellationToken);
-            return;
-        }
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
 
+    public async Task SeedDevelopmentAsync(CancellationToken cancellationToken = default) {
+        if (!environment.IsDevelopment()) return;
+
+        var company = await dbContext.Companies
+            .OrderBy(item => item.CreatedAt)
+            .FirstAsync(cancellationToken);
         await SeedDevelopmentDataAsync(company, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
