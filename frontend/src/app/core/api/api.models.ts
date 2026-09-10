@@ -5,6 +5,7 @@ export interface ApiResponse<T> {
 }
 
 export interface ProblemDetails {
+  code?: string;
   detail?: string;
   status?: number;
   title?: string;

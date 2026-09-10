@@ -1,6 +1,6 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ExcelImportWizardComponent } from '../excel-imports/excel-import-wizard.component';
 import { ExcelImportEntityType } from '../excel-imports/excel-import.models';
 import { InventoryStore } from '../inventories/inventory.store';
@@ -54,6 +54,8 @@ const DATA_VIEWS: readonly DataView[] = [
 })
 export class DataWorkspaceComponent {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly machines = inject(MachineStore);
   private readonly materials = inject(MaterialStore);
   private readonly inventories = inject(InventoryStore);
@@ -71,11 +73,22 @@ export class DataWorkspaceComponent {
 
   constructor() {
     effect(() => {
+      const requestedView = this.routeParams().get('view');
+      if (requestedView && !DATA_VIEWS.includes(requestedView as DataView)) {
+        void this.router.navigateByUrl('/not-found');
+        return;
+      }
       this.activeView();
       this.importMessage.set('');
       if (this.importEntityType() === null) {
         this.importOpen.set(false);
       }
+      requestAnimationFrame(() => {
+        this.host.nativeElement.querySelector<HTMLElement>('.tabs .active')?.scrollIntoView({
+          block: 'nearest',
+          inline: 'center',
+        });
+      });
     });
   }
 

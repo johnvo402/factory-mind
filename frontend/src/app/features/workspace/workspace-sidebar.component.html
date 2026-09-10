@@ -15,9 +15,9 @@
         <p>Chưa có cuộc trò chuyện.</p>
       }
       @for (conversation of store.conversations(); track conversation.id) {
-        <button type="button" class="conversation" [class.active]="store.selectedConversationId() === conversation.id" [disabled]="store.isStreaming()" (click)="selectConversation(conversation.id)" [title]="conversation.title">
+        <button type="button" class="conversation" [class.active]="store.selectedConversationId() === conversation.id" [disabled]="store.isStreaming()" (click)="selectConversation(conversation.id)" [title]="store.displayTitle(conversation)">
           <app-ui-icon name="message-square" [size]="16" />
-          <span>{{ conversation.title }}</span>
+          <span>{{ store.displayTitle(conversation) }}</span>
         </button>
       }
     </section>
@@ -39,11 +39,17 @@
       <strong>Tài liệu và tìm kiếm</strong>
       <p>PDF đã xử lý là nguồn trích dẫn cho câu trả lời AI.</p>
     </section>
-  } @else {
+  } @else if (activeView() === 'settings') {
     <section class="data-context">
       <span class="section-label">Cài đặt</span>
       <strong>Quản trị hệ thống</strong>
       <p>Công ty, người dùng và cấu hình Gemini.</p>
+    </section>
+  } @else {
+    <section class="data-context">
+      <span class="section-label">Điều hướng</span>
+      <strong>Cần chọn lại điểm đến</strong>
+      <p>Đường dẫn không tồn tại hoặc tài khoản chưa được cấp quyền.</p>
     </section>
   }
 

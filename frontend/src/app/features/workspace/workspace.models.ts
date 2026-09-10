@@ -1,1 +1,1 @@
-export type WorkspaceView = 'chat' | 'knowledge' | 'data' | 'planning' | 'settings';
+export type WorkspaceView = 'chat' | 'knowledge' | 'data' | 'planning' | 'settings' | 'status';

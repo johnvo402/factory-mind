@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Observable, of, Subject, throwError } from 'rxjs';
 import { ApiResponse } from '../../core/api/api.models';
@@ -21,8 +22,10 @@ describe('ChatStore', () => {
       'getConversations',
       'createConversation',
       'getMessages',
+      'getActionProposals',
       'streamMessage',
     ]);
+    api.getActionProposals.and.returnValue(success([]));
     TestBed.configureTestingModule({
       providers: [ChatStore, { provide: ChatApiService, useValue: api }],
     });
@@ -113,6 +116,21 @@ describe('ChatStore', () => {
 
     expect(store.messages()).toEqual([]);
     expect(store.error()).toBe('AI unavailable');
+  });
+
+  it('presents default conversation titles and gateway errors in Vietnamese', async () => {
+    api.getConversations.and.returnValue(success([]));
+    api.createConversation.and.returnValue(success(conversation()));
+    api.streamMessage.and.returnValue(throwError(() => new HttpErrorResponse({ status: 502 })));
+    api.getMessages.and.returnValue(success([]));
+
+    await store.initialize();
+    await store.sendMessage('Kiểm tra trạng thái máy');
+
+    expect(store.displayTitle(conversation())).toBe('Cuộc trò chuyện mới');
+    expect(store.error()).toBe(
+      'Trợ lý AI hiện chưa khả dụng. Kiểm tra cấu hình Gemini hoặc thử lại sau.',
+    );
   });
 
   function persistedAssistantMessage(): ChatMessage {

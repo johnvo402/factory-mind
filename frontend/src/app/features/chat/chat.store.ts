@@ -33,6 +33,13 @@ export class ChatStore {
       conversation.id === this.selectedConversationIdState()) ?? null,
   );
 
+  displayTitle(conversation: Conversation | null | undefined): string {
+    const title = conversation?.title.trim();
+    return !title || title.toLocaleLowerCase() === 'new conversation'
+      ? 'Cuộc trò chuyện mới'
+      : title;
+  }
+
   async initialize(): Promise<void> {
     if (this.initialized || this.loadingState()) {
       return;
@@ -344,12 +351,18 @@ export class ChatStore {
   private errorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
       const problem = error.error as ProblemDetails | null;
-      return problem?.detail ?? `Request failed (${error.status}).`;
+      if (problem?.detail) return problem.detail;
+      if (error.status === 0) return 'Không thể kết nối tới FactoryMind API.';
+      if (error.status === 429) return 'Trợ lý AI đang quá tải. Vui lòng thử lại sau ít phút.';
+      if (error.status === 502 || error.status === 503) {
+        return 'Trợ lý AI hiện chưa khả dụng. Kiểm tra cấu hình Gemini hoặc thử lại sau.';
+      }
+      return `Không thể hoàn tất yêu cầu (${error.status}). Vui lòng thử lại.`;
     }
 
     return error instanceof Error
       ? error.message
-      : 'Unable to complete the chat request.';
+      : 'Không thể hoàn tất yêu cầu chat. Vui lòng thử lại.';
   }
 
   private isCurrentSession(version: number): boolean {

@@ -14,7 +14,7 @@ import { Routing, RoutingInput, RoutingOperation, RoutingStatus } from './routin
   selector: 'app-product-routing-panel',
   imports: [ReactiveFormsModule, DialogFocusDirective, UiIconComponent],
   templateUrl: './product-routing-panel.component.html',
-  styleUrl: './product-routing-panel.component.scss',
+  styleUrls: ['../data/entity-workspace.scss', './product-routing-panel.component.scss'],
 })
 export class ProductRoutingPanelComponent implements OnInit {
   private readonly api = inject(RoutingApiService);

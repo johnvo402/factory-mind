@@ -22,9 +22,9 @@
       <button type="button" class="primary" (click)="startCreate()">Thêm sản phẩm</button>
     </div>
   } @else {
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Danh sách sản phẩm">
       <table>
-        <thead><tr><th>Mã</th><th>Tên sản phẩm</th><th>Cập nhật</th><th></th></tr></thead>
+        <thead><tr><th>Mã</th><th>Tên sản phẩm</th><th>Cập nhật</th><th aria-label="Thao tác"></th></tr></thead>
         <tbody>
           @for (product of store.products(); track product.id) {
             <tr>
@@ -211,7 +211,7 @@
                   @if (bom.items.length === 0) {
                     <div class="compact-empty"><span>Revision này chưa có thành phần vật tư.</span></div>
                   } @else {
-                    <div class="table-wrap compact-table">
+                    <div class="table-wrap compact-table" tabindex="0" role="region" aria-label="Vật tư trong BOM">
                       <table>
                         <thead><tr><th>Vật tư</th><th>Số lượng</th><th>Đơn vị</th><th>Hao hụt</th></tr></thead>
                         <tbody>

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { PlanningApiService } from './planning-api.service';
-import { SchedulePreview } from './planning.models';
+import { ScheduleOperationPreview, SchedulePreview } from './planning.models';
 import { PlanningWorkspaceComponent } from './planning-workspace.component';
 
 describe('PlanningWorkspaceComponent', () => {
@@ -54,10 +54,33 @@ describe('PlanningWorkspaceComponent', () => {
     expect(api.getPreview).toHaveBeenCalledWith(30);
     expect(horizonButton.getAttribute('aria-pressed')).toBe('true');
     expect(text()).toContain('Preview đang hiển thị: 14 ngày');
-    expect(text()).toContain('Unable to connect to the FactoryMind API.');
+    expect(text()).toContain('Không thể kết nối tới FactoryMind API.');
     expect(fixture.nativeElement.querySelectorAll('.day-header span').length).toBe(14);
     expect((fixture.nativeElement.querySelector('.gantt') as HTMLElement).style.getPropertyValue('--day-count')).toBe('14');
     expect(text()).toContain('PO-001');
+  });
+
+  it('clips Gantt bars to both edges of the loaded horizon', () => {
+    const component = fixture.componentInstance as unknown as {
+      barStyle: (operation: ScheduleOperationPreview) => Record<string, string>;
+    };
+    const operation = preview().orders[0].operations[0];
+
+    const clippedStart = component.barStyle({
+      ...operation,
+      scheduledStart: '2026-09-08T07:00:00Z',
+      scheduledEnd: '2026-09-08T09:00:00Z',
+    });
+    const clippedEnd = component.barStyle({
+      ...operation,
+      scheduledStart: '2026-09-22T07:00:00Z',
+      scheduledEnd: '2026-09-22T10:00:00Z',
+    });
+
+    expect(parseFloat(clippedStart['left'])).toBe(0);
+    expect(parseFloat(clippedStart['width'])).toBe(0.35);
+    expect(parseFloat(clippedEnd['left'])).toBeCloseTo(335 / 336 * 100, 5);
+    expect(parseFloat(clippedEnd['width'])).toBeCloseTo(100 / 336, 5);
   });
 
   function text(): string { return fixture.nativeElement.textContent; }

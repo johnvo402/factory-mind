@@ -62,7 +62,7 @@
 
       <section class="preview">
         <h3><i>3</i> Xem trước {{ preview.totalRows }} dòng</h3>
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Xem trước dữ liệu Excel">
           <table>
             <thead><tr>@for (header of preview.headers; track header) { <th>{{ header }}</th> }</tr></thead>
             <tbody>

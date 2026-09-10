@@ -1,0 +1,12 @@
+<main class="status-shell">
+  <article aria-labelledby="status-title">
+    <div class="status-mark"><app-ui-icon name="triangle-alert" [size]="28" /></div>
+    <span class="eyebrow">{{ eyebrow }} · {{ code }}</span>
+    <h1 id="status-title">{{ title }}</h1>
+    <p>{{ description }}</p>
+    <div class="actions">
+      <a class="primary" routerLink="/chat"><app-ui-icon name="message-square" [size]="18" /> Về Chat</a>
+      <a class="secondary" routerLink="/knowledge"><app-ui-icon name="book-open" [size]="18" /> Mở kho tri thức</a>
+    </div>
+  </article>
+</main>

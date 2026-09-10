@@ -33,10 +33,10 @@
 
           <article class="card editor">
             <div class="editor-heading"><span class="icon-box"><app-ui-icon name="user" /></span><div><h2>{{ selectedUserId() ? 'Chỉnh sửa người dùng' : 'Người dùng mới' }}</h2><p>Thiết lập thông tin và quyền truy cập.</p></div></div>
-            <label>Tên<input [value]="userName()" (input)="userName.set($any($event.target).value)" maxlength="200"></label>
-            <label>Email<input type="email" [value]="userEmail()" (input)="userEmail.set($any($event.target).value)" maxlength="320"></label>
+            <label>Tên<input [value]="userName()" (input)="userName.set($any($event.target).value)" maxlength="200" autocomplete="off"></label>
+            <label>Email<input type="email" [value]="userEmail()" (input)="userEmail.set($any($event.target).value)" maxlength="320" autocomplete="off"></label>
             @if (!selectedUserId()) {
-              <label>Mật khẩu<input type="password" [value]="userPassword()" (input)="userPassword.set($any($event.target).value)" minlength="8"></label>
+              <label>Mật khẩu<input type="password" [value]="userPassword()" (input)="userPassword.set($any($event.target).value)" minlength="8" autocomplete="new-password"></label>
             }
             <label>Vai trò
               <select [value]="userRole()" (change)="changeRole($event)">

@@ -64,6 +64,6 @@ export class App {
 
   private errorMessage(error: HttpErrorResponse): string {
     return (error.error as ProblemDetails | undefined)?.detail
-      ?? 'Unable to connect to the FactoryMind API.';
+      ?? 'Không thể kết nối tới FactoryMind API. Vui lòng thử lại.';
   }
 }

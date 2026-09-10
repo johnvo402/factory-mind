@@ -80,11 +80,22 @@ export class PlanningWorkspaceComponent implements OnInit {
   protected barStyle(operation: ScheduleOperationPreview): Record<string, string> {
     const preview = this.preview();
     if (!preview) return {};
-    const start = new Date(preview.horizonStart).getTime();
-    const span = new Date(preview.horizonEnd).getTime() - start;
-    const left = Math.max(0, (new Date(operation.scheduledStart).getTime() - start) / span * 100);
-    const width = Math.max(.35, (new Date(operation.scheduledEnd).getTime() - new Date(operation.scheduledStart).getTime()) / span * 100);
-    return { left: `${left}%`, width: `${Math.min(width, 100 - left)}%` };
+    const horizonStart = Date.parse(preview.horizonStart);
+    const horizonEnd = Date.parse(preview.horizonEnd);
+    const operationStart = Date.parse(operation.scheduledStart);
+    const operationEnd = Date.parse(operation.scheduledEnd);
+    const span = horizonEnd - horizonStart;
+    const visualStart = Math.max(operationStart, horizonStart);
+    const visualEnd = Math.min(operationEnd, horizonEnd);
+    if (![horizonStart, horizonEnd, operationStart, operationEnd].every(Number.isFinite)
+      || span <= 0 || visualEnd <= visualStart) {
+      return { display: 'none' };
+    }
+
+    const left = (visualStart - horizonStart) / span * 100;
+    const visibleWidth = (visualEnd - visualStart) / span * 100;
+    const width = Math.min(Math.max(.35, visibleWidth), 100 - left);
+    return { left: `${left}%`, width: `${width}%` };
   }
 
   protected formatDate(value: string | Date | null, includeTime = true): string {

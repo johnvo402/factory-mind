@@ -1,0 +1,88 @@
+:host { min-width: 0; display: block; }
+
+.status-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--color-primary-soft) 72%, transparent), transparent 25rem),
+    var(--color-background);
+  padding: var(--content-gutter);
+}
+
+article {
+  width: min(640px, 100%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  padding: clamp(28px, 5vw, 52px);
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.status-mark {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.eyebrow {
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+h1 {
+  margin: var(--space-2) 0 0;
+  color: var(--color-foreground);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+}
+
+p {
+  max-width: 520px;
+  margin: var(--space-4) auto 0;
+  color: var(--color-muted);
+  line-height: 1.65;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+
+.actions a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-sm);
+  padding: 10px 15px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.primary { background: var(--color-primary); color: var(--color-primary-foreground); }
+.primary:hover { background: var(--color-primary-hover); }
+.secondary { border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text); }
+.secondary:hover { background: var(--color-surface-subtle); }
+
+@media (max-width: 720px) {
+  .status-shell {
+    min-height: calc(100dvh - var(--mobile-topbar-height) - var(--mobile-nav-height));
+    padding: var(--space-4);
+  }
+
+  .actions { display: grid; }
+}

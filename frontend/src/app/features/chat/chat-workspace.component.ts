@@ -62,6 +62,13 @@ export class ChatWorkspaceComponent implements OnInit, OnDestroy {
         }
       });
     });
+    effect(() => {
+      if (this.store.isStreaming()) {
+        this.composer.disable({ emitEvent: false });
+      } else {
+        this.composer.enable({ emitEvent: false });
+      }
+    });
   }
 
   ngOnInit(): void {

@@ -56,7 +56,7 @@
       ><button type="button" class="primary" (click)="startOperation('receive')">Nhập kho</button>
     </div>
   } @else {
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Sổ kho nguyên liệu">
       <table>
         <thead>
           <tr>
@@ -64,7 +64,7 @@
             <th>Kho</th>
             <th>Số lượng</th>
             <th>Cập nhật cuối</th>
-            <th></th>
+            <th aria-label="Thao tác"></th>
           </tr>
         </thead>
         <tbody>
@@ -289,7 +289,7 @@
         } @else if (store.transactions().length === 0) {
           <div class="state empty"><strong>Chưa có giao dịch.</strong></div>
         } @else {
-          <div class="table-wrap history-table">
+          <div class="table-wrap history-table" tabindex="0" role="region" aria-label="Lịch sử kho nguyên liệu">
             <table>
               <thead>
                 <tr>

@@ -130,7 +130,7 @@
       ><button type="button" class="primary" (click)="startCreate()">Thêm lệnh sản xuất</button>
     </div>
   } @else {
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Danh sách lệnh sản xuất">
       <table class="orders-table">
         <thead>
           <tr>
@@ -142,7 +142,7 @@
             <th>Rủi ro giao hàng</th>
             <th>Phiên bản đã khóa</th>
             <th>Trạng thái</th>
-            <th></th>
+            <th aria-label="Thao tác"></th>
           </tr>
         </thead>
         <tbody>
@@ -329,7 +329,7 @@
           </label>
           <label
             >Hạn giao<input type="date" formControlName="dueDate" />
-            <small>Ngày giao được lưu đến cuối ngày UTC; có thể để trống.</small>
+            <small class="helper">Ngày giao được lưu đến cuối ngày UTC; có thể để trống.</small>
           </label>
           <label
             >Mức ưu tiên<select formControlName="priority">

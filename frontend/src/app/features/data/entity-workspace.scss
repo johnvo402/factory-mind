@@ -28,6 +28,7 @@ p { margin: 0; }
   gap: var(--space-2);
   border-radius: var(--radius-sm);
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .primary {
@@ -72,6 +73,9 @@ p { margin: 0; }
 .toolbar-actions,
 .search-form { display: flex; align-items: center; gap: var(--space-2); }
 
+.toolbar-actions,
+.search-form { min-width: 0; }
+
 .toolbar {
   align-items: flex-end;
   justify-content: space-between;
@@ -108,6 +112,11 @@ select:focus {
   border-radius: var(--radius-md);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
+}
+
+.table-wrap:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 32%, transparent);
+  outline-offset: 3px;
 }
 
 table { width: 100%; min-width: 700px; border-collapse: collapse; font-size: 0.875rem; }
@@ -185,7 +194,7 @@ td strong { color: var(--color-foreground); }
 .editor-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10;
+  z-index: 100;
   display: grid;
   justify-content: end;
   background: color-mix(in srgb, var(--color-sidebar) 56%, transparent);
@@ -220,6 +229,7 @@ td strong { color: var(--color-foreground); }
 .editor form { display: grid; gap: var(--space-5); margin-top: var(--space-8); }
 .editor label { display: grid; gap: 7px; color: var(--color-text); font-size: 0.84rem; font-weight: 700; }
 .editor small { color: var(--color-danger); font-weight: 500; }
+.editor small.helper { color: var(--color-muted); }
 .editor footer {
   display: flex;
   justify-content: flex-end;
@@ -236,17 +246,21 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 }
 
 @media (max-width: 1100px) {
-  .toolbar,
-  .toolbar-actions { align-items: stretch; flex-direction: column; }
-  .toolbar { align-items: stretch; }
-  .toolbar-actions { align-items: flex-end; }
-  .search-form input { width: min(380px, 42vw); }
+  .toolbar { align-items: stretch; flex-direction: column; }
+  .toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .search-form { flex: 1 1 420px; }
+  .search-form input { width: auto; min-width: 0; flex: 1 1 auto; }
 }
 
 @media (max-width: 720px) {
   .content { padding: var(--space-5) var(--space-4) var(--space-10); }
   .toolbar-actions,
   .search-form { align-items: stretch; }
+  .toolbar-actions { display: grid; grid-template-columns: 1fr; }
   .search-form { display: grid; grid-template-columns: 1fr auto; }
   .search-form input { width: 100%; grid-column: 1 / -1; }
   .primary { min-height: 44px; }

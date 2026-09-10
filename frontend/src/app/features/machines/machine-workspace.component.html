@@ -35,10 +35,10 @@
         <button type="button" class="primary" (click)="startCreate()">Thêm máy</button>
       </div>
     } @else {
-      <div class="table-wrap">
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Danh sách máy">
         <table>
           <thead>
-            <tr><th>Mã máy</th><th>Tên máy</th><th>Work Center</th><th>Trạng thái</th><th>Cập nhật</th><th></th></tr>
+            <tr><th>Mã máy</th><th>Tên máy</th><th>Work Center</th><th>Trạng thái</th><th>Cập nhật</th><th aria-label="Thao tác"></th></tr>
           </thead>
           <tbody>
             @for (machine of store.machines(); track machine.id) {
@@ -118,7 +118,7 @@
                 <option [value]="status.value">{{ status.label }}</option>
               }
             </select>
-            <small>Running chỉ được thiết lập khi bắt đầu công đoạn sản xuất.</small>
+            <small class="helper">Running chỉ được thiết lập khi bắt đầu công đoạn sản xuất.</small>
           </label>
           <footer>
             <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button>

@@ -6,7 +6,7 @@ function hasRole(roles: readonly string[]): boolean | ReturnType<Router['createU
   const auth = inject(AuthService);
   const router = inject(Router);
   const role = auth.user()?.role;
-  return role && roles.includes(role) ? true : router.createUrlTree(['/chat']);
+  return role && roles.includes(role) ? true : router.createUrlTree(['/unauthorized']);
 }
 
 export const managerGuard: CanActivateFn = () => hasRole(['Admin', 'Manager']);

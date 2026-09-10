@@ -29,9 +29,9 @@
       <button type="button" class="primary" (click)="startCreate()">Thêm nguyên liệu</button>
     </div>
   } @else {
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Danh sách nguyên liệu">
       <table>
-        <thead><tr><th>Mã</th><th>Tên nguyên liệu</th><th>Đơn vị</th><th>Cập nhật</th><th></th></tr></thead>
+        <thead><tr><th>Mã</th><th>Tên nguyên liệu</th><th>Đơn vị</th><th>Cập nhật</th><th aria-label="Thao tác"></th></tr></thead>
         <tbody>
           @for (material of store.materials(); track material.id) {
             <tr>

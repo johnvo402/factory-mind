@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BehaviorSubject } from 'rxjs';
-import { ActivatedRoute, convertToParamMap, ParamMap } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, ParamMap, Router } from '@angular/router';
 import { InventoryStore } from '../inventories/inventory.store';
 import { MachineStore } from '../machines/machine.store';
 import { MaterialStore } from '../materials/material.store';
@@ -11,9 +11,11 @@ import { DataWorkspaceComponent } from './data-workspace.component';
 describe('DataWorkspaceComponent import eligibility', () => {
   let fixture: ComponentFixture<DataWorkspaceComponent>;
   let routeParams: BehaviorSubject<ParamMap>;
+  let router: jasmine.SpyObj<Router>;
 
   beforeEach(async () => {
     routeParams = new BehaviorSubject(convertToParamMap({ view: 'machines' }));
+    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
     const route = {
       paramMap: routeParams.asObservable(),
       snapshot: { paramMap: routeParams.value },
@@ -22,6 +24,7 @@ describe('DataWorkspaceComponent import eligibility', () => {
       imports: [DataWorkspaceComponent],
       providers: [
         { provide: ActivatedRoute, useValue: route },
+        { provide: Router, useValue: router },
         { provide: MachineStore, useValue: { load: jasmine.createSpy('load') } },
         { provide: MaterialStore, useValue: { load: jasmine.createSpy('load') } },
         { provide: InventoryStore, useValue: { initialize: jasmine.createSpy('initialize') } },
@@ -81,6 +84,12 @@ describe('DataWorkspaceComponent import eligibility', () => {
     navigateTo('work-centers');
 
     expect(fixture.nativeElement.querySelector('[data-testid="open-entity-type"]')).toBeNull();
+  });
+
+  it('sends an unknown data view to the not-found page', () => {
+    navigateTo('unknown-view');
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/not-found');
   });
 
   function navigateTo(view: string): void {

@@ -32,6 +32,7 @@ export class WorkspaceComponent {
     if (url.startsWith('/data')) return 'data';
     if (url.startsWith('/planning')) return 'planning';
     if (url.startsWith('/settings')) return 'settings';
+    if (url.startsWith('/unauthorized') || url.startsWith('/not-found')) return 'status';
     return 'chat';
   });
 

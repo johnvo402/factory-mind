@@ -5,6 +5,25 @@
   gap: var(--space-2);
 }
 
+:host .toolbar {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+:host .toolbar-actions {
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+:host .inventory-filters {
+  flex: 1 1 720px;
+}
+
+:host .inventory-filters label:first-child {
+  flex: 1 1 180px;
+}
+
 .inventory-filters label {
   display: grid;
   gap: 5px;
@@ -69,7 +88,8 @@
 
 @media (max-width: 1100px) {
   .inventory-filters {
-    justify-content: flex-end;
+    flex: 1 1 100%;
+    justify-content: flex-start;
   }
   .history-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
