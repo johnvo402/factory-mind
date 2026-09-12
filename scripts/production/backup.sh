@@ -99,7 +99,12 @@ printf '{\n  "createdAt": "%s",\n  "releaseSha": "%s",\n  "postgresDatabase": "%
 rm -f -- "$in_progress_directory/.backup-in-progress"
 mv -- "$in_progress_directory" "$final_directory"
 in_progress_directory=""
-chmod -R go-rwx -- "$final_directory"
+chmod 700 -- "$final_directory" "$final_directory/minio"
+chmod 600 -- \
+  "$final_directory/database.dump" \
+  "$final_directory/manifest.json" \
+  "$final_directory/MINIO_OBJECTS.sha256" \
+  "$final_directory/SHA256SUMS"
 
 mapfile -t completed_backups < <(
   find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d \
