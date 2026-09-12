@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, isDevMode, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ProblemDetails } from './core/api/api.models';
 import { AuthService } from './core/auth/auth.service';
 import { WorkspaceComponent } from './features/workspace/workspace.component';
@@ -14,6 +15,7 @@ import { UiIconComponent } from './shared/ui/ui-icon.component';
 })
 export class App {
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   protected readonly loggedIn = this.auth.isAuthenticated;
   protected readonly userName = computed(() => this.auth.user()?.name ?? '');
@@ -42,7 +44,10 @@ export class App {
     this.loading.set(true);
     this.error.set('');
     this.auth.login(this.loginForm.getRawValue()).subscribe({
-      next: () => this.loading.set(false),
+      next: () => {
+        this.loading.set(false);
+        void this.router.navigateByUrl('/chat');
+      },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
         this.error.set(this.errorMessage(error));
