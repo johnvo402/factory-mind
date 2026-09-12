@@ -227,7 +227,7 @@ jobs:
       - name: Smoke test isolated production stack
         run: |
           docker compose -f compose.prod.yaml up -d --no-build --wait --wait-timeout 180
-          ENV_FILE=/dev/null ./scripts/production/smoke.sh "$GITHUB_SHA"
+          ENV_FILE="$PWD/.env.production.example" ./scripts/production/smoke.sh "$GITHUB_SHA"
 
       - name: Verify isolated PostgreSQL and MinIO backup restore
         run: ./scripts/production/verify-backup-restore.sh
