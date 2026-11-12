@@ -1,17 +1,34 @@
 <section class="content">
   <section class="toolbar">
-    <div><h2>Danh sách sản phẩm</h2><p>{{ store.products().length }} sản phẩm trong kết quả hiện tại</p></div>
+    <div>
+      <h2>Danh sách sản phẩm</h2>
+      <p>{{ store.products().length }} sản phẩm trong kết quả hiện tại</p>
+    </div>
     <div class="toolbar-actions">
       <form (submit)="search($event)" class="search-form">
-        <input type="search" [formControl]="searchControl" maxlength="200" aria-label="Tìm sản phẩm" placeholder="Tìm theo mã hoặc tên sản phẩm">
-        @if (store.search()) { <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button> }
-        <button type="submit" class="secondary"><app-ui-icon name="search" [size]="17" /> Tìm kiếm</button>
+        <input
+          type="search"
+          [formControl]="searchControl"
+          maxlength="200"
+          aria-label="Tìm sản phẩm"
+          placeholder="Tìm theo mã hoặc tên sản phẩm"
+        />
+        @if (store.search()) {
+          <button type="button" class="ghost" (click)="clearSearch()">Xóa lọc</button>
+        }
+        <button type="submit" class="secondary">
+          <app-ui-icon name="search" [size]="17" /> Tìm kiếm
+        </button>
       </form>
-      <button type="button" class="primary" (click)="startCreate()"><app-ui-icon name="plus" /> Thêm sản phẩm</button>
+      <button type="button" class="primary" (click)="startCreate()">
+        <app-ui-icon name="plus" /> Thêm sản phẩm
+      </button>
     </div>
   </section>
 
-  @if (store.error()) { <div class="error" role="alert">{{ store.error() }}</div> }
+  @if (store.error()) {
+    <div class="error" role="alert">{{ store.error() }}</div>
+  }
 
   @if (store.isLoading()) {
     <div class="state">Đang tải dữ liệu sản phẩm...</div>
@@ -24,23 +41,57 @@
   } @else {
     <div class="table-wrap" tabindex="0" role="region" aria-label="Danh sách sản phẩm">
       <table>
-        <thead><tr><th>Mã</th><th>Tên sản phẩm</th><th>Cập nhật</th><th aria-label="Thao tác"></th></tr></thead>
+        <thead>
+          <tr>
+            <th>Mã</th>
+            <th>Tên sản phẩm</th>
+            <th>Cập nhật</th>
+            <th aria-label="Thao tác"></th>
+          </tr>
+        </thead>
         <tbody>
           @for (product of store.products(); track product.id) {
             <tr>
-              <td><strong>{{ product.code }}</strong></td><td>{{ product.name }}</td><td>{{ product.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <strong>{{ product.code }}</strong>
+              </td>
+              <td>{{ product.name }}</td>
+              <td>{{ product.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
               <td class="actions">
                 @if (confirmDeleteId() === product.id) {
-                  <button type="button" class="danger" [disabled]="store.isSaving()" (click)="confirmDelete(product.id)"><app-ui-icon name="trash-2" [size]="16" /> Xác nhận</button>
-                  <button type="button" class="ghost" (click)="confirmDeleteId.set(null)">Hủy</button>
+                  <button
+                    type="button"
+                    class="danger"
+                    [disabled]="store.isSaving()"
+                    (click)="confirmDelete(product.id)"
+                  >
+                    <app-ui-icon name="trash-2" [size]="16" /> Xác nhận
+                  </button>
+                  <button type="button" class="ghost" (click)="confirmDeleteId.set(null)">
+                    Hủy
+                  </button>
                 } @else {
                   <details class="row-actions">
-                    <summary [attr.aria-label]="'Thao tác với ' + product.code"><app-ui-icon name="more-horizontal" /></summary>
+                    <summary [attr.aria-label]="'Thao tác với ' + product.code">
+                      <app-ui-icon name="more-horizontal" />
+                    </summary>
                     <div class="row-menu">
-                      <button type="button" class="ghost" (click)="openBoms(product)">BOM &amp; vật tư</button>
-                      <button type="button" class="ghost" (click)="routingProduct.set(product)">Routing &amp; công đoạn</button>
-                      <button type="button" class="ghost" (click)="startEdit(product)"><app-ui-icon name="pencil" [size]="16" /> Sửa</button>
-                      <button type="button" class="ghost danger-text" (click)="requestDelete(product.id)"><app-ui-icon name="trash-2" [size]="16" /> Xóa</button>
+                      <button type="button" class="ghost" (click)="openBoms(product)">
+                        BOM &amp; vật tư
+                      </button>
+                      <button type="button" class="ghost" (click)="routingProduct.set(product)">
+                        Routing &amp; công đoạn
+                      </button>
+                      <button type="button" class="ghost" (click)="startEdit(product)">
+                        <app-ui-icon name="pencil" [size]="16" /> Sửa
+                      </button>
+                      <button
+                        type="button"
+                        class="ghost danger-text"
+                        (click)="requestDelete(product.id)"
+                      >
+                        <app-ui-icon name="trash-2" [size]="16" /> Xóa
+                      </button>
                     </div>
                   </details>
                 }
@@ -54,23 +105,51 @@
 
   @if (editorOpen()) {
     <div class="editor-backdrop" (click)="cancelEdit()">
-      <section class="editor" appDialogFocus (dialogDismissed)="cancelEdit()" role="dialog" aria-modal="true" aria-labelledby="product-editor-title" (click)="$event.stopPropagation()">
+      <section
+        class="editor"
+        appDialogFocus
+        (dialogDismissed)="cancelEdit()"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-editor-title"
+        (click)="$event.stopPropagation()"
+      >
         <header>
-          <div><span class="eyebrow">SẢN PHẨM</span><h2 id="product-editor-title">{{ editingId() ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới' }}</h2></div>
-          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()"><app-ui-icon name="x" /></button>
+          <div>
+            <span class="eyebrow">SẢN PHẨM</span>
+            <h2 id="product-editor-title">
+              {{ editingId() ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới' }}
+            </h2>
+          </div>
+          <button type="button" class="close" aria-label="Đóng" (click)="cancelEdit()">
+            <app-ui-icon name="x" />
+          </button>
         </header>
         <form [formGroup]="productForm" (ngSubmit)="save()">
-          <label>Mã sản phẩm
-            <input type="text" formControlName="code" maxlength="50" placeholder="Ví dụ: PRD-001">
-            @if (productForm.controls.code.touched && productForm.controls.code.invalid) { <small>Mã sản phẩm là bắt buộc và không quá 50 ký tự.</small> }
+          <label
+            >Mã sản phẩm
+            <input type="text" formControlName="code" maxlength="50" placeholder="Ví dụ: PRD-001" />
+            @if (productForm.controls.code.touched && productForm.controls.code.invalid) {
+              <small>Mã sản phẩm là bắt buộc và không quá 50 ký tự.</small>
+            }
           </label>
-          <label>Tên sản phẩm
-            <input type="text" formControlName="name" maxlength="200" placeholder="Ví dụ: Storage Box 20L">
-            @if (productForm.controls.name.touched && productForm.controls.name.invalid) { <small>Tên sản phẩm là bắt buộc và không quá 200 ký tự.</small> }
+          <label
+            >Tên sản phẩm
+            <input
+              type="text"
+              formControlName="name"
+              maxlength="200"
+              placeholder="Ví dụ: Storage Box 20L"
+            />
+            @if (productForm.controls.name.touched && productForm.controls.name.invalid) {
+              <small>Tên sản phẩm là bắt buộc và không quá 200 ký tự.</small>
+            }
           </label>
           <footer>
             <button type="button" class="secondary" (click)="cancelEdit()">Hủy</button>
-            <button type="submit" class="primary" [disabled]="store.isSaving()">{{ store.isSaving() ? 'Đang lưu...' : 'Lưu sản phẩm' }}</button>
+            <button type="submit" class="primary" [disabled]="store.isSaving()">
+              {{ store.isSaving() ? 'Đang lưu...' : 'Lưu sản phẩm' }}
+            </button>
           </footer>
         </form>
       </section>
@@ -79,14 +158,24 @@
 
   @if (bomPanelOpen() && selectedProduct(); as product) {
     <div class="editor-backdrop" (click)="closeBoms()">
-      <section class="editor bom-panel" appDialogFocus (dialogDismissed)="closeBoms()" role="dialog" aria-modal="true" aria-labelledby="bom-panel-title" (click)="$event.stopPropagation()">
+      <section
+        class="editor bom-panel"
+        appDialogFocus
+        (dialogDismissed)="closeBoms()"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bom-panel-title"
+        (click)="$event.stopPropagation()"
+      >
         <header>
           <div>
             <span class="eyebrow">ĐỊNH MỨC VẬT TƯ</span>
             <h2 id="bom-panel-title">{{ product.code }} — {{ product.name }}</h2>
             <p>Quản lý revision và kiểm tra mức đủ vật tư hiện tại.</p>
           </div>
-          <button type="button" class="close" aria-label="Đóng quản lý BOM" (click)="closeBoms()"><app-ui-icon name="x" /></button>
+          <button type="button" class="close" aria-label="Đóng quản lý BOM" (click)="closeBoms()">
+            <app-ui-icon name="x" />
+          </button>
         </header>
 
         @if (bomStore.error()) {
@@ -99,8 +188,13 @@
           <div class="bom-layout">
             <aside class="bom-revisions" aria-label="Danh sách revision BOM">
               <div class="section-heading">
-                <div><h3>Revisions</h3><p>{{ bomStore.boms().length }} phiên bản</p></div>
-                <button type="button" class="secondary" (click)="startNewRevision()">Tạo revision mới</button>
+                <div>
+                  <h3>Revisions</h3>
+                  <p>{{ bomStore.boms().length }} phiên bản</p>
+                </div>
+                <button type="button" class="secondary" (click)="startNewRevision()">
+                  Tạo revision mới
+                </button>
               </div>
 
               @if (bomStore.boms().length === 0) {
@@ -111,9 +205,20 @@
               } @else {
                 <div class="revision-list">
                   @for (bom of bomStore.boms(); track bom.id) {
-                    <button type="button" class="revision-card" [class.selected]="selectedBomId() === bom.id" (click)="selectBom(bom)" [attr.aria-pressed]="selectedBomId() === bom.id">
+                    <button
+                      type="button"
+                      class="revision-card"
+                      [class.selected]="selectedBomId() === bom.id"
+                      (click)="selectBom(bom)"
+                      [attr.aria-pressed]="selectedBomId() === bom.id"
+                    >
                       <span>Revision {{ bom.revision }}</span>
-                      <strong class="bom-status" [class.active]="bom.status === 'active'" [class.archived]="bom.status === 'archived'">{{ bomStatusLabel(bom.status) }}</strong>
+                      <strong
+                        class="bom-status"
+                        [class.active]="bom.status === 'active'"
+                        [class.archived]="bom.status === 'archived'"
+                        >{{ bomStatusLabel(bom.status) }}</strong
+                      >
                       <small>Output {{ bom.outputQuantity | number: '1.0-6' }}</small>
                     </button>
                   }
@@ -127,56 +232,127 @@
                   <div class="section-heading">
                     <div>
                       <span class="eyebrow">DRAFT</span>
-                      <h3 id="bom-form-title">{{ editingBomId() ? 'Cập nhật revision' : 'Revision mới' }}</h3>
+                      <h3 id="bom-form-title">
+                        {{ editingBomId() ? 'Cập nhật revision' : 'Revision mới' }}
+                      </h3>
                     </div>
-                    <button type="button" class="ghost" (click)="cancelBomEdit()">Hủy chỉnh sửa</button>
+                    <button type="button" class="ghost" (click)="cancelBomEdit()">
+                      Hủy chỉnh sửa
+                    </button>
                   </div>
 
                   <form class="bom-form" [formGroup]="bomForm" (ngSubmit)="saveBom()">
-                    <label>Output quantity
-                      <input type="number" formControlName="outputQuantity" min="0.000001" step="0.000001" aria-describedby="output-quantity-help">
-                      <span id="output-quantity-help" class="helper">Số thành phẩm mà lượng vật tư bên dưới tạo ra.</span>
-                      @if (bomForm.controls.outputQuantity.touched && bomForm.controls.outputQuantity.invalid) {
+                    <label
+                      >Output quantity
+                      <input
+                        type="number"
+                        formControlName="outputQuantity"
+                        min="0.000001"
+                        step="0.000001"
+                        aria-describedby="output-quantity-help"
+                      />
+                      <span id="output-quantity-help" class="helper"
+                        >Số thành phẩm mà lượng vật tư bên dưới tạo ra.</span
+                      >
+                      @if (
+                        bomForm.controls.outputQuantity.touched &&
+                        bomForm.controls.outputQuantity.invalid
+                      ) {
                         <small>Output quantity phải lớn hơn 0.</small>
                       }
                     </label>
 
                     <div class="component-editor" formArrayName="items">
                       <div class="component-header">
-                        <div><h4>Thành phần vật tư</h4><p>Mỗi vật tư chỉ xuất hiện một lần.</p></div>
-                        <button type="button" class="secondary" [disabled]="bomStore.materials().length === 0" (click)="addBomItem()">Thêm vật tư</button>
+                        <div>
+                          <h4>Thành phần vật tư</h4>
+                          <p>Mỗi vật tư chỉ xuất hiện một lần.</p>
+                        </div>
+                        <button
+                          type="button"
+                          class="secondary"
+                          [disabled]="bomStore.materials().length === 0"
+                          (click)="addBomItem()"
+                        >
+                          Thêm vật tư
+                        </button>
                       </div>
 
                       @if (bomForm.controls.items.length === 0) {
-                        <div class="compact-empty"><span>Revision nháp chưa có vật tư. Thêm ít nhất một vật tư trước khi kích hoạt.</span></div>
+                        <div class="compact-empty">
+                          <span
+                            >Revision nháp chưa có vật tư. Thêm ít nhất một vật tư trước khi kích
+                            hoạt.</span
+                          >
+                        </div>
                       }
 
-                      @for (itemControl of bomForm.controls.items.controls; track itemControl; let index = $index) {
+                      @for (
+                        itemControl of bomForm.controls.items.controls;
+                        track itemControl;
+                        let index = $index
+                      ) {
                         <div class="component-row" [formGroupName]="index">
-                          <label>Vật tư
+                          <label
+                            >Vật tư
                             <select formControlName="materialId">
                               @for (material of bomStore.materials(); track material.id) {
-                                <option [value]="material.id">{{ material.code }} — {{ material.name }} ({{ material.unit }})</option>
+                                <option [value]="material.id">
+                                  {{ material.code }} — {{ material.name }} ({{ material.unit }})
+                                </option>
                               }
                             </select>
                           </label>
-                          <label>Số lượng
+                          <label
+                            >Số lượng
                             <span class="number-with-unit">
-                              <input type="number" formControlName="quantity" min="0.000001" step="0.000001">
+                              <input
+                                type="number"
+                                formControlName="quantity"
+                                min="0.000001"
+                                step="0.000001"
+                              />
                               <span>{{ materialUnit(itemControl.controls.materialId.value) }}</span>
                             </span>
-                            @if (itemControl.controls.quantity.touched && itemControl.controls.quantity.invalid) { <small>Phải lớn hơn 0.</small> }
+                            @if (
+                              itemControl.controls.quantity.touched &&
+                              itemControl.controls.quantity.invalid
+                            ) {
+                              <small>Phải lớn hơn 0.</small>
+                            }
                           </label>
-                          <label>Hao hụt (%)
-                            <input type="number" formControlName="scrapPercentage" min="0" max="100" step="0.01" placeholder="0">
-                            @if (itemControl.controls.scrapPercentage.touched && itemControl.controls.scrapPercentage.invalid) { <small>Từ 0 đến 100%.</small> }
+                          <label
+                            >Hao hụt (%)
+                            <input
+                              type="number"
+                              formControlName="scrapPercentage"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              placeholder="0"
+                            />
+                            @if (
+                              itemControl.controls.scrapPercentage.touched &&
+                              itemControl.controls.scrapPercentage.invalid
+                            ) {
+                              <small>Từ 0 đến 100%.</small>
+                            }
                           </label>
-                          <button type="button" class="ghost danger-text remove-component" [attr.aria-label]="'Xóa vật tư dòng ' + (index + 1)" (click)="removeBomItem(index)">Xóa</button>
+                          <button
+                            type="button"
+                            class="ghost danger-text remove-component"
+                            [attr.aria-label]="'Xóa vật tư dòng ' + (index + 1)"
+                            (click)="removeBomItem(index)"
+                          >
+                            Xóa
+                          </button>
                         </div>
                       }
 
                       @if (bomForm.controls.items.hasError('duplicateMaterial')) {
-                        <p class="inline-error" role="alert">Một vật tư không thể xuất hiện hai lần trong cùng BOM.</p>
+                        <p class="inline-error" role="alert">
+                          Một vật tư không thể xuất hiện hai lần trong cùng BOM.
+                        </p>
                       }
                       @if (allMaterialsUsed()) {
                         <p class="helper" role="status">Tất cả vật tư đã có trong revision này.</p>
@@ -185,7 +361,9 @@
 
                     <footer>
                       <button type="button" class="secondary" (click)="cancelBomEdit()">Hủy</button>
-                      <button type="submit" class="primary" [disabled]="bomStore.isSaving()">{{ bomStore.isSaving() ? 'Đang lưu...' : 'Lưu bản nháp' }}</button>
+                      <button type="submit" class="primary" [disabled]="bomStore.isSaving()">
+                        {{ bomStore.isSaving() ? 'Đang lưu...' : 'Lưu bản nháp' }}
+                      </button>
                     </footer>
                   </form>
                 </section>
@@ -199,28 +377,61 @@
                     </div>
                     <div class="section-actions">
                       @if (bom.status === 'draft') {
-                        <button type="button" class="secondary" (click)="startEditBom(bom)">Sửa revision</button>
-                        <button type="button" class="primary" [disabled]="bomStore.isSaving() || bom.items.length === 0" (click)="activateBom(bom)">Kích hoạt</button>
+                        <button type="button" class="secondary" (click)="startEditBom(bom)">
+                          Sửa revision
+                        </button>
+                        <button
+                          type="button"
+                          class="primary"
+                          [disabled]="bomStore.isSaving() || bom.items.length === 0"
+                          (click)="activateBom(bom)"
+                        >
+                          Kích hoạt
+                        </button>
                       }
                       @if (bom.status !== 'archived') {
-                        <button type="button" class="ghost" [disabled]="bomStore.isSaving()" (click)="archiveBom(bom)">Lưu trữ</button>
+                        <button
+                          type="button"
+                          class="ghost"
+                          [disabled]="bomStore.isSaving()"
+                          (click)="archiveBom(bom)"
+                        >
+                          Lưu trữ
+                        </button>
                       }
                     </div>
                   </div>
 
                   @if (bom.items.length === 0) {
-                    <div class="compact-empty"><span>Revision này chưa có thành phần vật tư.</span></div>
+                    <div class="compact-empty">
+                      <span>Revision này chưa có thành phần vật tư.</span>
+                    </div>
                   } @else {
-                    <div class="table-wrap compact-table" tabindex="0" role="region" aria-label="Vật tư trong BOM">
+                    <div
+                      class="table-wrap compact-table"
+                      tabindex="0"
+                      role="region"
+                      aria-label="Vật tư trong BOM"
+                    >
                       <table>
-                        <thead><tr><th>Vật tư</th><th>Số lượng</th><th>Đơn vị</th><th>Hao hụt</th></tr></thead>
+                        <thead>
+                          <tr>
+                            <th>Vật tư</th>
+                            <th>Số lượng</th>
+                            <th>Đơn vị</th>
+                            <th>Hao hụt</th>
+                          </tr>
+                        </thead>
                         <tbody>
                           @for (item of bom.items; track item.id) {
                             <tr>
-                              <td><strong>{{ item.materialCode }}</strong><span class="cell-detail">{{ item.materialName }}</span></td>
+                              <td>
+                                <strong>{{ item.materialCode }}</strong
+                                ><span class="cell-detail">{{ item.materialName }}</span>
+                              </td>
                               <td>{{ item.quantity | number: '1.0-6' }}</td>
                               <td>{{ item.unit }}</td>
-                              <td>{{ (item.scrapPercentage ?? 0) | number: '1.0-2' }}%</td>
+                              <td>{{ item.scrapPercentage ?? 0 | number: '1.0-2' }}%</td>
                             </tr>
                           }
                         </tbody>
@@ -229,35 +440,82 @@
                   }
                 </section>
               } @else {
-                <section class="bom-section compact-empty"><span>Chọn hoặc tạo một revision để xem chi tiết.</span></section>
+                <section class="bom-section compact-empty">
+                  <span>Chọn hoặc tạo một revision để xem chi tiết.</span>
+                </section>
               }
 
               <section class="bom-section requirement-section" aria-labelledby="requirement-title">
                 <div class="section-heading">
-                  <div><span class="eyebrow">DỰ BÁO NHU CẦU</span><h3 id="requirement-title">Kiểm tra vật tư</h3><p>Dùng BOM đang hoạt động và tổng tồn hiện tại trên tất cả kho.</p></div>
+                  <div>
+                    <span class="eyebrow">DỰ BÁO NHU CẦU</span>
+                    <h3 id="requirement-title">Kiểm tra vật tư</h3>
+                    <p>Dùng BOM đang hoạt động và tổng tồn hiện tại trên tất cả kho.</p>
+                  </div>
                 </div>
                 <form class="requirement-form" (ngSubmit)="calculateRequirements()">
-                  <label>Số lượng cần sản xuất
-                    <input type="number" [formControl]="requirementQuantity" min="0.000001" step="0.000001">
-                    @if (requirementQuantity.touched && requirementQuantity.invalid) { <small>Số lượng phải lớn hơn 0.</small> }
+                  <label
+                    >Số lượng cần sản xuất
+                    <input
+                      type="number"
+                      [formControl]="requirementQuantity"
+                      min="0.000001"
+                      step="0.000001"
+                    />
+                    @if (requirementQuantity.touched && requirementQuantity.invalid) {
+                      <small>Số lượng phải lớn hơn 0.</small>
+                    }
                   </label>
-                  <button type="submit" class="primary" [disabled]="bomStore.isCalculating()">{{ bomStore.isCalculating() ? 'Đang tính...' : 'Tính nhu cầu vật tư' }}</button>
+                  <button type="submit" class="primary" [disabled]="bomStore.isCalculating()">
+                    {{ bomStore.isCalculating() ? 'Đang tính...' : 'Tính nhu cầu vật tư' }}
+                  </button>
                 </form>
 
                 @if (bomStore.requirements(); as requirements) {
                   <div class="requirement-result" role="status" aria-live="polite">
                     <div class="result-summary" [class.shortage]="!requirements.canProduce">
-                      <strong>{{ requirements.canProduce ? 'Đủ vật tư để sản xuất' : 'Chưa đủ vật tư để sản xuất' }}</strong>
-                      <span>Active BOM revision {{ requirements.bomRevision }} · {{ requirements.requestedQuantity | number: '1.0-6' }} sản phẩm</span>
+                      <strong>{{
+                        requirements.canProduce
+                          ? 'Đủ vật tư để sản xuất'
+                          : 'Chưa đủ vật tư để sản xuất'
+                      }}</strong>
+                      <span
+                        >Active BOM revision {{ requirements.bomRevision }} ·
+                        {{ requirements.requestedQuantity | number: '1.0-6' }} sản phẩm</span
+                      >
                     </div>
                     <div class="requirement-grid">
                       @for (material of requirements.materials; track material.materialId) {
                         <article class="requirement-card" [class.shortage]="!material.isSufficient">
-                          <header><div><strong>{{ material.materialCode }}</strong><span>{{ material.materialName }}</span></div><b>{{ material.isSufficient ? 'Đủ' : 'Thiếu' }}</b></header>
+                          <header>
+                            <div>
+                              <strong>{{ material.materialCode }}</strong
+                              ><span>{{ material.materialName }}</span>
+                            </div>
+                            <b>{{ material.isSufficient ? 'Đủ' : 'Thiếu' }}</b>
+                          </header>
                           <dl>
-                            <div><dt>Cần</dt><dd>{{ material.requiredQuantity | number: '1.0-6' }} {{ material.unit }}</dd></div>
-                            <div><dt>Hiện có</dt><dd>{{ material.availableQuantity | number: '1.0-6' }} {{ material.unit }}</dd></div>
-                            <div><dt>Thiếu hụt</dt><dd>{{ material.shortageQuantity | number: '1.0-6' }} {{ material.unit }}</dd></div>
+                            <div>
+                              <dt>Cần</dt>
+                              <dd>
+                                {{ material.requiredQuantity | number: '1.0-6' }}
+                                {{ material.unit }}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Hiện có</dt>
+                              <dd>
+                                {{ material.availableQuantity | number: '1.0-6' }}
+                                {{ material.unit }}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Thiếu hụt</dt>
+                              <dd>
+                                {{ material.shortageQuantity | number: '1.0-6' }}
+                                {{ material.unit }}
+                              </dd>
+                            </div>
                           </dl>
                         </article>
                       }

@@ -29,7 +29,10 @@ describe('DataWorkspaceComponent import eligibility', () => {
         { provide: MaterialStore, useValue: { load: jasmine.createSpy('load') } },
         { provide: InventoryStore, useValue: { initialize: jasmine.createSpy('initialize') } },
         { provide: ProductStore, useValue: { load: jasmine.createSpy('load') } },
-        { provide: ProductionOrderStore, useValue: { initialize: jasmine.createSpy('initialize') } },
+        {
+          provide: ProductionOrderStore,
+          useValue: { initialize: jasmine.createSpy('initialize') },
+        },
       ],
     })
       .overrideComponent(DataWorkspaceComponent, {

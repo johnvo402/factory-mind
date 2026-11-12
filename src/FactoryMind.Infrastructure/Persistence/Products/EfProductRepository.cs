@@ -9,14 +9,10 @@ public sealed class EfProductRepository(FactoryMindDbContext dbContext) : IProdu
         Guid companyId,
         string? search,
         CancellationToken cancellationToken) {
-        var query = dbContext.Products
-            .AsNoTracking()
-            .Where(product => product.CompanyId == companyId);
-        if (search is not null) {
-            var pattern = $"%{search}%";
-            query = query.Where(product =>
-                EF.Functions.ILike(product.Code, pattern) ||
-                EF.Functions.ILike(product.Name, pattern));
+        var product = dbContext.Product.AsNoTracking().Where(p=>p.CompanyId == companyId);
+        if(!string.IsNullOrEmpty(search))
+        {
+            
         }
 
         return await query.OrderBy(product => product.Code).ToListAsync(cancellationToken);

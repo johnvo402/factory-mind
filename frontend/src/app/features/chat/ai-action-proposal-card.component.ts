@@ -16,9 +16,11 @@ export class AiActionProposalCardComponent {
   protected readonly error = signal('');
 
   protected get disabled(): boolean {
-    return this.busy()
-      || this.proposal().status !== 'pending'
-      || new Date(this.proposal().expiresAt).getTime() <= Date.now();
+    return (
+      this.busy() ||
+      this.proposal().status !== 'pending' ||
+      new Date(this.proposal().expiresAt).getTime() <= Date.now()
+    );
   }
 
   protected async confirm(): Promise<void> {

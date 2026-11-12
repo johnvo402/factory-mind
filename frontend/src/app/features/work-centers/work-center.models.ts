@@ -15,7 +15,9 @@ export interface WorkCenterShift {
   endTime: string;
 }
 
-export interface WorkCenterDayOff { date: string; }
+export interface WorkCenterDayOff {
+  date: string;
+}
 
 export interface WorkCenterCalendar {
   workCenterId: string;

@@ -114,15 +114,9 @@ export class ProductionOrderWorkspaceComponent implements OnInit {
       status: (filters.status || undefined) as ProductionOrderStatus | undefined,
       priority: (filters.priority || undefined) as ProductionOrderPriority | undefined,
       deliveryStatus: (filters.deliveryStatus || undefined) as
-        | ProductionOrderDeliveryStatus
-        | undefined,
+        ProductionOrderDeliveryStatus | undefined,
       sortBy: filters.sortBy as
-        | 'deliveryRisk'
-        | 'updatedAt'
-        | 'dueDate'
-        | 'priority'
-        | 'number'
-        | 'status',
+        'deliveryRisk' | 'updatedAt' | 'dueDate' | 'priority' | 'number' | 'status',
       sortDirection: filters.sortDirection as 'asc' | 'desc',
     });
   }

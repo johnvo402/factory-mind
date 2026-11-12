@@ -5,9 +5,11 @@ import { WorkCenterApiService } from './work-center-api.service';
 import { WorkCenterCalendarInput } from './work-center.models';
 
 describe('WorkCenterApiService calendar', () => {
-  beforeEach(() => TestBed.configureTestingModule({
-    providers: [provideHttpClient(), provideHttpClientTesting()],
-  }));
+  beforeEach(() =>
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    }),
+  );
 
   it('loads calendar from the Work Center route', () => {
     const service = TestBed.inject(WorkCenterApiService);

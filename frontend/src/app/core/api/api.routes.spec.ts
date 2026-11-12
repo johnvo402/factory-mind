@@ -2,7 +2,9 @@ import { API_ROUTES } from './api.routes';
 
 describe('API_ROUTES manufacturing parity', () => {
   it('builds production lifecycle and operation URLs', () => {
-    expect(API_ROUTES.productionOrders.schedulePreview).toBe('/api/production-orders/schedule-preview');
+    expect(API_ROUTES.productionOrders.schedulePreview).toBe(
+      '/api/production-orders/schedule-preview',
+    );
     expect(API_ROUTES.productionOrders.release('po-1')).toBe('/api/production-orders/po-1/release');
     expect(API_ROUTES.productionOrders.start('po-1')).toBe('/api/production-orders/po-1/start');
     expect(API_ROUTES.productionOrders.complete('po-1')).toBe(

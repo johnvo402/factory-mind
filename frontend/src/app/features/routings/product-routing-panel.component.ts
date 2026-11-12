@@ -29,10 +29,14 @@ export class ProductRoutingPanelComponent implements OnInit {
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly error = signal('');
-  protected readonly selected = computed(() => this.routings().find(item => item.id === this.selectedId()) ?? null);
+  protected readonly selected = computed(
+    () => this.routings().find((item) => item.id === this.selectedId()) ?? null,
+  );
   protected readonly form = new FormGroup({ operations: new FormArray<RoutingOperationForm>([]) });
 
-  ngOnInit(): void { void this.load(); }
+  ngOnInit(): void {
+    void this.load();
+  }
 
   protected async load(preferredId?: string): Promise<void> {
     this.loading.set(true);
@@ -44,7 +48,12 @@ export class ProductRoutingPanelComponent implements OnInit {
       ]);
       this.routings.set(routingResponse.data ?? []);
       this.workCenters.set(workCenterResponse.data ?? []);
-      this.selectedId.set(preferredId ?? this.routings().find(item => item.status === 'active')?.id ?? this.routings()[0]?.id ?? null);
+      this.selectedId.set(
+        preferredId ??
+          this.routings().find((item) => item.status === 'active')?.id ??
+          this.routings()[0]?.id ??
+          null,
+      );
     } catch (error: unknown) {
       this.error.set(businessDataErrorMessage(error));
     } finally {
@@ -56,7 +65,7 @@ export class ProductRoutingPanelComponent implements OnInit {
     const source = this.selected();
     this.editingId.set(null);
     this.form.controls.operations.clear();
-    (source?.operations ?? []).forEach(operation => this.addOperation(operation));
+    (source?.operations ?? []).forEach((operation) => this.addOperation(operation));
     if (this.form.controls.operations.length === 0) this.addOperation();
     this.editing.set(true);
   }
@@ -65,37 +74,65 @@ export class ProductRoutingPanelComponent implements OnInit {
     if (routing.status !== 'draft') return;
     this.editingId.set(routing.id);
     this.form.controls.operations.clear();
-    routing.operations.forEach(operation => this.addOperation(operation));
+    routing.operations.forEach((operation) => this.addOperation(operation));
     this.editing.set(true);
   }
 
   protected addOperation(operation?: RoutingOperation): void {
-    this.form.controls.operations.push(new FormGroup({
-      sequence: new FormControl(operation?.sequence ?? (this.form.controls.operations.length + 1) * 10, { nonNullable: true, validators: [Validators.required, Validators.min(1)] }),
-      name: new FormControl(operation?.name ?? '', { nonNullable: true, validators: [Validators.required, Validators.maxLength(200)] }),
-      workCenterId: new FormControl(operation?.workCenterId ?? this.activeWorkCenters()[0]?.id ?? '', { nonNullable: true, validators: [Validators.required] }),
-      setupTimeMinutes: new FormControl(operation?.setupTimeMinutes ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-      runTimeMinutes: new FormControl(operation?.runTimeMinutes ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-      description: new FormControl<string | null>(operation?.description ?? null, [Validators.maxLength(500)]),
-    }));
+    this.form.controls.operations.push(
+      new FormGroup({
+        sequence: new FormControl(
+          operation?.sequence ?? (this.form.controls.operations.length + 1) * 10,
+          { nonNullable: true, validators: [Validators.required, Validators.min(1)] },
+        ),
+        name: new FormControl(operation?.name ?? '', {
+          nonNullable: true,
+          validators: [Validators.required, Validators.maxLength(200)],
+        }),
+        workCenterId: new FormControl(
+          operation?.workCenterId ?? this.activeWorkCenters()[0]?.id ?? '',
+          { nonNullable: true, validators: [Validators.required] },
+        ),
+        setupTimeMinutes: new FormControl(operation?.setupTimeMinutes ?? 0, {
+          nonNullable: true,
+          validators: [Validators.required, Validators.min(0)],
+        }),
+        runTimeMinutes: new FormControl(operation?.runTimeMinutes ?? 0, {
+          nonNullable: true,
+          validators: [Validators.required, Validators.min(0)],
+        }),
+        description: new FormControl<string | null>(operation?.description ?? null, [
+          Validators.maxLength(500),
+        ]),
+      }),
+    );
   }
 
-  protected activeWorkCenters(): WorkCenter[] { return this.workCenters().filter(item => item.isActive); }
-  protected removeOperation(index: number): void { this.form.controls.operations.removeAt(index); }
+  protected activeWorkCenters(): WorkCenter[] {
+    return this.workCenters().filter((item) => item.isActive);
+  }
+  protected removeOperation(index: number): void {
+    this.form.controls.operations.removeAt(index);
+  }
 
   protected async save(): Promise<void> {
     const values = this.form.controls.operations.getRawValue();
-    const duplicate = new Set(values.map(item => item.sequence)).size !== values.length;
+    const duplicate = new Set(values.map((item) => item.sequence)).size !== values.length;
     this.form.controls.operations.setErrors(duplicate ? { duplicateSequence: true } : null);
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
     const input: RoutingInput = { operations: values };
     this.saving.set(true);
     this.error.set('');
     try {
       const editingId = this.editingId();
-      const response = await firstValueFrom(editingId
-        ? this.api.update(this.product().id, editingId, input)
-        : this.api.create(this.product().id, input));
+      const response = await firstValueFrom(
+        editingId
+          ? this.api.update(this.product().id, editingId, input)
+          : this.api.create(this.product().id, input),
+      );
       this.editing.set(false);
       await this.load(response.data?.id);
     } catch (error: unknown) {

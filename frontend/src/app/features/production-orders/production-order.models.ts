@@ -11,12 +11,7 @@ export type ProductionOrderDeliveryStatus =
   | 'completed_late'
   | 'cancelled';
 export type ProductionOrderSortField =
-  | 'deliveryRisk'
-  | 'updatedAt'
-  | 'dueDate'
-  | 'priority'
-  | 'number'
-  | 'status';
+  'deliveryRisk' | 'updatedAt' | 'dueDate' | 'priority' | 'number' | 'status';
 export type SortDirection = 'asc' | 'desc';
 
 export interface ProductionOrderOperation {

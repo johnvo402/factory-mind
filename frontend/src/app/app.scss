@@ -6,7 +6,7 @@
 .login-page {
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: minmax(440px, 1.05fr) minmax(440px, .95fr);
+  grid-template-columns: minmax(440px, 1.05fr) minmax(440px, 0.95fr);
   background: var(--color-surface);
 }
 
@@ -19,7 +19,12 @@
   padding: clamp(32px, 5vw, 72px);
   background:
     radial-gradient(circle at 80% 20%, var(--color-login-glow) 0, transparent 32%),
-    linear-gradient(145deg, var(--color-login-start) 0%, var(--color-login-middle) 58%, var(--color-login-end) 100%);
+    linear-gradient(
+      145deg,
+      var(--color-login-start) 0%,
+      var(--color-login-middle) 58%,
+      var(--color-login-end) 100%
+    );
   color: var(--color-sidebar-text);
 }
 
@@ -65,7 +70,7 @@
 .login-brand strong,
 .mobile-brand strong {
   font-size: 1.05rem;
-  letter-spacing: -.02em;
+  letter-spacing: -0.02em;
 }
 
 .story-content {
@@ -80,9 +85,9 @@
   align-items: center;
   gap: 8px;
   color: var(--color-login-heading);
-  font-size: .78rem;
+  font-size: 0.78rem;
   font-weight: 750;
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -90,7 +95,7 @@
   margin: 20px 0 0;
   font-size: clamp(2.8rem, 5vw, 5rem);
   line-height: 1.02;
-  letter-spacing: -.055em;
+  letter-spacing: -0.055em;
   text-wrap: balance;
 }
 
@@ -109,7 +114,7 @@
   position: relative;
   z-index: 1;
   color: var(--color-login-muted);
-  font-size: .82rem;
+  font-size: 0.82rem;
 }
 
 .trust-line span {
@@ -136,9 +141,9 @@
 .eyebrow {
   margin: 0 0 10px;
   color: var(--color-primary);
-  font-size: .75rem;
+  font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: .11em;
+  letter-spacing: 0.11em;
 }
 
 h1 {
@@ -146,7 +151,7 @@ h1 {
   color: var(--color-foreground);
   font-size: clamp(2rem, 3vw, 2.6rem);
   line-height: 1.12;
-  letter-spacing: -.035em;
+  letter-spacing: -0.035em;
 }
 
 .subtitle {
@@ -168,7 +173,7 @@ form {
 
 label {
   color: var(--color-text);
-  font-size: .88rem;
+  font-size: 0.88rem;
   font-weight: 700;
 }
 
@@ -181,10 +186,14 @@ input {
   padding: 0 14px;
   color: var(--color-foreground);
   font: inherit;
-  transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
+  transition:
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast);
 }
 
-input::placeholder { color: var(--color-subtle); }
+input::placeholder {
+  color: var(--color-subtle);
+}
 
 input:focus {
   border-color: var(--color-primary);
@@ -192,8 +201,12 @@ input:focus {
   outline: 0;
 }
 
-.password-field { position: relative; }
-.password-field input { padding-right: 50px; }
+.password-field {
+  position: relative;
+}
+.password-field input {
+  padding-right: 50px;
+}
 
 .password-toggle {
   width: 40px;
@@ -216,7 +229,7 @@ input:focus {
 
 .field-group small {
   color: var(--color-danger);
-  font-size: .78rem;
+  font-size: 0.78rem;
 }
 
 form > button[type='submit'] {
@@ -229,7 +242,10 @@ form > button[type='submit'] {
   font: inherit;
   font-weight: 750;
   box-shadow: 0 9px 22px color-mix(in srgb, var(--color-primary) 14%, transparent);
-  transition: background var(--motion-fast), box-shadow var(--motion-fast), transform var(--motion-fast);
+  transition:
+    background var(--motion-fast),
+    box-shadow var(--motion-fast),
+    transform var(--motion-fast);
 }
 
 form > button[type='submit']:hover:not(:disabled) {
@@ -240,7 +256,7 @@ form > button[type='submit']:hover:not(:disabled) {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: .5;
+  opacity: 0.5;
 }
 
 .error {
@@ -250,7 +266,7 @@ button:disabled {
   background: var(--color-danger-soft);
   padding: 11px 12px;
   color: var(--color-danger);
-  font-size: .86rem;
+  font-size: 0.86rem;
 }
 
 .demo-access {
@@ -261,7 +277,7 @@ button:disabled {
   border-top: 1px solid var(--color-border);
   padding-top: 20px;
   color: var(--color-muted);
-  font-size: .78rem;
+  font-size: 0.78rem;
 }
 
 .demo-access strong {
@@ -270,11 +286,21 @@ button:disabled {
   color: var(--color-text);
 }
 
-.demo-access span { overflow-wrap: anywhere; }
+.demo-access span {
+  overflow-wrap: anywhere;
+}
 
 @media (max-width: 900px) {
-  .login-page { grid-template-columns: 1fr; }
-  .login-story { display: none; }
-  .login-card { padding: 40px 24px; }
-  .mobile-brand { display: flex; }
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+  .login-story {
+    display: none;
+  }
+  .login-card {
+    padding: 40px 24px;
+  }
+  .mobile-brand {
+    display: flex;
+  }
 }

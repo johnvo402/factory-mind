@@ -3,7 +3,12 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiResponse } from '../../core/api/api.models';
 import { API_ROUTES } from '../../core/api/api.routes';
-import { WorkCenter, WorkCenterCalendar, WorkCenterCalendarInput, WorkCenterInput } from './work-center.models';
+import {
+  WorkCenter,
+  WorkCenterCalendar,
+  WorkCenterCalendarInput,
+  WorkCenterInput,
+} from './work-center.models';
 
 @Injectable({ providedIn: 'root' })
 export class WorkCenterApiService {
@@ -30,7 +35,13 @@ export class WorkCenterApiService {
     return this.http.get<ApiResponse<WorkCenterCalendar>>(API_ROUTES.workCenters.calendar(id));
   }
 
-  replaceCalendar(id: string, input: WorkCenterCalendarInput): Observable<ApiResponse<WorkCenterCalendar>> {
-    return this.http.put<ApiResponse<WorkCenterCalendar>>(API_ROUTES.workCenters.calendar(id), input);
+  replaceCalendar(
+    id: string,
+    input: WorkCenterCalendarInput,
+  ): Observable<ApiResponse<WorkCenterCalendar>> {
+    return this.http.put<ApiResponse<WorkCenterCalendar>>(
+      API_ROUTES.workCenters.calendar(id),
+      input,
+    );
   }
 }

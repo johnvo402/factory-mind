@@ -28,7 +28,9 @@ describe('AiActionProposalCardComponent', () => {
   });
 
   it('confirm calls the exact persisted proposal endpoint once', async () => {
-    confirmAction.and.returnValue(of({ success: true, message: 'OK', data: proposal('succeeded') }));
+    confirmAction.and.returnValue(
+      of({ success: true, message: 'OK', data: proposal('succeeded') }),
+    );
     const fixture = create('pending');
     (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.confirm')!.click();
     await fixture.whenStable();
@@ -46,7 +48,9 @@ describe('AiActionProposalCardComponent', () => {
   it('disables double click while confirmation is in flight', () => {
     confirmAction.and.returnValue(new Subject());
     const fixture = create('pending');
-    const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.confirm')!;
+    const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      '.confirm',
+    )!;
     button.click();
     fixture.detectChanges();
     button.click();
@@ -57,7 +61,9 @@ describe('AiActionProposalCardComponent', () => {
   for (const status of ['succeeded', 'expired', 'stale', 'cancelled'] as AiActionProposalStatus[]) {
     it(`disables confirmation when proposal is ${status}`, () => {
       const fixture = create(status);
-      const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.confirm')!;
+      const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+        '.confirm',
+      )!;
       expect(button.disabled).toBeTrue();
     });
   }

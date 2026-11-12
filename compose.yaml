@@ -21,7 +21,11 @@ services:
       start_period: 10s
 
   minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    image: factory-mind-minio:RELEASE.2025-09-07T16-13-09Z-source
+    build:
+      context: .
+      dockerfile: docker/minio.Dockerfile
+      target: server
     container_name: factory-mind-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"

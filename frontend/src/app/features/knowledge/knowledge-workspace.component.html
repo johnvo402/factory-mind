@@ -6,22 +6,66 @@
   </header>
 
   <main>
-    @if (store.error()) { <p class="notice error">{{ store.error() }}</p> }
-    @if (store.message()) { <p class="notice success">{{ store.message() }}</p> }
+    @if (store.error()) {
+      <p class="notice error">{{ store.error() }}</p>
+    }
+    @if (store.message()) {
+      <p class="notice success">{{ store.message() }}</p>
+    }
 
     <section class="top-grid">
       <article class="card upload-card">
-        <div class="card-title"><span class="icon-box"><app-ui-icon name="upload" /></span><div><h2>Tải tài liệu lên</h2><p>PDF tối đa theo giới hạn hệ thống</p></div></div>
-        <label>Tiêu đề tài liệu <span>(không bắt buộc)</span><input [value]="title()" (input)="title.set($any($event.target).value)" maxlength="200" placeholder="Ví dụ: Quy trình bảo trì máy ép"></label>
-        <label class="file-input"><app-ui-icon name="file-text" [size]="22" /><strong>Chọn tệp PDF</strong><input type="file" accept="application/pdf,.pdf" (change)="chooseFile($event)"></label>
-        @if (selectedFile(); as file) { <small class="selected-file">{{ file.name }} · {{ formatSize(file.size) }}</small> }
-        <button type="button" [disabled]="store.isLoading() || !selectedFile()" (click)="upload()"><app-ui-icon name="upload" [size]="17" /> Tải lên và xử lý</button>
+        <div class="card-title">
+          <span class="icon-box"><app-ui-icon name="upload" /></span>
+          <div>
+            <h2>Tải tài liệu lên</h2>
+            <p>PDF tối đa theo giới hạn hệ thống</p>
+          </div>
+        </div>
+        <label
+          >Tiêu đề tài liệu <span>(không bắt buộc)</span
+          ><input
+            [value]="title()"
+            (input)="title.set($any($event.target).value)"
+            maxlength="200"
+            placeholder="Ví dụ: Quy trình bảo trì máy ép"
+        /></label>
+        <label class="file-input"
+          ><app-ui-icon name="file-text" [size]="22" /><strong>Chọn tệp PDF</strong
+          ><input type="file" accept="application/pdf,.pdf" (change)="chooseFile($event)"
+        /></label>
+        @if (selectedFile(); as file) {
+          <small class="selected-file">{{ file.name }} · {{ formatSize(file.size) }}</small>
+        }
+        <button type="button" [disabled]="store.isLoading() || !selectedFile()" (click)="upload()">
+          <app-ui-icon name="upload" [size]="17" /> Tải lên và xử lý
+        </button>
       </article>
 
       <article class="card search-card">
-        <div class="card-title"><span class="icon-box"><app-ui-icon name="search" /></span><div><h2>Tìm trong tài liệu</h2><p>Tìm theo ý nghĩa, không chỉ theo từ khóa chính xác.</p></div></div>
+        <div class="card-title">
+          <span class="icon-box"><app-ui-icon name="search" /></span>
+          <div>
+            <h2>Tìm trong tài liệu</h2>
+            <p>Tìm theo ý nghĩa, không chỉ theo từ khóa chính xác.</p>
+          </div>
+        </div>
         <label for="knowledge-query">Câu hỏi hoặc nội dung cần tìm</label>
-        <div class="search-box"><app-ui-icon name="search" [size]="19" /><input id="knowledge-query" [value]="query()" (input)="query.set($any($event.target).value)" (keydown.enter)="search()" placeholder="Ví dụ: quy trình bảo trì máy ép"><button type="button" [disabled]="store.isLoading() || !query().trim()" (click)="search()">Tìm kiếm</button></div>
+        <div class="search-box">
+          <app-ui-icon name="search" [size]="19" /><input
+            id="knowledge-query"
+            [value]="query()"
+            (input)="query.set($any($event.target).value)"
+            (keydown.enter)="search()"
+            placeholder="Ví dụ: quy trình bảo trì máy ép"
+          /><button
+            type="button"
+            [disabled]="store.isLoading() || !query().trim()"
+            (click)="search()"
+          >
+            Tìm kiếm
+          </button>
+        </div>
         <small>Nhấn Enter để tìm · Kết quả hiển thị trang và độ tương đồng</small>
       </article>
     </section>
@@ -31,7 +75,12 @@
         <h2>Kết quả tìm kiếm</h2>
         @for (result of store.results(); track result.chunkId) {
           <article class="result-card">
-            <div><strong>{{ result.documentTitle }}</strong><span>Trang {{ result.pageNumber }} · Độ khớp {{ result.score | percent:'1.0-0' }}</span></div>
+            <div>
+              <strong>{{ result.documentTitle }}</strong
+              ><span
+                >Trang {{ result.pageNumber }} · Độ khớp {{ result.score | percent: '1.0-0' }}</span
+              >
+            </div>
             <p>{{ result.content }}</p>
           </article>
         }
@@ -39,7 +88,15 @@
     }
 
     <section class="documents">
-      <div class="section-heading"><div><h2>Danh sách tài liệu</h2><p>{{ store.documents().length }} tài liệu trong kho tri thức</p></div><button type="button" [disabled]="store.isLoading()" (click)="store.load()"><app-ui-icon name="refresh-cw" [size]="16" /> Làm mới</button></div>
+      <div class="section-heading">
+        <div>
+          <h2>Danh sách tài liệu</h2>
+          <p>{{ store.documents().length }} tài liệu trong kho tri thức</p>
+        </div>
+        <button type="button" [disabled]="store.isLoading()" (click)="store.load()">
+          <app-ui-icon name="refresh-cw" [size]="16" /> Làm mới
+        </button>
+      </div>
       @if (store.isLoading() && store.documents().length === 0) {
         <p class="empty">Đang tải tài liệu...</p>
       } @else if (store.documents().length === 0) {
@@ -49,12 +106,26 @@
           @for (document of store.documents(); track document.id) {
             <article class="document-row">
               <div class="file-mark"><app-ui-icon name="file-text" /></div>
-              <div><strong>{{ document.title }}</strong><small>{{ document.fileName }} · {{ formatSize(document.size) }}</small></div>
-              <div class="document-meta"><span [class]="'status ' + document.status">{{ statusLabel(document.status) }}</span><small>{{ document.pageCount }} trang · {{ document.chunkCount }} đoạn</small></div>
+              <div>
+                <strong>{{ document.title }}</strong
+                ><small>{{ document.fileName }} · {{ formatSize(document.size) }}</small>
+              </div>
+              <div class="document-meta">
+                <span [class]="'status ' + document.status">{{ statusLabel(document.status) }}</span
+                ><small>{{ document.pageCount }} trang · {{ document.chunkCount }} đoạn</small>
+              </div>
               @if (document.status === 'failed') {
-                <button type="button" [disabled]="store.isLoading()" (click)="store.process(document.id)">Thử lại</button>
+                <button
+                  type="button"
+                  [disabled]="store.isLoading()"
+                  (click)="store.process(document.id)"
+                >
+                  Thử lại
+                </button>
               }
-              @if (document.processingError) { <p class="processing-error">{{ document.processingError }}</p> }
+              @if (document.processingError) {
+                <p class="processing-error">{{ document.processingError }}</p>
+              }
             </article>
           }
         </div>

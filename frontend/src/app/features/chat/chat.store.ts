@@ -28,9 +28,11 @@ export class ChatStore {
   readonly isLoading = this.loadingState.asReadonly();
   readonly isStreaming = this.streamingState.asReadonly();
   readonly error = this.errorState.asReadonly();
-  readonly selectedConversation = computed(() =>
-    this.conversationsState().find((conversation) =>
-      conversation.id === this.selectedConversationIdState()) ?? null,
+  readonly selectedConversation = computed(
+    () =>
+      this.conversationsState().find(
+        (conversation) => conversation.id === this.selectedConversationIdState(),
+      ) ?? null,
   );
 
   displayTitle(conversation: Conversation | null | undefined): string {
@@ -49,9 +51,7 @@ export class ChatStore {
     this.loadingState.set(true);
     this.errorState.set('');
     try {
-      const conversations = this.requireData(
-        await firstValueFrom(this.api.getConversations()),
-      );
+      const conversations = this.requireData(await firstValueFrom(this.api.getConversations()));
       if (!this.isCurrentSession(version)) {
         return;
       }
@@ -73,10 +73,7 @@ export class ChatStore {
     }
   }
 
-  async selectConversation(
-    conversationId: string,
-    version = this.sessionVersion,
-  ): Promise<void> {
+  async selectConversation(conversationId: string, version = this.sessionVersion): Promise<void> {
     if (this.streamingState()) {
       return;
     }
@@ -132,11 +129,7 @@ export class ChatStore {
 
       const userMessage = this.createLocalMessage('user', content);
       const assistantMessage = this.createLocalMessage('assistant', '');
-      this.messagesState.update((messages) => [
-        ...messages,
-        userMessage,
-        assistantMessage,
-      ]);
+      this.messagesState.update((messages) => [...messages, userMessage, assistantMessage]);
 
       await this.consumeMessageStream(conversationId, assistantMessage.id);
       if (!this.isCurrentSession(version)) {
@@ -191,25 +184,17 @@ export class ChatStore {
       return selectedConversationId;
     }
 
-    const conversation = this.requireData(
-      await firstValueFrom(this.api.createConversation()),
-    );
+    const conversation = this.requireData(await firstValueFrom(this.api.createConversation()));
     if (!this.isCurrentSession(version)) {
       return conversation.id;
     }
 
-    this.conversationsState.update((conversations) => [
-      conversation,
-      ...conversations,
-    ]);
+    this.conversationsState.update((conversations) => [conversation, ...conversations]);
     this.selectedConversationIdState.set(conversation.id);
     return conversation.id;
   }
 
-  private consumeMessageStream(
-    conversationId: string,
-    assistantMessageId: string,
-  ): Promise<void> {
+  private consumeMessageStream(conversationId: string, assistantMessageId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const resolveStream = () => {
         this.resolveActiveStream = null;
@@ -229,10 +214,7 @@ export class ChatStore {
     });
   }
 
-  private applyStreamEvent(
-    assistantMessageId: string,
-    event: ChatStreamEvent,
-  ): void {
+  private applyStreamEvent(assistantMessageId: string, event: ChatStreamEvent): void {
     if (event.type === 'token') {
       this.updateMessage(assistantMessageId, (message) => ({
         ...message,
@@ -257,18 +239,16 @@ export class ChatStore {
     this.actionProposalsState.update((proposals) => {
       const exists = proposals.some((candidate) => candidate.proposalId === proposal.proposalId);
       return exists
-        ? proposals.map((candidate) => candidate.proposalId === proposal.proposalId ? proposal : candidate)
+        ? proposals.map((candidate) =>
+            candidate.proposalId === proposal.proposalId ? proposal : candidate,
+          )
         : [...proposals, proposal];
     });
   }
 
-  private updateMessage(
-    messageId: string,
-    update: (message: ChatMessage) => ChatMessage,
-  ): void {
+  private updateMessage(messageId: string, update: (message: ChatMessage) => ChatMessage): void {
     this.messagesState.update((messages) =>
-      messages.map((message) =>
-        message.id === messageId ? update(message) : message),
+      messages.map((message) => (message.id === messageId ? update(message) : message)),
     );
   }
 
@@ -283,25 +263,14 @@ export class ChatStore {
     return '';
   }
 
-  private async reloadMessages(
-    conversationId: string,
-    version: number,
-  ): Promise<void> {
-    const messages = this.requireData(
-      await firstValueFrom(this.api.getMessages(conversationId)),
-    );
-    if (
-      this.isCurrentSession(version)
-      && this.selectedConversationIdState() === conversationId
-    ) {
+  private async reloadMessages(conversationId: string, version: number): Promise<void> {
+    const messages = this.requireData(await firstValueFrom(this.api.getMessages(conversationId)));
+    if (this.isCurrentSession(version) && this.selectedConversationIdState() === conversationId) {
       this.messagesState.set(messages);
     }
   }
 
-  private async reloadActionProposals(
-    conversationId: string,
-    version: number,
-  ): Promise<void> {
+  private async reloadActionProposals(conversationId: string, version: number): Promise<void> {
     const proposals = this.requireData(
       await firstValueFrom(this.api.getActionProposals(conversationId)),
     );
@@ -311,18 +280,13 @@ export class ChatStore {
   }
 
   private async reloadConversations(version: number): Promise<void> {
-    const conversations = this.requireData(
-      await firstValueFrom(this.api.getConversations()),
-    );
+    const conversations = this.requireData(await firstValueFrom(this.api.getConversations()));
     if (this.isCurrentSession(version)) {
       this.conversationsState.set(conversations);
     }
   }
 
-  private createLocalMessage(
-    role: 'user' | 'assistant',
-    content: string,
-  ): ChatMessage {
+  private createLocalMessage(role: 'user' | 'assistant', content: string): ChatMessage {
     this.localMessageSequence += 1;
     return {
       id: `local-${role}-${this.localMessageSequence}`,

@@ -22,7 +22,10 @@
     @if (message().businessEvidence.length > 0) {
       <section class="business-evidence" aria-label="Dữ liệu nghiệp vụ">
         <span class="citations-label">Dữ liệu nghiệp vụ</span>
-        @for (evidence of message().businessEvidence; track evidence.entityType + evidence.entityId) {
+        @for (
+          evidence of message().businessEvidence;
+          track evidence.entityType + evidence.entityId
+        ) {
           <article class="evidence-card">
             <header>
               <span class="reference business-reference">B{{ evidence.referenceNumber }}</span>

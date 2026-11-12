@@ -19,8 +19,9 @@ export class SettingsWorkspaceComponent implements OnInit {
   private readonly savedCompanyName = signal('');
   private readonly savedCompanyTimeZoneId = signal('UTC');
   protected readonly companyDirty = computed(
-    () => this.companyName().trim() !== this.savedCompanyName()
-      || this.companyTimeZoneId().trim() !== this.savedCompanyTimeZoneId(),
+    () =>
+      this.companyName().trim() !== this.savedCompanyName() ||
+      this.companyTimeZoneId().trim() !== this.savedCompanyTimeZoneId(),
   );
   protected readonly selectedUserId = signal<string | null>(null);
   protected readonly userName = signal('');

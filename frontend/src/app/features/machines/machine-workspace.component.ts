@@ -111,6 +111,6 @@ export class MachineWorkspaceComponent implements OnInit {
   protected statusLabel(status: MachineStatus): string {
     return status === 'running'
       ? 'Đang chạy'
-      : this.statuses.find(item => item.value === status)?.label ?? status;
+      : (this.statuses.find((item) => item.value === status)?.label ?? status);
   }
 }

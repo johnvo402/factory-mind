@@ -20,8 +20,11 @@ export class KnowledgeWorkspaceComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     void this.store.load();
     this.pollId = setInterval(() => {
-      if (this.store.documents().some(document =>
-        document.status === 'uploaded' || document.status === 'processing')) {
+      if (
+        this.store
+          .documents()
+          .some((document) => document.status === 'uploaded' || document.status === 'processing')
+      ) {
         void this.store.load(true);
       }
     }, 3_000);
@@ -39,7 +42,7 @@ export class KnowledgeWorkspaceComponent implements OnInit, OnDestroy {
 
   protected async upload(): Promise<void> {
     const file = this.selectedFile();
-    if (file && await this.store.upload(file, this.title())) {
+    if (file && (await this.store.upload(file, this.title()))) {
       this.selectedFile.set(null);
       this.title.set('');
     }

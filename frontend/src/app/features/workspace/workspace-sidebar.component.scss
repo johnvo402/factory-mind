@@ -1,4 +1,7 @@
-:host { min-width: 0; display: block; }
+:host {
+  min-width: 0;
+  display: block;
+}
 
 .sidebar {
   min-height: 100dvh;
@@ -33,9 +36,14 @@
   box-shadow: var(--shadow-accent);
 }
 
-.brand strong { font-size: 1.03rem; letter-spacing: -.025em; }
+.brand strong {
+  font-size: 1.03rem;
+  letter-spacing: -0.025em;
+}
 
-button { font: inherit; }
+button {
+  font: inherit;
+}
 
 .new-chat {
   min-height: 44px;
@@ -48,13 +56,20 @@ button { font: inherit; }
   background: var(--color-sidebar-raised);
   padding: 10px 12px;
   color: var(--color-sidebar-text);
-  font-size: .86rem;
+  font-size: 0.86rem;
   font-weight: 700;
   box-shadow: var(--shadow-sm);
-  transition: border-color var(--motion-fast), background var(--motion-fast), transform var(--motion-fast);
+  transition:
+    border-color var(--motion-fast),
+    background var(--motion-fast),
+    transform var(--motion-fast);
 }
 
-.new-chat:hover:not(:disabled) { border-color: var(--color-sidebar-accent); background: var(--color-sidebar-hover); transform: translateY(-1px); }
+.new-chat:hover:not(:disabled) {
+  border-color: var(--color-sidebar-accent);
+  background: var(--color-sidebar-hover);
+  transform: translateY(-1px);
+}
 
 .history,
 .data-context {
@@ -70,19 +85,28 @@ button { font: inherit; }
 .section-label {
   padding: 0 10px 8px;
   color: var(--color-sidebar-label);
-  font-size: .72rem;
+  font-size: 0.72rem;
   font-weight: 750;
-  letter-spacing: .09em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
 .history p,
 .data-context p,
-.data-context strong { margin: 4px 10px; }
+.data-context strong {
+  margin: 4px 10px;
+}
 
 .history p,
-.data-context p { color: var(--color-sidebar-muted); font-size: .8rem; line-height: 1.55; }
-.data-context strong { color: var(--color-sidebar-text); font-size: .9rem; }
+.data-context p {
+  color: var(--color-sidebar-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.data-context strong {
+  color: var(--color-sidebar-text);
+  font-size: 0.9rem;
+}
 
 .conversation {
   min-width: 0;
@@ -97,12 +121,21 @@ button { font: inherit; }
   padding: 9px 10px;
   color: var(--color-sidebar-muted);
   text-align: left;
-  transition: background var(--motion-fast), color var(--motion-fast);
+  transition:
+    background var(--motion-fast),
+    color var(--motion-fast);
 }
 
-.conversation span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conversation span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .conversation:hover,
-.conversation.active { background: var(--color-sidebar-hover); color: var(--color-primary-foreground); }
+.conversation.active {
+  background: var(--color-sidebar-hover);
+  color: var(--color-primary-foreground);
+}
 
 .primary-nav {
   display: grid;
@@ -120,20 +153,52 @@ button { font: inherit; }
   border-radius: var(--radius-sm);
   padding: 10px;
   color: var(--color-sidebar-muted);
-  font-size: .86rem;
+  font-size: 0.86rem;
   font-weight: 600;
   text-decoration: none;
-  transition: background var(--motion-fast), color var(--motion-fast);
+  transition:
+    background var(--motion-fast),
+    color var(--motion-fast);
 }
 
-.primary-nav a:hover { background: color-mix(in srgb, white 4%, transparent); color: var(--color-primary-foreground); }
-.primary-nav a.active { background: var(--color-sidebar-hover); color: var(--color-primary-foreground); }
-.primary-nav a.active::before { width: 3px; position: absolute; inset: 10px auto 10px 0; border-radius: 99px; background: var(--color-sidebar-accent-bright); content: ''; }
+.primary-nav a:hover {
+  background: color-mix(in srgb, white 4%, transparent);
+  color: var(--color-primary-foreground);
+}
+.primary-nav a.active {
+  background: var(--color-sidebar-hover);
+  color: var(--color-primary-foreground);
+}
+.primary-nav a.active::before {
+  width: 3px;
+  position: absolute;
+  inset: 10px auto 10px 0;
+  border-radius: 99px;
+  background: var(--color-sidebar-accent-bright);
+  content: '';
+}
 
-.account { position: relative; border-top: 1px solid var(--color-sidebar-border); padding-top: 12px; }
-.account summary { min-height: 48px; display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 10px; border-radius: var(--radius-sm); padding: 6px; list-style: none; }
-.account summary::-webkit-details-marker { display: none; }
-.account summary:hover { background: color-mix(in srgb, white 4%, transparent); }
+.account {
+  position: relative;
+  border-top: 1px solid var(--color-sidebar-border);
+  padding-top: 12px;
+}
+.account summary {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  list-style: none;
+}
+.account summary::-webkit-details-marker {
+  display: none;
+}
+.account summary:hover {
+  background: color-mix(in srgb, white 4%, transparent);
+}
 
 .profile-avatar {
   width: 36px;
@@ -147,9 +212,20 @@ button { font: inherit; }
 }
 
 .profile-copy strong,
-.profile-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.profile-copy strong { font-size: .82rem; }
-.profile-copy small { margin-top: 2px; color: var(--color-sidebar-muted); font-size: .72rem; }
+.profile-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-copy strong {
+  font-size: 0.82rem;
+}
+.profile-copy small {
+  margin-top: 2px;
+  color: var(--color-sidebar-muted);
+  font-size: 0.72rem;
+}
 
 .account-menu {
   width: 224px;
@@ -168,20 +244,58 @@ button { font: inherit; }
   animation: menu-in var(--motion-fast) var(--ease-out);
 }
 
-.account-menu > div { display: grid; grid-template-columns: 20px 1fr; gap: 9px; border-bottom: 1px solid var(--color-border); padding: 8px; }
+.account-menu > div {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 9px;
+  border-bottom: 1px solid var(--color-border);
+  padding: 8px;
+}
 .account-menu strong,
-.account-menu small { display: block; }
-.account-menu strong { font-size: .82rem; }
-.account-menu small { margin-top: 2px; color: var(--color-muted); font-size: .72rem; }
-.account-menu button { min-height: 40px; display: flex; align-items: center; gap: 9px; border: 0; border-radius: var(--radius-sm); background: transparent; padding: 8px; color: var(--color-danger); font-weight: 650; text-align: left; }
-.account-menu button:hover { background: var(--color-danger-soft); }
+.account-menu small {
+  display: block;
+}
+.account-menu strong {
+  font-size: 0.82rem;
+}
+.account-menu small {
+  margin-top: 2px;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+}
+.account-menu button {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: 8px;
+  color: var(--color-danger);
+  font-weight: 650;
+  text-align: left;
+}
+.account-menu button:hover {
+  background: var(--color-danger-soft);
+}
 
-button:disabled { cursor: not-allowed; opacity: .45; }
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
 
-@keyframes menu-in { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
 
 @media (max-width: 720px) {
-  :host { height: var(--mobile-topbar-height); }
+  :host {
+    height: var(--mobile-topbar-height);
+  }
 
   .sidebar {
     min-height: var(--mobile-topbar-height);
@@ -195,14 +309,33 @@ button:disabled { cursor: not-allowed; opacity: .45; }
     padding: 10px 16px;
   }
 
-  .brand { padding: 0; }
-  .brand > span { width: 36px; height: 36px; }
+  .brand {
+    padding: 0;
+  }
+  .brand > span {
+    width: 36px;
+    height: 36px;
+  }
 
-  .new-chat { width: 42px; height: 42px; justify-content: center; margin: 0 4px 0 0; padding: 0; }
-  .new-chat > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .new-chat {
+    width: 42px;
+    height: 42px;
+    justify-content: center;
+    margin: 0 4px 0 0;
+    padding: 0;
+  }
+  .new-chat > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
 
   .history,
-  .data-context { display: none; }
+  .data-context {
+    display: none;
+  }
 
   .primary-nav {
     min-height: var(--mobile-nav-height);
@@ -216,7 +349,8 @@ button:disabled { cursor: not-allowed; opacity: .45; }
     margin: 0;
     border-top: 1px solid var(--color-border);
     background: color-mix(in srgb, var(--color-surface) 94%, transparent);
-    padding: 7px max(8px, env(safe-area-inset-right)) max(7px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    padding: 7px max(8px, env(safe-area-inset-right)) max(7px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
     box-shadow: var(--shadow-md);
     backdrop-filter: blur(16px);
   }
@@ -229,15 +363,38 @@ button:disabled { cursor: not-allowed; opacity: .45; }
     gap: 3px;
     padding: 5px 8px;
     color: var(--color-muted);
-    font-size: .68rem;
+    font-size: 0.68rem;
   }
 
-  .primary-nav a:hover { background: var(--color-surface-subtle); color: var(--color-foreground); }
-  .primary-nav a.active { background: var(--color-primary-soft); color: var(--color-primary); }
-  .primary-nav a.active::before { width: 18px; height: 3px; inset: auto auto 1px; }
+  .primary-nav a:hover {
+    background: var(--color-surface-subtle);
+    color: var(--color-foreground);
+  }
+  .primary-nav a.active {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  .primary-nav a.active::before {
+    width: 18px;
+    height: 3px;
+    inset: auto auto 1px;
+  }
 
-  .account { border: 0; padding: 0; }
-  .account summary { min-height: 42px; grid-template-columns: 36px; padding: 3px; }
-  .profile-copy { display: none; }
-  .account-menu { top: 50px; right: 0; bottom: auto; }
+  .account {
+    border: 0;
+    padding: 0;
+  }
+  .account summary {
+    min-height: 42px;
+    grid-template-columns: 36px;
+    padding: 3px;
+  }
+  .profile-copy {
+    display: none;
+  }
+  .account-menu {
+    top: 50px;
+    right: 0;
+    bottom: auto;
+  }
 }

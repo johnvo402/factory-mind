@@ -1,4 +1,7 @@
-:host { width: 100%; display: block; }
+:host {
+  width: 100%;
+  display: block;
+}
 
 .dashboard-summary {
   width: 100%;
@@ -20,7 +23,11 @@ article {
   box-shadow: var(--shadow-sm);
 }
 
-article span { color: var(--color-muted); font-size: 0.78rem; font-weight: 650; }
+article span {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
 article strong {
   margin-top: var(--space-2);
   color: var(--color-foreground);
@@ -28,22 +35,32 @@ article strong {
   line-height: 1.1;
   letter-spacing: -0.025em;
 }
-article small { margin-top: auto; color: var(--color-subtle); font-size: 0.7rem; }
+article small {
+  margin-top: auto;
+  color: var(--color-subtle);
+  font-size: 0.7rem;
+}
 article.has-alerts {
   border-color: color-mix(in srgb, var(--color-warning) 22%, var(--color-border));
   background: color-mix(in srgb, var(--color-warning-soft) 52%, var(--color-surface));
 }
-article.has-alerts strong { color: var(--color-warning); }
+article.has-alerts strong {
+  color: var(--color-warning);
+}
 article.planning-kpi.has-value.warning {
   border-color: color-mix(in srgb, var(--color-warning) 26%, var(--color-border));
   background: color-mix(in srgb, var(--color-warning-soft) 58%, var(--color-surface));
 }
-article.planning-kpi.has-value.warning strong { color: var(--color-warning); }
+article.planning-kpi.has-value.warning strong {
+  color: var(--color-warning);
+}
 article.planning-kpi.has-value.danger {
   border-color: color-mix(in srgb, var(--color-danger) 24%, var(--color-border));
   background: color-mix(in srgb, var(--color-danger-soft) 58%, var(--color-surface));
 }
-article.planning-kpi.has-value.danger strong { color: var(--color-danger); }
+article.planning-kpi.has-value.danger strong {
+  color: var(--color-danger);
+}
 
 .dashboard-status {
   grid-column: 1 / -1;
@@ -78,11 +95,21 @@ article.planning-kpi.has-value.danger strong { color: var(--color-danger); }
 }
 
 @media (max-width: 1000px) {
-  .dashboard-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 500px) {
-  .dashboard-summary { grid-template-columns: 1fr 1fr; gap: var(--space-2); }
-  article { min-height: 104px; padding: var(--space-3); }
-  article strong { font-size: 1.45rem; }
+  .dashboard-summary {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+  article {
+    min-height: 104px;
+    padding: var(--space-3);
+  }
+  article strong {
+    font-size: 1.45rem;
+  }
 }

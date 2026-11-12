@@ -538,6 +538,14 @@ docker compose ps
 
 Hai service phải có trạng thái `healthy` trước khi chạy API.
 
+MinIO được build từ mã nguồn upstream theo phiên bản cố định vì image cũ không còn tải được từ
+registry. Lần chạy đầu cần thêm thời gian tải Go dependencies và compile. Nếu cổng `5432` đã có
+dịch vụ khác, đổi `POSTGRES_PORT` và `Port` trong `ConnectionStrings__FactoryMind` của `.env.local`
+sang cùng một cổng trống, ví dụ `55432`.
+
+Hướng dẫn thao tác dev/prod, build MinIO và xử lý cổng trùng:
+[`docs/operations/dev-prod-quickstart.md`](docs/operations/dev-prod-quickstart.md).
+
 ### 3. Chạy backend
 
 Mở một PowerShell terminal mới tại thư mục gốc:

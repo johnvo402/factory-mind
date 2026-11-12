@@ -24,9 +24,9 @@ describe('parseServerSentEvents', () => {
 
   it('joins multiple data lines according to the SSE contract', async () => {
     const events: ServerSentEvent[] = [];
-    for await (const event of parseServerSentEvents(streamFrom([
-      ': keep-alive\nevent: message\ndata: first\ndata: second\n\n',
-    ]))) {
+    for await (const event of parseServerSentEvents(
+      streamFrom([': keep-alive\nevent: message\ndata: first\ndata: second\n\n']),
+    )) {
       events.push(event);
     }
 

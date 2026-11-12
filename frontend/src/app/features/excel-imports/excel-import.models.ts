@@ -1,9 +1,5 @@
 export type ExcelImportEntityType =
-  | 'machine'
-  | 'material'
-  | 'product'
-  | 'inventory'
-  | 'production_order';
+  'machine' | 'material' | 'product' | 'inventory' | 'production_order';
 
 export interface ExcelPreview {
   headers: string[];

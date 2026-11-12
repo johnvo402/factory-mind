@@ -5,7 +5,9 @@ import { PlanningApiService } from './planning-api.service';
 
 describe('PlanningApiService', () => {
   it('uses the bounded schedule-preview route and horizon query', () => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     const service = TestBed.inject(PlanningApiService);
     const http = TestBed.inject(HttpTestingController);
 

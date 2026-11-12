@@ -4,7 +4,9 @@
   color: var(--color-text);
 }
 
-button { font: inherit; }
+button {
+  font: inherit;
+}
 
 .chat-panel {
   min-width: 0;
@@ -13,7 +15,11 @@ button { font: inherit; }
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   background:
-    radial-gradient(circle at 50% 25%, color-mix(in srgb, var(--color-primary-soft) 54%, transparent) 0, transparent 30rem),
+    radial-gradient(
+      circle at 50% 25%,
+      color-mix(in srgb, var(--color-primary-soft) 54%, transparent) 0,
+      transparent 30rem
+    ),
     var(--color-background);
 }
 
@@ -31,7 +37,9 @@ button { font: inherit; }
   z-index: 2;
 }
 
-.chat-header > div { min-width: 0; }
+.chat-header > div {
+  min-width: 0;
+}
 
 .eyebrow {
   color: var(--color-primary);
@@ -86,7 +94,9 @@ button { font: inherit; }
   margin: 0 auto;
 }
 
-.message-list { padding: var(--space-5) 0 var(--space-10); }
+.message-list {
+  padding: var(--space-5) 0 var(--space-10);
+}
 
 .welcome {
   min-height: 100%;
@@ -110,7 +120,9 @@ button { font: inherit; }
   color: var(--color-primary-foreground);
 }
 
-.welcome > .eyebrow { margin: var(--space-5) 0 var(--space-2); }
+.welcome > .eyebrow {
+  margin: var(--space-5) 0 var(--space-2);
+}
 
 .welcome h2 {
   max-width: 720px;
@@ -169,7 +181,10 @@ button { font: inherit; }
   color: var(--color-text);
   text-align: left;
   box-shadow: var(--shadow-sm);
-  transition: transform var(--motion-fast) var(--ease-out), border-color var(--motion-fast), box-shadow var(--motion-fast);
+  transition:
+    transform var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast);
 }
 
 .suggestions button:hover {
@@ -187,7 +202,10 @@ button { font: inherit; }
   text-transform: uppercase;
 }
 
-.suggestions span { align-self: start; line-height: 1.5; }
+.suggestions span {
+  align-self: start;
+  line-height: 1.5;
+}
 
 .suggestions app-ui-icon {
   align-self: end;
@@ -241,12 +259,16 @@ button { font: inherit; }
   background: var(--color-surface);
   padding: 10px 10px 10px var(--space-4);
   box-shadow: 0 12px 36px color-mix(in srgb, var(--color-sidebar) 10%, transparent);
-  transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
+  transition:
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast);
 }
 
 .composer:focus-within {
   border-color: color-mix(in srgb, var(--color-primary) 65%, var(--color-border));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 16%, transparent), var(--shadow-md);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--focus-ring) 16%, transparent),
+    var(--shadow-md);
 }
 
 .composer textarea {
@@ -263,7 +285,9 @@ button { font: inherit; }
   line-height: 1.5;
 }
 
-.composer textarea::placeholder { color: var(--color-subtle); }
+.composer textarea::placeholder {
+  color: var(--color-subtle);
+}
 
 .composer button {
   width: 46px;
@@ -274,7 +298,9 @@ button { font: inherit; }
   border-radius: var(--radius-md);
   background: var(--color-primary);
   color: var(--color-primary-foreground);
-  transition: background var(--motion-fast), transform var(--motion-fast);
+  transition:
+    background var(--motion-fast),
+    transform var(--motion-fast);
 }
 
 .composer button:not(:disabled):hover {
@@ -283,7 +309,10 @@ button { font: inherit; }
 }
 
 button:disabled,
-textarea:disabled { cursor: not-allowed; opacity: 0.55; }
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
 
 .composer-area > p {
   margin-top: var(--space-2);
@@ -303,23 +332,51 @@ textarea:disabled { cursor: not-allowed; opacity: 0.55; }
   font-size: 0.82rem;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 @media (max-width: 900px) {
-  .suggestions { grid-template-columns: 1fr; }
-  .suggestions button { min-height: 92px; }
+  .suggestions {
+    grid-template-columns: 1fr;
+  }
+  .suggestions button {
+    min-height: 92px;
+  }
 }
 
 @media (max-width: 720px) {
-  .chat-panel { height: calc(100dvh - var(--mobile-topbar-height) - var(--mobile-nav-height)); }
-  .chat-header { min-height: 62px; }
+  .chat-panel {
+    height: calc(100dvh - var(--mobile-topbar-height) - var(--mobile-nav-height));
+  }
+  .chat-header {
+    min-height: 62px;
+  }
   .chat-header,
   .messages,
-  .composer-area { padding-right: var(--space-4); padding-left: var(--space-4); }
-  .rag-status { display: none; }
-  .welcome { justify-content: flex-start; padding-top: var(--space-8); }
-  .welcome h2 { font-size: 1.75rem; }
-  .suggestion-heading small { display: none; }
-  .composer-area { padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom)); }
-  .composer-area > p { display: none; }
+  .composer-area {
+    padding-right: var(--space-4);
+    padding-left: var(--space-4);
+  }
+  .rag-status {
+    display: none;
+  }
+  .welcome {
+    justify-content: flex-start;
+    padding-top: var(--space-8);
+  }
+  .welcome h2 {
+    font-size: 1.75rem;
+  }
+  .suggestion-heading small {
+    display: none;
+  }
+  .composer-area {
+    padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+  }
+  .composer-area > p {
+    display: none;
+  }
 }

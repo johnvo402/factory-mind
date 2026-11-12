@@ -9,7 +9,10 @@ describe('ExcelImportStore', () => {
   let file: File;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<ExcelImportApiService>('ExcelImportApiService', ['preview', 'import']);
+    api = jasmine.createSpyObj<ExcelImportApiService>('ExcelImportApiService', [
+      'preview',
+      'import',
+    ]);
     TestBed.configureTestingModule({
       providers: [ExcelImportStore, { provide: ExcelImportApiService, useValue: api }],
     });
@@ -18,17 +21,19 @@ describe('ExcelImportStore', () => {
   });
 
   it('uses suggested mappings from preview', async () => {
-    api.preview.and.returnValue(of({
-      success: true,
-      message: 'OK',
-      data: {
-        headers: ['Code', 'Name', 'Status'],
-        rows: [{ Code: 'M-001', Name: 'Injection', Status: 'available' }],
-        totalRows: 1,
-        requiredFields: ['code', 'name', 'status'],
-        suggestedMapping: { code: 'Code', name: 'Name', status: 'Status' },
-      },
-    }));
+    api.preview.and.returnValue(
+      of({
+        success: true,
+        message: 'OK',
+        data: {
+          headers: ['Code', 'Name', 'Status'],
+          rows: [{ Code: 'M-001', Name: 'Injection', Status: 'available' }],
+          totalRows: 1,
+          requiredFields: ['code', 'name', 'status'],
+          suggestedMapping: { code: 'Code', name: 'Name', status: 'Status' },
+        },
+      }),
+    );
 
     await store.previewFile('machine', file);
 
@@ -37,22 +42,26 @@ describe('ExcelImportStore', () => {
   });
 
   it('returns false and exposes row errors without treating them as a transport failure', async () => {
-    api.preview.and.returnValue(of({
-      success: true,
-      message: 'OK',
-      data: {
-        headers: ['Code', 'Name', 'Status'],
-        rows: [],
-        totalRows: 1,
-        requiredFields: ['code', 'name', 'status'],
-        suggestedMapping: { code: 'Code', name: 'Name', status: 'Status' },
-      },
-    }));
-    api.import.and.returnValue(of({
-      success: true,
-      message: 'OK',
-      data: { importedCount: 0, errors: [{ row: 2, field: 'code', message: 'Duplicate.' }] },
-    }));
+    api.preview.and.returnValue(
+      of({
+        success: true,
+        message: 'OK',
+        data: {
+          headers: ['Code', 'Name', 'Status'],
+          rows: [],
+          totalRows: 1,
+          requiredFields: ['code', 'name', 'status'],
+          suggestedMapping: { code: 'Code', name: 'Name', status: 'Status' },
+        },
+      }),
+    );
+    api.import.and.returnValue(
+      of({
+        success: true,
+        message: 'OK',
+        data: { importedCount: 0, errors: [{ row: 2, field: 'code', message: 'Duplicate.' }] },
+      }),
+    );
     await store.previewFile('machine', file);
 
     const imported = await store.import('machine');

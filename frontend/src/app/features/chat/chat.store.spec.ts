@@ -79,10 +79,7 @@ describe('ChatStore', () => {
     await store.sendMessage('Which machine is ready?');
 
     expect(api.createConversation).toHaveBeenCalledTimes(1);
-    expect(api.streamMessage).toHaveBeenCalledWith(
-      'conversation-1',
-      'Which machine is ready?',
-    );
+    expect(api.streamMessage).toHaveBeenCalledWith('conversation-1', 'Which machine is ready?');
     expect(store.messages()).toEqual(canonicalMessages);
     expect(store.selectedConversation()?.title).toBe('Which machine is ready?');
     expect(store.isStreaming()).toBeFalse();
@@ -139,23 +136,27 @@ describe('ChatStore', () => {
       role: 'assistant',
       content: 'Machine A is ready [S1].',
       createdAt: '2026-08-01T00:00:02Z',
-      businessEvidence: [{
-        referenceNumber: 1,
-        entityId: 'machine-1',
-        entityType: 'machine',
-        title: 'MC-01 - Cutter',
-        detail: 'status=available',
-      }],
-      citations: [{
-        referenceNumber: 1,
-        documentId: 'document-1',
-        chunkId: 'chunk-1',
-        documentTitle: 'Machine handbook',
-        fileName: 'machine-handbook.pdf',
-        pageNumber: 4,
-        excerpt: 'Machine A is available for operation.',
-        score: 0.91,
-      }],
+      businessEvidence: [
+        {
+          referenceNumber: 1,
+          entityId: 'machine-1',
+          entityType: 'machine',
+          title: 'MC-01 - Cutter',
+          detail: 'status=available',
+        },
+      ],
+      citations: [
+        {
+          referenceNumber: 1,
+          documentId: 'document-1',
+          chunkId: 'chunk-1',
+          documentTitle: 'Machine handbook',
+          fileName: 'machine-handbook.pdf',
+          pageNumber: 4,
+          excerpt: 'Machine A is available for operation.',
+          score: 0.91,
+        },
+      ],
     };
   }
 

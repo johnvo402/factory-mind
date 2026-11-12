@@ -1,6 +1,16 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { catchError, finalize, firstValueFrom, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
+import {
+  catchError,
+  finalize,
+  firstValueFrom,
+  map,
+  Observable,
+  of,
+  shareReplay,
+  tap,
+  throwError,
+} from 'rxjs';
 import { ApiResponse } from '../api/api.models';
 import { API_ROUTES } from '../api/api.routes';
 import { SKIP_AUTH_INTERCEPTOR } from './auth-http.context';

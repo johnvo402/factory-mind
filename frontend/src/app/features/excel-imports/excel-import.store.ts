@@ -2,11 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { businessDataErrorMessage } from '../data/business-data-error';
 import { ExcelImportApiService } from './excel-import-api.service';
-import {
-  ExcelImportEntityType,
-  ExcelImportResult,
-  ExcelPreview,
-} from './excel-import.models';
+import { ExcelImportEntityType, ExcelImportResult, ExcelPreview } from './excel-import.models';
 
 @Injectable()
 export class ExcelImportStore {
@@ -43,12 +39,12 @@ export class ExcelImportStore {
   }
 
   setMapping(field: string, header: string): void {
-    this.mappingState.update(mapping => ({ ...mapping, [field]: header }));
+    this.mappingState.update((mapping) => ({ ...mapping, [field]: header }));
   }
 
   hasCompleteMapping(): boolean {
     const preview = this.previewState();
-    return !!preview && preview.requiredFields.every(field => !!this.mappingState()[field]);
+    return !!preview && preview.requiredFields.every((field) => !!this.mappingState()[field]);
   }
 
   async import(entityType: ExcelImportEntityType): Promise<boolean> {

@@ -33,7 +33,9 @@ export class ProductionOrderApiService {
     if (filters.dueFrom) params = params.set('dueFrom', filters.dueFrom);
     if (filters.dueTo) params = params.set('dueTo', filters.dueTo);
     if (filters.productId) params = params.set('productId', filters.productId);
-    const route = planning ? API_ROUTES.productionOrders.planning : API_ROUTES.productionOrders.root;
+    const route = planning
+      ? API_ROUTES.productionOrders.planning
+      : API_ROUTES.productionOrders.root;
     return this.http.get<ApiResponse<ProductionOrderPage>>(route, {
       params,
     });

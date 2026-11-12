@@ -71,12 +71,10 @@
           @for (inventory of store.inventories(); track inventory.id) {
             <tr>
               <td>
-                <strong>{{ inventory.materialCode }}</strong
-                ><br />{{ inventory.materialName }}
+                <strong>{{ inventory.materialCode }}</strong><br />{{ inventory.materialName }}
               </td>
               <td>
-                <strong>{{ inventory.warehouseCode }}</strong
-                ><br />{{ inventory.warehouseName }}
+                <strong>{{ inventory.warehouseCode }}</strong><br />{{ inventory.warehouseName }}
               </td>
               <td>
                 <strong>{{ inventory.quantity | number: '1.0-3' }}</strong> {{ inventory.unit }}
@@ -289,7 +287,12 @@
         } @else if (store.transactions().length === 0) {
           <div class="state empty"><strong>Chưa có giao dịch.</strong></div>
         } @else {
-          <div class="table-wrap history-table" tabindex="0" role="region" aria-label="Lịch sử kho nguyên liệu">
+          <div
+            class="table-wrap history-table"
+            tabindex="0"
+            role="region"
+            aria-label="Lịch sử kho nguyên liệu"
+          >
             <table>
               <thead>
                 <tr>
@@ -306,12 +309,14 @@
                   <tr>
                     <td>{{ transaction.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
                     <td>
-                      <strong>{{ transaction.materialCode }}</strong
-                      ><br />{{ transaction.materialName }}
+                      <strong>{{ transaction.materialCode }}</strong><br />{{
+                        transaction.materialName
+                      }}
                     </td>
                     <td>
-                      <strong>{{ transaction.warehouseCode }}</strong
-                      ><br />{{ transaction.warehouseName }}
+                      <strong>{{ transaction.warehouseCode }}</strong><br />{{
+                        transaction.warehouseName
+                      }}
                     </td>
                     <td>{{ operationLabel(transaction.type) }}</td>
                     <td>
@@ -391,8 +396,7 @@
                 [class.inactive]="!warehouse.isActive"
                 (click)="editWarehouse(warehouse)"
               >
-                <strong>{{ warehouse.code }}</strong
-                ><span>{{ warehouse.name }}</span
+                <strong>{{ warehouse.code }}</strong><span>{{ warehouse.name }}</span
                 ><small>{{ warehouse.isActive ? 'Đang hoạt động' : 'Đã ngừng hoạt động' }}</small>
               </button>
             }

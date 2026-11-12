@@ -115,7 +115,9 @@ export class ProductionOrderStore {
     this.errorState.set('');
     this.refreshWarningState.set('');
     try {
-      const response = await firstValueFrom(this.api.getProductionOrders(this.filtersState(), true));
+      const response = await firstValueFrom(
+        this.api.getProductionOrders(this.filtersState(), true),
+      );
       this.applyPage(response.data);
     } catch (error: unknown) {
       this.errorState.set(businessDataErrorMessage(error));
@@ -352,7 +354,9 @@ export class ProductionOrderStore {
     );
   }
 
-  private applyPage(page: { items: ProductionOrder[]; totalCount: number } | null | undefined): void {
+  private applyPage(
+    page: { items: ProductionOrder[]; totalCount: number } | null | undefined,
+  ): void {
     this.orderItems.set(page?.items ?? []);
     this.totalCountState.set(page?.totalCount ?? 0);
   }

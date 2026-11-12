@@ -60,10 +60,15 @@ describe('MachineStore', () => {
   });
 
   it('shows Problem Details when deletion fails', async () => {
-    api.deleteMachine.and.returnValue(throwError(() => new HttpErrorResponse({
-      status: 409,
-      error: { detail: 'Machine is in use.' },
-    })));
+    api.deleteMachine.and.returnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 409,
+            error: { detail: 'Machine is in use.' },
+          }),
+      ),
+    );
 
     const deleted = await store.delete('machine-1');
 

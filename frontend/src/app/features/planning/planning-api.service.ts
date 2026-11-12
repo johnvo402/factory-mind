@@ -11,6 +11,9 @@ export class PlanningApiService {
 
   getPreview(horizonDays: number): Observable<ApiResponse<SchedulePreview>> {
     const params = new HttpParams().set('horizonDays', horizonDays);
-    return this.http.get<ApiResponse<SchedulePreview>>(API_ROUTES.productionOrders.schedulePreview, { params });
+    return this.http.get<ApiResponse<SchedulePreview>>(
+      API_ROUTES.productionOrders.schedulePreview,
+      { params },
+    );
   }
 }

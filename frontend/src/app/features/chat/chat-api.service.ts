@@ -45,20 +45,19 @@ export class ChatApiService {
 
   confirmAction(proposalId: string): Observable<ApiResponse<AiActionProposal>> {
     return this.http.post<ApiResponse<AiActionProposal>>(
-      API_ROUTES.aiActions.confirm(proposalId), null,
+      API_ROUTES.aiActions.confirm(proposalId),
+      null,
     );
   }
 
   cancelAction(proposalId: string): Observable<ApiResponse<AiActionProposal>> {
     return this.http.post<ApiResponse<AiActionProposal>>(
-      API_ROUTES.aiActions.cancel(proposalId), null,
+      API_ROUTES.aiActions.cancel(proposalId),
+      null,
     );
   }
 
-  streamMessage(
-    conversationId: string,
-    content: string,
-  ): Observable<ChatStreamEvent> {
+  streamMessage(conversationId: string, content: string): Observable<ChatStreamEvent> {
     return new Observable((subscriber) => {
       const controller = new AbortController();
 
@@ -146,9 +145,7 @@ export class ChatApiService {
       case 'citations':
         return {
           type: 'citations',
-          citations: Array.isArray(data['citations'])
-            ? (data['citations'] as ChatCitation[])
-            : [],
+          citations: Array.isArray(data['citations']) ? (data['citations'] as ChatCitation[]) : [],
         };
       case 'business-evidence':
         return {
@@ -165,9 +162,7 @@ export class ChatApiService {
         return { type: 'done' };
       case 'error':
         throw new Error(
-          typeof data['message'] === 'string'
-            ? data['message']
-            : 'The AI response stream failed.',
+          typeof data['message'] === 'string' ? data['message'] : 'The AI response stream failed.',
         );
       default:
         return null;

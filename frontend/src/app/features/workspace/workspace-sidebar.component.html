@@ -4,7 +4,12 @@
     <strong>FactoryMind</strong>
   </a>
 
-  <button class="new-chat" type="button" [disabled]="store.isStreaming()" (click)="startNewConversation()">
+  <button
+    class="new-chat"
+    type="button"
+    [disabled]="store.isStreaming()"
+    (click)="startNewConversation()"
+  >
     <app-ui-icon name="plus" [size]="18" /> <span>Cuộc trò chuyện mới</span>
   </button>
 
@@ -15,7 +20,14 @@
         <p>Chưa có cuộc trò chuyện.</p>
       }
       @for (conversation of store.conversations(); track conversation.id) {
-        <button type="button" class="conversation" [class.active]="store.selectedConversationId() === conversation.id" [disabled]="store.isStreaming()" (click)="selectConversation(conversation.id)" [title]="store.displayTitle(conversation)">
+        <button
+          type="button"
+          class="conversation"
+          [class.active]="store.selectedConversationId() === conversation.id"
+          [disabled]="store.isStreaming()"
+          (click)="selectConversation(conversation.id)"
+          [title]="store.displayTitle(conversation)"
+        >
           <app-ui-icon name="message-square" [size]="16" />
           <span>{{ store.displayTitle(conversation) }}</span>
         </button>
@@ -54,25 +66,60 @@
   }
 
   <nav class="primary-nav" aria-label="Điều hướng chính">
-    <a routerLink="/chat" [class.active]="activeView() === 'chat'" [attr.aria-current]="activeView() === 'chat' ? 'page' : null"><app-ui-icon name="message-square" [size]="19" /><span>Chat</span></a>
-    <a routerLink="/knowledge" [class.active]="activeView() === 'knowledge'" [attr.aria-current]="activeView() === 'knowledge' ? 'page' : null"><app-ui-icon name="book-open" [size]="19" /><span>Tri thức</span></a>
+    <a
+      routerLink="/chat"
+      [class.active]="activeView() === 'chat'"
+      [attr.aria-current]="activeView() === 'chat' ? 'page' : null"
+      ><app-ui-icon name="message-square" [size]="19" /><span>Chat</span></a
+    >
+    <a
+      routerLink="/knowledge"
+      [class.active]="activeView() === 'knowledge'"
+      [attr.aria-current]="activeView() === 'knowledge' ? 'page' : null"
+      ><app-ui-icon name="book-open" [size]="19" /><span>Tri thức</span></a
+    >
     @if (userRole() === 'Admin' || userRole() === 'Manager') {
-      <a routerLink="/data/machines" [class.active]="activeView() === 'data'" [attr.aria-current]="activeView() === 'data' ? 'page' : null"><app-ui-icon name="database" [size]="19" /><span>Dữ liệu</span></a>
-      <a routerLink="/planning" [class.active]="activeView() === 'planning'" [attr.aria-current]="activeView() === 'planning' ? 'page' : null"><app-ui-icon name="clock-3" [size]="19" /><span>Kế hoạch sản xuất</span></a>
+      <a
+        routerLink="/data/machines"
+        [class.active]="activeView() === 'data'"
+        [attr.aria-current]="activeView() === 'data' ? 'page' : null"
+        ><app-ui-icon name="database" [size]="19" /><span>Dữ liệu</span></a
+      >
+      <a
+        routerLink="/planning"
+        [class.active]="activeView() === 'planning'"
+        [attr.aria-current]="activeView() === 'planning' ? 'page' : null"
+        ><app-ui-icon name="clock-3" [size]="19" /><span>Kế hoạch sản xuất</span></a
+      >
     }
     @if (userRole() === 'Admin') {
-      <a routerLink="/settings" [class.active]="activeView() === 'settings'" [attr.aria-current]="activeView() === 'settings' ? 'page' : null"><app-ui-icon name="settings" [size]="19" /><span>Cài đặt</span></a>
+      <a
+        routerLink="/settings"
+        [class.active]="activeView() === 'settings'"
+        [attr.aria-current]="activeView() === 'settings' ? 'page' : null"
+        ><app-ui-icon name="settings" [size]="19" /><span>Cài đặt</span></a
+      >
     }
   </nav>
 
   <details class="account">
     <summary aria-label="Mở menu tài khoản">
       <span class="profile-avatar">{{ userName().slice(0, 1) }}</span>
-      <span class="profile-copy"><strong>{{ userName() }}</strong><small>{{ userRole() }}</small></span>
+      <span class="profile-copy"
+        ><strong>{{ userName() }}</strong
+        ><small>{{ userRole() }}</small></span
+      >
     </summary>
     <div class="account-menu">
-      <div><app-ui-icon name="user" [size]="18" /><span><strong>{{ userName() }}</strong><small>{{ userRole() }}</small></span></div>
-      <button type="button" (click)="logoutRequested.emit()"><app-ui-icon name="log-out" [size]="18" /> Đăng xuất</button>
+      <div>
+        <app-ui-icon name="user" [size]="18" /><span
+          ><strong>{{ userName() }}</strong
+          ><small>{{ userRole() }}</small></span
+        >
+      </div>
+      <button type="button" (click)="logoutRequested.emit()">
+        <app-ui-icon name="log-out" [size]="18" /> Đăng xuất
+      </button>
     </div>
   </details>
 </aside>

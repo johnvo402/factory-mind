@@ -67,7 +67,9 @@ export class SettingsStore {
   async reindex(): Promise<boolean> {
     return this.run(async () => {
       const response = await firstValueFrom(this.api.reindexDocuments());
-      this.messageState.set(`Đã đưa ${response.data?.queuedCount ?? 0} tài liệu vào hàng đợi re-index.`);
+      this.messageState.set(
+        `Đã đưa ${response.data?.queuedCount ?? 0} tài liệu vào hàng đợi re-index.`,
+      );
     });
   }
 

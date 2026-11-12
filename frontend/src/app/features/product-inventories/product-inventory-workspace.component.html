@@ -68,12 +68,10 @@
           @for (balance of store.balances(); track balance.id) {
             <tr>
               <td>
-                <strong>{{ balance.productCode }}</strong
-                ><br />{{ balance.productName }}
+                <strong>{{ balance.productCode }}</strong><br />{{ balance.productName }}
               </td>
               <td>
-                <strong>{{ balance.warehouseCode }}</strong
-                ><br />{{ balance.warehouseName }}
+                <strong>{{ balance.warehouseCode }}</strong><br />{{ balance.warehouseName }}
               </td>
               <td>
                 <strong>{{ balance.quantity | number: '1.0-3' }}</strong>
@@ -162,7 +160,12 @@
             ><span>Giao dịch sẽ được tạo khi hoàn thành lệnh sản xuất.</span>
           </div>
         } @else {
-          <div class="table-wrap history-table" tabindex="0" role="region" aria-label="Lịch sử kho thành phẩm">
+          <div
+            class="table-wrap history-table"
+            tabindex="0"
+            role="region"
+            aria-label="Lịch sử kho thành phẩm"
+          >
             <table>
               <thead>
                 <tr>
@@ -179,12 +182,14 @@
                   <tr>
                     <td>{{ transaction.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
                     <td>
-                      <strong>{{ transaction.productCode }}</strong
-                      ><br />{{ transaction.productName }}
+                      <strong>{{ transaction.productCode }}</strong><br />{{
+                        transaction.productName
+                      }}
                     </td>
                     <td>
-                      <strong>{{ transaction.warehouseCode }}</strong
-                      ><br />{{ transaction.warehouseName }}
+                      <strong>{{ transaction.warehouseCode }}</strong><br />{{
+                        transaction.warehouseName
+                      }}
                     </td>
                     <td>{{ transactionTypeLabel(transaction.type) }}</td>
                     <td>
@@ -197,9 +202,7 @@
                       @if (transaction.referenceId) {
                         <br /><span class="muted">ID: {{ transaction.referenceId }}</span>
                       }
-                      <br /><span class="muted">{{
-                        transaction.note || 'Không có ghi chú'
-                      }}</span>
+                      <br /><span class="muted">{{ transaction.note || 'Không có ghi chú' }}</span>
                     </td>
                   </tr>
                 }

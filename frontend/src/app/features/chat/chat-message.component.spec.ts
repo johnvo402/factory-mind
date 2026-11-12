@@ -11,27 +11,32 @@ describe('ChatMessageComponent', () => {
     const message: ChatMessage = {
       id: 'assistant-1',
       role: 'assistant',
-      content: '**Safe answer** '
-        + '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" onerror="alert(1)"> '
-        + '[S1].',
+      content:
+        '**Safe answer** ' +
+        '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" onerror="alert(1)"> ' +
+        '[S1].',
       createdAt: '2026-08-01T00:00:00Z',
-      businessEvidence: [{
-        referenceNumber: 1,
-        entityId: 'machine-1',
-        entityType: 'machine',
-        title: 'MC-01 - Cutter',
-        detail: 'status=available',
-      }],
-      citations: [{
-        referenceNumber: 1,
-        documentId: 'document-1',
-        chunkId: 'chunk-1',
-        documentTitle: 'Safety manual',
-        fileName: 'safety.pdf',
-        pageNumber: 8,
-        excerpt: 'Wear protective equipment.',
-        score: 0.94,
-      }],
+      businessEvidence: [
+        {
+          referenceNumber: 1,
+          entityId: 'machine-1',
+          entityType: 'machine',
+          title: 'MC-01 - Cutter',
+          detail: 'status=available',
+        },
+      ],
+      citations: [
+        {
+          referenceNumber: 1,
+          documentId: 'document-1',
+          chunkId: 'chunk-1',
+          documentTitle: 'Safety manual',
+          fileName: 'safety.pdf',
+          pageNumber: 8,
+          excerpt: 'Wear protective equipment.',
+          score: 0.94,
+        },
+      ],
     };
     fixture.componentRef.setInput('message', message);
     fixture.detectChanges();
@@ -42,8 +47,12 @@ describe('ChatMessageComponent', () => {
     expect(element.querySelector('.citation summary')?.textContent).toContain('Safety manual');
     expect(element.querySelector('.citation p')?.textContent).toContain('protective equipment');
     expect(element.querySelector('.evidence-card header')?.textContent).toContain('MC-01');
-    expect(element.querySelector('.evidence-card p')?.textContent).toContain('Trạng thái: Sẵn sàng');
-    expect(element.querySelector('.evidence-card p')?.textContent).not.toContain('status=available');
+    expect(element.querySelector('.evidence-card p')?.textContent).toContain(
+      'Trạng thái: Sẵn sàng',
+    );
+    expect(element.querySelector('.evidence-card p')?.textContent).not.toContain(
+      'status=available',
+    );
   });
 
   it('uses readable labels for manufacturing execution evidence', async () => {
@@ -57,18 +66,21 @@ describe('ChatMessageComponent', () => {
       content: 'PO-001 đang ở Painting [B1].',
       createdAt: '2026-09-06T00:00:00Z',
       citations: [],
-      businessEvidence: [{
-        referenceNumber: 1,
-        entityId: 'operation-1',
-        entityType: 'production_operation',
-        title: 'PO-001 / 20 Painting',
-        detail: 'Status: in_progress.',
-      }],
+      businessEvidence: [
+        {
+          referenceNumber: 1,
+          entityId: 'operation-1',
+          entityType: 'production_operation',
+          title: 'PO-001 / 20 Painting',
+          detail: 'Status: in_progress.',
+        },
+      ],
     } satisfies ChatMessage);
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('.evidence-card header')?.textContent)
-      .toContain('Công đoạn sản xuất');
+    expect(element.querySelector('.evidence-card header')?.textContent).toContain(
+      'Công đoạn sản xuất',
+    );
   });
 });

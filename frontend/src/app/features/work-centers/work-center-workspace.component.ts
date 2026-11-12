@@ -5,7 +5,12 @@ import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
 import { UiIconComponent } from '../../shared/ui/ui-icon.component';
 import { businessDataErrorMessage } from '../data/business-data-error';
 import { WorkCenterApiService } from './work-center-api.service';
-import { WorkCenter, WorkCenterDayOff, WorkCenterInput, WorkCenterShift } from './work-center.models';
+import {
+  WorkCenter,
+  WorkCenterDayOff,
+  WorkCenterInput,
+  WorkCenterShift,
+} from './work-center.models';
 
 export function validateWorkCenterCalendar(
   parallelCapacity: number,
@@ -14,15 +19,19 @@ export function validateWorkCenterCalendar(
 ): string {
   if (parallelCapacity < 1 || parallelCapacity > 100) return 'Parallel capacity phải từ 1 đến 100.';
   for (const shift of shifts) {
-    if (!shift.startTime || !shift.endTime || shift.startTime >= shift.endTime) return 'Giờ bắt đầu phải trước giờ kết thúc.';
+    if (!shift.startTime || !shift.endTime || shift.startTime >= shift.endTime)
+      return 'Giờ bắt đầu phải trước giờ kết thúc.';
   }
   const groups = new Map<number, WorkCenterShift[]>();
-  for (const shift of shifts) groups.set(shift.dayOfWeek, [...(groups.get(shift.dayOfWeek) ?? []), shift]);
+  for (const shift of shifts)
+    groups.set(shift.dayOfWeek, [...(groups.get(shift.dayOfWeek) ?? []), shift]);
   for (const items of groups.values()) {
     const ordered = [...items].sort((a, b) => a.startTime.localeCompare(b.startTime));
-    if (ordered.some((item, index) => index > 0 && ordered[index - 1].endTime > item.startTime)) return 'Các ca trong cùng ngày không được chồng lấn.';
+    if (ordered.some((item, index) => index > 0 && ordered[index - 1].endTime > item.startTime))
+      return 'Các ca trong cùng ngày không được chồng lấn.';
   }
-  if (new Set(daysOff.map(day => day.date)).size !== daysOff.length) return 'Ngày nghỉ không được trùng.';
+  if (new Set(daysOff.map((day) => day.date)).size !== daysOff.length)
+    return 'Ngày nghỉ không được trùng.';
   return '';
 }
 
@@ -50,12 +59,20 @@ export class WorkCenterWorkspaceComponent implements OnInit {
   protected readonly calendarValidation = computed(() => this.validateCalendar());
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly form = new FormGroup({
-    code: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(50)] }),
-    name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(200)] }),
+    code: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(50)],
+    }),
+    name: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(200)],
+    }),
     description: new FormControl<string | null>(null, [Validators.maxLength(500)]),
   });
 
-  ngOnInit(): void { void this.load(); }
+  ngOnInit(): void {
+    void this.load();
+  }
 
   protected async load(search = this.searchControl.value): Promise<void> {
     this.loading.set(true);
@@ -78,7 +95,11 @@ export class WorkCenterWorkspaceComponent implements OnInit {
 
   protected openEdit(workCenter: WorkCenter): void {
     this.editingId.set(workCenter.id);
-    this.form.reset({ code: workCenter.code, name: workCenter.name, description: workCenter.description });
+    this.form.reset({
+      code: workCenter.code,
+      name: workCenter.name,
+      description: workCenter.description,
+    });
     this.editorOpen.set(true);
   }
 
@@ -123,8 +144,8 @@ export class WorkCenterWorkspaceComponent implements OnInit {
       const calendar = response.data!;
       this.calendarWorkCenter.set(workCenter);
       this.parallelCapacity.set(calendar.parallelCapacity);
-      this.shifts.set(calendar.shifts.map(shift => ({ ...shift })));
-      this.daysOff.set(calendar.daysOff.map(day => ({ ...day })));
+      this.shifts.set(calendar.shifts.map((shift) => ({ ...shift })));
+      this.daysOff.set(calendar.daysOff.map((day) => ({ ...day })));
       this.calendarTimeZone.set(calendar.timeZoneId);
       this.newDayOff.set('');
       this.calendarOpen.set(true);
@@ -136,29 +157,41 @@ export class WorkCenterWorkspaceComponent implements OnInit {
   }
 
   protected addShift(): void {
-    this.shifts.update(items => [...items, { dayOfWeek: 1, startTime: '08:00:00', endTime: '17:00:00' }]);
+    this.shifts.update((items) => [
+      ...items,
+      { dayOfWeek: 1, startTime: '08:00:00', endTime: '17:00:00' },
+    ]);
   }
 
   protected updateShift(index: number, field: keyof WorkCenterShift, event: Event): void {
     const raw = (event.target as HTMLInputElement | HTMLSelectElement).value;
-    this.shifts.update(items => items.map((item, itemIndex) => itemIndex === index
-      ? { ...item, [field]: field === 'dayOfWeek' ? Number(raw) : (raw.length === 5 ? `${raw}:00` : raw) }
-      : item));
+    this.shifts.update((items) =>
+      items.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: field === 'dayOfWeek' ? Number(raw) : raw.length === 5 ? `${raw}:00` : raw,
+            }
+          : item,
+      ),
+    );
   }
 
   protected removeShift(index: number): void {
-    this.shifts.update(items => items.filter((_, itemIndex) => itemIndex !== index));
+    this.shifts.update((items) => items.filter((_, itemIndex) => itemIndex !== index));
   }
 
   protected addDayOff(): void {
     const date = this.newDayOff();
-    if (!date || this.daysOff().some(day => day.date === date)) return;
-    this.daysOff.update(items => [...items, { date }].sort((a, b) => a.date.localeCompare(b.date)));
+    if (!date || this.daysOff().some((day) => day.date === date)) return;
+    this.daysOff.update((items) =>
+      [...items, { date }].sort((a, b) => a.date.localeCompare(b.date)),
+    );
     this.newDayOff.set('');
   }
 
   protected removeDayOff(date: string): void {
-    this.daysOff.update(items => items.filter(day => day.date !== date));
+    this.daysOff.update((items) => items.filter((day) => day.date !== date));
   }
 
   protected async saveCalendar(): Promise<void> {
@@ -167,11 +200,13 @@ export class WorkCenterWorkspaceComponent implements OnInit {
     this.saving.set(true);
     this.error.set('');
     try {
-      await firstValueFrom(this.api.replaceCalendar(workCenter.id, {
-        parallelCapacity: this.parallelCapacity(),
-        shifts: this.shifts(),
-        daysOff: this.daysOff(),
-      }));
+      await firstValueFrom(
+        this.api.replaceCalendar(workCenter.id, {
+          parallelCapacity: this.parallelCapacity(),
+          shifts: this.shifts(),
+          daysOff: this.daysOff(),
+        }),
+      );
       this.calendarOpen.set(false);
       await this.load();
     } catch (error: unknown) {

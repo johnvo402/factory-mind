@@ -42,7 +42,7 @@ export interface AiActionProposalSummary {
 }
 
 export type AiActionProposalStatus =
-  | 'pending' | 'confirmed' | 'succeeded' | 'failed' | 'cancelled' | 'expired' | 'stale';
+  'pending' | 'confirmed' | 'succeeded' | 'failed' | 'cancelled' | 'expired' | 'stale';
 
 export interface AiActionProposal {
   proposalId: string;

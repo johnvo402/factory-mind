@@ -36,7 +36,8 @@ export class DialogFocusDirective implements AfterViewInit, OnDestroy {
     }
 
     this.document.body.style.overflow = 'hidden';
-    const initialFocus = dialog.querySelector<HTMLElement>('[autofocus]') ?? this.focusableItems()[0];
+    const initialFocus =
+      dialog.querySelector<HTMLElement>('[autofocus]') ?? this.focusableItems()[0];
     (initialFocus ?? dialog).focus();
   }
 
@@ -78,8 +79,8 @@ export class DialogFocusDirective implements AfterViewInit, OnDestroy {
   }
 
   private focusableItems(): HTMLElement[] {
-    return Array.from(this.element.nativeElement.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-      element => element.offsetParent !== null,
-    );
+    return Array.from(
+      this.element.nativeElement.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    ).filter((element) => element.offsetParent !== null);
   }
 }

@@ -24,7 +24,8 @@ describe('businessDataErrorMessage', () => {
   });
 
   it('uses a recoverable message for a network failure', () => {
-    expect(businessDataErrorMessage(new HttpErrorResponse({ status: 0 })))
-      .toBe('Không thể kết nối tới FactoryMind API.');
+    expect(businessDataErrorMessage(new HttpErrorResponse({ status: 0 }))).toBe(
+      'Không thể kết nối tới FactoryMind API.',
+    );
   });
 });

@@ -9,10 +9,7 @@ import { ExcelImportEntityType, ExcelImportResult, ExcelPreview } from './excel-
 export class ExcelImportApiService {
   private readonly http = inject(HttpClient);
 
-  preview(
-    entityType: ExcelImportEntityType,
-    file: File,
-  ): Observable<ApiResponse<ExcelPreview>> {
+  preview(entityType: ExcelImportEntityType, file: File): Observable<ApiResponse<ExcelPreview>> {
     const form = new FormData();
     form.append('entityType', entityType);
     form.append('file', file);

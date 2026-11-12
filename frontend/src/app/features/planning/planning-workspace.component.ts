@@ -33,7 +33,11 @@ export class PlanningWorkspaceComponent implements OnInit {
   });
   protected readonly selectedOrder = computed(() => {
     const operation = this.selectedOperation();
-    return operation ? this.preview()?.orders.find(order => order.operations.some(item => item.id === operation.id)) ?? null : null;
+    return operation
+      ? (this.preview()?.orders.find((order) =>
+          order.operations.some((item) => item.id === operation.id),
+        ) ?? null)
+      : null;
   });
   protected readonly days = computed(() => {
     const preview = this.preview();
@@ -45,7 +49,9 @@ export class PlanningWorkspaceComponent implements OnInit {
     });
   });
 
-  ngOnInit(): void { void this.load(); }
+  ngOnInit(): void {
+    void this.load();
+  }
 
   protected async load(): Promise<void> {
     this.loading.set(true);
@@ -67,10 +73,15 @@ export class PlanningWorkspaceComponent implements OnInit {
     void this.load();
   }
 
-  protected operationsFor(centerId: string, lane: number): Array<{ order: ScheduleOrderPreview; operation: ScheduleOperationPreview }> {
-    return (this.preview()?.orders ?? []).flatMap(order => order.operations
-      .filter(operation => operation.workCenterId === centerId && operation.lane === lane)
-      .map(operation => ({ order, operation })));
+  protected operationsFor(
+    centerId: string,
+    lane: number,
+  ): Array<{ order: ScheduleOrderPreview; operation: ScheduleOperationPreview }> {
+    return (this.preview()?.orders ?? []).flatMap((order) =>
+      order.operations
+        .filter((operation) => operation.workCenterId === centerId && operation.lane === lane)
+        .map((operation) => ({ order, operation })),
+    );
   }
 
   protected laneNumbers(center: WorkCenterCapacityPreview): number[] {
@@ -87,14 +98,17 @@ export class PlanningWorkspaceComponent implements OnInit {
     const span = horizonEnd - horizonStart;
     const visualStart = Math.max(operationStart, horizonStart);
     const visualEnd = Math.min(operationEnd, horizonEnd);
-    if (![horizonStart, horizonEnd, operationStart, operationEnd].every(Number.isFinite)
-      || span <= 0 || visualEnd <= visualStart) {
+    if (
+      ![horizonStart, horizonEnd, operationStart, operationEnd].every(Number.isFinite) ||
+      span <= 0 ||
+      visualEnd <= visualStart
+    ) {
       return { display: 'none' };
     }
 
-    const left = (visualStart - horizonStart) / span * 100;
-    const visibleWidth = (visualEnd - visualStart) / span * 100;
-    const width = Math.min(Math.max(.35, visibleWidth), 100 - left);
+    const left = ((visualStart - horizonStart) / span) * 100;
+    const visibleWidth = ((visualEnd - visualStart) / span) * 100;
+    const width = Math.min(Math.max(0.35, visibleWidth), 100 - left);
     return { left: `${left}%`, width: `${width}%` };
   }
 
@@ -103,19 +117,30 @@ export class PlanningWorkspaceComponent implements OnInit {
     const timeZone = this.preview()?.timeZoneId ?? 'UTC';
     return new Intl.DateTimeFormat('vi-VN', {
       timeZone,
-      day: '2-digit', month: '2-digit', year: 'numeric',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
       ...(includeTime ? { hour: '2-digit', minute: '2-digit' } : {}),
     }).format(new Date(value));
   }
 
   protected projectedLabel(status: ScheduleOrderPreview['projectedDeliveryStatus']): string {
-    return { unknown: 'Chưa xác định', projected_on_time: 'Dự kiến đúng hạn', projected_late: 'Dự kiến trễ' }[status];
+    return {
+      unknown: 'Chưa xác định',
+      projected_on_time: 'Dự kiến đúng hạn',
+      projected_late: 'Dự kiến trễ',
+    }[status];
   }
 
   protected deliveryLabel(status: string): string {
     const labels: Record<string, string> = {
-      no_due_date: 'Không có hạn', on_track: 'Đang đúng hạn', due_soon: 'Sắp đến hạn', overdue: 'Quá hạn',
-      completed_on_time: 'Hoàn thành đúng hạn', completed_late: 'Hoàn thành trễ', cancelled: 'Đã hủy',
+      no_due_date: 'Không có hạn',
+      on_track: 'Đang đúng hạn',
+      due_soon: 'Sắp đến hạn',
+      overdue: 'Quá hạn',
+      completed_on_time: 'Hoàn thành đúng hạn',
+      completed_late: 'Hoàn thành trễ',
+      cancelled: 'Đã hủy',
     };
     return labels[status] ?? status;
   }
@@ -138,7 +163,8 @@ export class PlanningWorkspaceComponent implements OnInit {
       calendar_missing: `${center}chưa cấu hình ca làm việc.`,
       horizon_exceeded: `Không đủ thời gian trong khung ${this.loadedHorizonDays()} ngày.`,
       current_capacity_conflict: `${center}số công đoạn đang chạy vượt parallel capacity.`,
-      blocked_by_predecessor: 'Chưa thể lập lịch vì thời điểm hoàn thành công đoạn trước chưa xác định.',
+      blocked_by_predecessor:
+        'Chưa thể lập lịch vì thời điểm hoàn thành công đoạn trước chưa xác định.',
     };
     return labels[item.reason] ?? item.reason;
   }

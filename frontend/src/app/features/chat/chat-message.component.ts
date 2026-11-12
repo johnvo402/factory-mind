@@ -81,11 +81,13 @@ export class ChatMessageComponent {
     if (key === 'updatedAt') {
       const timestamp = new Date(value);
       if (!Number.isNaN(timestamp.getTime())) {
-        return new Intl.DateTimeFormat('vi-VN', {
-          dateStyle: 'short',
-          timeStyle: 'short',
-          timeZone: 'UTC',
-        }).format(timestamp) + ' UTC';
+        return (
+          new Intl.DateTimeFormat('vi-VN', {
+            dateStyle: 'short',
+            timeStyle: 'short',
+            timeZone: 'UTC',
+          }).format(timestamp) + ' UTC'
+        );
       }
     }
 

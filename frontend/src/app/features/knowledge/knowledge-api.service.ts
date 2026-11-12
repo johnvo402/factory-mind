@@ -23,7 +23,10 @@ export class KnowledgeApiService {
   }
 
   process(documentId: string): Observable<ApiResponse<KnowledgeDocument>> {
-    return this.http.post<ApiResponse<KnowledgeDocument>>(API_ROUTES.documents.process(documentId), {});
+    return this.http.post<ApiResponse<KnowledgeDocument>>(
+      API_ROUTES.documents.process(documentId),
+      {},
+    );
   }
 
   search(query: string, limit = 5): Observable<ApiResponse<KnowledgeSearchResult[]>> {

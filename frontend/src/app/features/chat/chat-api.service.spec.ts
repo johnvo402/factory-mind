@@ -38,14 +38,16 @@ describe('ChatApiService', () => {
   });
 
   it('parses the authenticated POST stream into semantic chat events', async () => {
-    browserFetch.and.resolveTo(sseResponse([
-      'event: conversation\ndata: {"conversationId":"conversation-1"}\n\n',
-      'event: token\ndata: {"content":"Answer [S1]."}\n\n',
-      'event: ai-action-proposal\ndata: {"proposalId":"p-1","actionType":"release_production_order","status":"pending","title":"Release PO-001","summary":{"productionOrderNumber":"PO-001","product":"P - Product","quantity":1,"bomRevision":1,"routingRevision":1},"expiresAt":"2099-01-01T00:00:00Z","failureCode":null}\n\n',
-      'event: business-evidence\ndata: {"businessEvidence":[]}\n\n',
-      'event: citations\ndata: {"citations":[]}\n\n',
-      'event: done\ndata: {}\n\n',
-    ]));
+    browserFetch.and.resolveTo(
+      sseResponse([
+        'event: conversation\ndata: {"conversationId":"conversation-1"}\n\n',
+        'event: token\ndata: {"content":"Answer [S1]."}\n\n',
+        'event: ai-action-proposal\ndata: {"proposalId":"p-1","actionType":"release_production_order","status":"pending","title":"Release PO-001","summary":{"productionOrderNumber":"PO-001","product":"P - Product","quantity":1,"bomRevision":1,"routingRevision":1},"expiresAt":"2099-01-01T00:00:00Z","failureCode":null}\n\n',
+        'event: business-evidence\ndata: {"businessEvidence":[]}\n\n',
+        'event: citations\ndata: {"citations":[]}\n\n',
+        'event: done\ndata: {}\n\n',
+      ]),
+    );
 
     const events = await lastValueFrom(
       service.streamMessage('conversation-1', 'Question').pipe(toArray()),
@@ -98,13 +100,11 @@ describe('ChatApiService', () => {
   });
 
   it('rejects a stream that ends without the done event', async () => {
-    browserFetch.and.resolveTo(sseResponse([
-      'event: token\ndata: {"content":"Partial"}\n\n',
-    ]));
+    browserFetch.and.resolveTo(sseResponse(['event: token\ndata: {"content":"Partial"}\n\n']));
 
-    await expectAsync(lastValueFrom(
-      service.streamMessage('conversation-1', 'Question').pipe(toArray()),
-    )).toBeRejectedWithError('The AI response stream ended before completion.');
+    await expectAsync(
+      lastValueFrom(service.streamMessage('conversation-1', 'Question').pipe(toArray())),
+    ).toBeRejectedWithError('The AI response stream ended before completion.');
   });
 
   function sseResponse(chunks: string[]): Response {

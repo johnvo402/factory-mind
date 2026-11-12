@@ -154,15 +154,30 @@
               <td>{{ order.productCode }} — {{ order.productName }}</td>
               <td>{{ order.quantity | number: '1.0-3' }}</td>
               <td>
-                <span class="priority-badge" [class.urgent]="order.priority === 'urgent'" [class.high]="order.priority === 'high'">
-                  @if (order.priority === 'urgent') { <app-ui-icon name="flag" [size]="14" /> }
+                <span
+                  class="priority-badge"
+                  [class.urgent]="order.priority === 'urgent'"
+                  [class.high]="order.priority === 'high'"
+                >
+                  @if (order.priority === 'urgent') {
+                    <app-ui-icon name="flag" [size]="14" />
+                  }
                   {{ priorityLabel(order.priority) }}
                 </span>
               </td>
-              <td class="due-date">{{ order.dueDate ? (order.dueDate | date: 'dd/MM/yyyy' : 'UTC') : 'Chưa đặt' }}</td>
+              <td class="due-date">
+                {{ order.dueDate ? (order.dueDate | date: 'dd/MM/yyyy' : 'UTC') : 'Chưa đặt' }}
+              </td>
               <td>
-                <span class="delivery-badge" [class.overdue]="order.deliveryStatus === 'overdue'" [class.due-soon]="order.deliveryStatus === 'due_soon'" [class.completed-late]="order.deliveryStatus === 'completed_late'">
-                  @if (order.deliveryStatus === 'overdue' || order.deliveryStatus === 'completed_late') {
+                <span
+                  class="delivery-badge"
+                  [class.overdue]="order.deliveryStatus === 'overdue'"
+                  [class.due-soon]="order.deliveryStatus === 'due_soon'"
+                  [class.completed-late]="order.deliveryStatus === 'completed_late'"
+                >
+                  @if (
+                    order.deliveryStatus === 'overdue' || order.deliveryStatus === 'completed_late'
+                  ) {
                     <app-ui-icon name="triangle-alert" [size]="14" />
                   } @else if (order.deliveryStatus === 'due_soon') {
                     <app-ui-icon name="clock-3" [size]="14" />
@@ -274,9 +289,23 @@
       </table>
     </div>
     <nav class="pagination" aria-label="Phân trang lệnh sản xuất">
-      <button type="button" class="secondary" [disabled]="store.filters().page <= 1 || store.isLoading()" (click)="store.goToPage(store.filters().page - 1)">Trang trước</button>
+      <button
+        type="button"
+        class="secondary"
+        [disabled]="store.filters().page <= 1 || store.isLoading()"
+        (click)="store.goToPage(store.filters().page - 1)"
+      >
+        Trang trước
+      </button>
       <span>Trang {{ store.filters().page }} / {{ totalPages() }}</span>
-      <button type="button" class="secondary" [disabled]="store.filters().page >= totalPages() || store.isLoading()" (click)="store.goToPage(store.filters().page + 1)">Trang sau</button>
+      <button
+        type="button"
+        class="secondary"
+        [disabled]="store.filters().page >= totalPages() || store.isLoading()"
+        (click)="store.goToPage(store.filters().page + 1)"
+      >
+        Trang sau
+      </button>
     </nav>
   }
 
@@ -393,8 +422,7 @@
             <div class="requirements-summary" [class.shortage]="!requirements.canProduce">
               <strong>{{
                 requirements.canProduce ? 'Đủ vật tư để thực hiện lệnh' : 'Lệnh đang thiếu vật tư'
-              }}</strong
-              ><span
+              }}</strong><span
                 >{{
                   order.status === 'planned'
                     ? 'Tính theo BOM đang hoạt động revision ' + requirements.bomRevision + '.'
@@ -410,8 +438,9 @@
                 <article class="material-row" [class.shortage]="!material.isSufficient">
                   <header>
                     <div>
-                      <strong>{{ material.materialCode }}</strong
-                      ><span>{{ material.materialName }}</span>
+                      <strong>{{ material.materialCode }}</strong><span>{{
+                        material.materialName
+                      }}</span>
                     </div>
                     <b>{{ material.isSufficient ? 'Đủ' : 'Thiếu' }}</b>
                   </header>
@@ -871,8 +900,8 @@
               >
                 <div class="operation-sequence">{{ operation.sequence }}</div>
                 <div class="operation-copy">
-                  <strong>{{ operation.name }}</strong
-                  ><span>{{ operation.workCenterCode }} — {{ operation.workCenterName }}</span
+                  <strong>{{ operation.name }}</strong><span
+                    >{{ operation.workCenterCode }} — {{ operation.workCenterName }}</span
                   ><small
                     >Máy:
                     {{
@@ -886,8 +915,7 @@
                   >
                 </div>
                 <div class="operation-timing">
-                  <span>{{ operationStatusLabel(operation.status) }}</span
-                  ><small
+                  <span>{{ operationStatusLabel(operation.status) }}</span><small
                     >Bắt đầu:
                     {{ operation.startedAt ? (operation.startedAt | date: 'short') : '—' }}</small
                   ><small

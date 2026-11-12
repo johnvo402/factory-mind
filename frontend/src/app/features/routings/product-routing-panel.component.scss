@@ -35,7 +35,9 @@ footer {
 
 .routing-panel h2,
 .routing-panel h3,
-.routing-panel p { margin: 0; }
+.routing-panel p {
+  margin: 0;
+}
 
 .routing-panel h2 {
   margin-top: var(--space-1);
@@ -44,8 +46,13 @@ footer {
   letter-spacing: -0.02em;
 }
 
-.routing-panel h3 { color: var(--color-foreground); }
-.routing-panel > header p { margin-top: var(--space-2); color: var(--color-muted); }
+.routing-panel h3 {
+  color: var(--color-foreground);
+}
+.routing-panel > header p {
+  margin-top: var(--space-2);
+  color: var(--color-muted);
+}
 
 .routing-layout {
   display: grid;
@@ -60,7 +67,10 @@ aside {
   gap: var(--space-2);
 }
 
-.new-routing { width: 100%; margin-bottom: var(--space-1); }
+.new-routing {
+  width: 100%;
+  margin-bottom: var(--space-1);
+}
 
 .routing-notice,
 .empty-copy,
@@ -80,7 +90,10 @@ aside {
   color: var(--color-primary);
 }
 
-.state { margin-top: var(--space-6); text-align: center; }
+.state {
+  margin-top: var(--space-6);
+  text-align: center;
+}
 
 .error,
 .inline-error {
@@ -91,7 +104,9 @@ aside {
   font-size: 0.82rem;
 }
 
-.error { margin-top: var(--space-5); }
+.error {
+  margin-top: var(--space-5);
+}
 
 .revision {
   display: grid;
@@ -105,14 +120,31 @@ aside {
   text-align: left;
 }
 
-.revision:hover { background: var(--color-surface-raised); }
-.revision.selected { border-color: var(--color-primary); background: var(--color-primary-soft); }
-.revision strong { color: var(--color-muted); font-size: 0.75rem; }
-.revision strong.active { color: var(--color-success); }
-.revision small { color: var(--color-muted); }
+.revision:hover {
+  background: var(--color-surface-raised);
+}
+.revision.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+.revision strong {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+.revision strong.active {
+  color: var(--color-success);
+}
+.revision small {
+  color: var(--color-muted);
+}
 
-.section-heading { align-items: center; }
-.section-heading .eyebrow { display: block; margin-bottom: var(--space-1); }
+.section-heading {
+  align-items: center;
+}
+.section-heading .eyebrow {
+  display: block;
+  margin-bottom: var(--space-1);
+}
 
 .operation-editor {
   display: grid;
@@ -120,8 +152,13 @@ aside {
   margin-top: var(--space-5);
 }
 
-.editor-heading { align-items: center; }
-.editor-heading p { color: var(--color-muted); font-size: 0.82rem; }
+.editor-heading {
+  align-items: center;
+}
+.editor-heading p {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
 
 fieldset {
   display: grid;
@@ -166,7 +203,9 @@ fieldset select:focus {
   outline: 3px solid color-mix(in srgb, var(--focus-ring) 16%, transparent);
 }
 
-.description { grid-column: 2 / 6; }
+.description {
+  grid-column: 2 / 6;
+}
 
 .operation-list {
   display: grid;
@@ -195,9 +234,14 @@ fieldset select:focus {
   color: var(--color-primary);
 }
 
-.operation-list article div { display: grid; gap: var(--space-1); }
+.operation-list article div {
+  display: grid;
+  gap: var(--space-1);
+}
 .operation-list span,
-.operation-list small { color: var(--color-muted); }
+.operation-list small {
+  color: var(--color-muted);
+}
 
 footer {
   justify-content: flex-end;
@@ -207,18 +251,38 @@ footer {
 }
 
 @keyframes slide-in {
-  from { opacity: 0; transform: translateX(20px); }
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
 }
 
 @media (max-width: 760px) {
-  .routing-panel { width: 100vw; padding: var(--space-5); }
-  .routing-layout { grid-template-columns: 1fr; }
-  aside { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .routing-panel {
+    width: 100vw;
+    padding: var(--space-5);
+  }
+  .routing-layout {
+    grid-template-columns: 1fr;
+  }
+  aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .new-routing,
   .routing-notice,
-  .empty-copy { grid-column: 1 / -1; }
-  fieldset { grid-template-columns: 1fr 1fr; }
-  .description { grid-column: 1 / -1; }
-  .operation-list article { grid-template-columns: 36px 1fr; }
-  .operation-list small { grid-column: 2; }
+  .empty-copy {
+    grid-column: 1 / -1;
+  }
+  fieldset {
+    grid-template-columns: 1fr 1fr;
+  }
+  .description {
+    grid-column: 1 / -1;
+  }
+  .operation-list article {
+    grid-template-columns: 36px 1fr;
+  }
+  .operation-list small {
+    grid-column: 2;
+  }
 }

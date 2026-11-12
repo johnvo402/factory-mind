@@ -18,16 +18,20 @@ import { AiActionProposalCardComponent } from './ai-action-proposal-card.compone
 
 @Component({
   selector: 'app-chat-workspace',
-  imports: [ReactiveFormsModule, ChatMessageComponent, AiActionProposalCardComponent,
-    DashboardSummaryComponent, UiIconComponent],
+  imports: [
+    ReactiveFormsModule,
+    ChatMessageComponent,
+    AiActionProposalCardComponent,
+    DashboardSummaryComponent,
+    UiIconComponent,
+  ],
   templateUrl: './chat-workspace.component.html',
   styleUrl: './chat-workspace.component.scss',
 })
 export class ChatWorkspaceComponent implements OnInit, OnDestroy {
   protected readonly store = inject(ChatStore);
   private readonly auth = inject(AuthService);
-  private readonly messageViewport =
-    viewChild<ElementRef<HTMLDivElement>>('messageViewport');
+  private readonly messageViewport = viewChild<ElementRef<HTMLDivElement>>('messageViewport');
   protected readonly userName = computed(() => this.auth.user()?.name ?? 'bạn');
   protected readonly composer = new FormControl('', {
     nonNullable: true,

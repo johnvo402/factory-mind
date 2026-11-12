@@ -36,9 +36,7 @@ describe('ExcelImportWizardComponent template download', () => {
     spyOn(URL, 'createObjectURL').and.returnValue('blob:template');
     const revoke = spyOn(URL, 'revokeObjectURL');
     let downloadedFileName = '';
-    spyOn(HTMLAnchorElement.prototype, 'click').and.callFake(function (
-      this: HTMLAnchorElement,
-    ) {
+    spyOn(HTMLAnchorElement.prototype, 'click').and.callFake(function (this: HTMLAnchorElement) {
       downloadedFileName = this.download;
     });
 
@@ -82,8 +80,8 @@ describe('ExcelImportWizardComponent template download', () => {
   });
 
   function templateButton(): HTMLButtonElement {
-    return (Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[]).find(
-      (button) => button.textContent?.includes('file mẫu'),
-    )!;
+    return (
+      Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[]
+    ).find((button) => button.textContent?.includes('file mẫu'))!;
   }
 });

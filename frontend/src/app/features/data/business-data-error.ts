@@ -10,10 +10,13 @@ const localizedBusinessErrors: Readonly<Record<string, string>> = {
   'production_orders.locked_bom_required': 'Lệnh sản xuất chưa khóa phiên bản BOM.',
   'production_orders.locked_routing_required': 'Lệnh sản xuất chưa khóa phiên bản Routing.',
   'production_orders.allocations_required': 'Cần phân bổ kho cho từng vật tư trong BOM đã khóa.',
-  'production_orders.allocation_quantity_invalid': 'Số lượng phân bổ của mỗi vật tư phải lớn hơn 0.',
+  'production_orders.allocation_quantity_invalid':
+    'Số lượng phân bổ của mỗi vật tư phải lớn hơn 0.',
   'production_orders.extra_allocation_material': 'Phân bổ chứa vật tư không thuộc BOM đã khóa.',
-  'production_orders.missing_allocation_material': 'Còn vật tư trong BOM đã khóa chưa được phân bổ.',
-  'production_orders.allocation_total_mismatch': 'Tổng phân bổ phải khớp chính xác nhu cầu vật tư do máy chủ tính.',
+  'production_orders.missing_allocation_material':
+    'Còn vật tư trong BOM đã khóa chưa được phân bổ.',
+  'production_orders.allocation_total_mismatch':
+    'Tổng phân bổ phải khớp chính xác nhu cầu vật tư do máy chủ tính.',
   'planning.calendar_invalid': 'Lịch Work Center không hợp lệ. Kiểm tra lại ca làm việc.',
   'planning.timezone_invalid': 'Múi giờ vận hành của doanh nghiệp không hợp lệ.',
   'planning.invalid_horizon': 'Khung thời gian kế hoạch nằm ngoài giới hạn cho phép.',

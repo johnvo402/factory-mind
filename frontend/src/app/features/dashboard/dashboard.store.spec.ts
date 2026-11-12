@@ -39,10 +39,15 @@ describe('DashboardStore', () => {
   });
 
   it('keeps an isolated retryable error when the dashboard fails', async () => {
-    api.getSummary.and.returnValue(throwError(() => new HttpErrorResponse({
-      status: 503,
-      error: { detail: 'Dashboard is temporarily unavailable.' },
-    })));
+    api.getSummary.and.returnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 503,
+            error: { detail: 'Dashboard is temporarily unavailable.' },
+          }),
+      ),
+    );
 
     await store.load();
 

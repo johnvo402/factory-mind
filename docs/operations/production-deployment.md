@@ -62,6 +62,10 @@ If GHCR packages are private, authenticate with a token limited to `read:package
 printf '%s' "$CR_PAT" | docker login ghcr.io --username YOUR_GITHUB_USER --password-stdin
 ```
 
+If the historical upstream MinIO images cannot be pulled, build the pinned server and client from
+`docker/minio.Dockerfile` and configure `MINIO_IMAGE` and `MINIO_MC_IMAGE` before deployment. See
+[dev-prod-quickstart.md](dev-prod-quickstart.md#2-chuẩn-bị-image-minio-và-công-cụ-backup) for commands.
+
 ## First deployment
 
 Choose a full 40-character SHA whose CI run and production-image job are green:

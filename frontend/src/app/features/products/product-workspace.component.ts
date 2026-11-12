@@ -1,12 +1,6 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import {
-  FormArray,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Bom, BomInput, BomItem, BomStatus } from '../boms/bom.models';
 import { BomStore } from '../boms/bom.store';
 import { DialogFocusDirective } from '../../shared/ui/dialog-focus.directive';
@@ -17,7 +11,14 @@ import { ProductRoutingPanelComponent } from '../routings/product-routing-panel.
 
 @Component({
   selector: 'app-product-workspace',
-  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, DialogFocusDirective, UiIconComponent, ProductRoutingPanelComponent],
+  imports: [
+    DatePipe,
+    DecimalPipe,
+    ReactiveFormsModule,
+    DialogFocusDirective,
+    UiIconComponent,
+    ProductRoutingPanelComponent,
+  ],
   templateUrl: './product-workspace.component.html',
   styleUrls: ['../data/entity-workspace.scss', './product-workspace.component.scss'],
 })
@@ -34,8 +35,8 @@ export class ProductWorkspaceComponent implements OnInit {
   protected readonly selectedBomId = signal<string | null>(null);
   protected readonly editingBomId = signal<string | null>(null);
   protected readonly allMaterialsUsed = signal(false);
-  protected readonly selectedBom = computed(() =>
-    this.bomStore.boms().find((bom) => bom.id === this.selectedBomId()) ?? null,
+  protected readonly selectedBom = computed(
+    () => this.bomStore.boms().find((bom) => bom.id === this.selectedBomId()) ?? null,
   );
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly requirementQuantity = new FormControl(100, {
